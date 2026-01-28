@@ -1,0 +1,238 @@
+{
+  "modules": [
+    {
+      "id": "critical_thinking",
+      "name": "Critical Thinking",
+      "description": "Analyze the problem from multiple perspectives to identify potential pitfalls and nuances.",
+      "category": "Analysis"
+    },
+    {
+      "id": "step_by_step",
+      "name": "Step-by-Step Thinking",
+      "description": "Break down the problem into a sequence of small, manageable steps.",
+      "category": "Decomposition"
+    },
+    {
+      "id": "decomposition",
+      "name": "Decomposition",
+      "description": "Divide a complex problem into smaller, independent sub-problems.",
+      "category": "Decomposition"
+    },
+    {
+      "id": "abstraction",
+      "name": "Abstraction",
+      "description": "Identify general patterns or principles underlying the specific problem.",
+      "category": "Modeling"
+    },
+    {
+      "id": "analogy",
+      "name": "Analogical Reasoning",
+      "description": "Find similarities with previously solved problems to apply successful strategies.",
+      "category": "Modeling"
+    },
+    {
+      "id": "constraint_analysis",
+      "name": "Constraint Analysis",
+      "description": "Explicitly list and analyze all constraints and limitations defined in the problem.",
+      "category": "Analysis"
+    },
+    {
+      "id": "hypothesis_generation",
+      "name": "Hypothesis Generation",
+      "description": "Formulate multiple potential explanations or solutions before testing them.",
+      "category": "Exploration"
+    },
+    {
+      "id": "verification",
+      "name": "Verification/Self-correction",
+      "description": "Check intermediate results for errors and correct the approach if necessary.",
+      "category": "Validation"
+    },
+    {
+      "id": "pattern_recognition",
+      "name": "Pattern Recognition",
+      "description": "Identify recurring structures or sequences within the problem data.",
+      "category": "Analysis"
+    },
+    {
+      "id": "information_retrieval",
+      "name": "Information Retrieval",
+      "description": "Identify knowledge or data that needs to be recalled or retrieved to solve the problem.",
+      "category": "Knowledge"
+    },
+    {
+      "id": "creative_thinking",
+      "name": "Creative Thinking",
+      "description": "Generate out-of-the-box ideas or unconventional approaches.",
+      "category": "Exploration"
+    },
+    {
+      "id": "systems_thinking",
+      "name": "Systems Thinking",
+      "description": "View the problem as a system of interacting parts and analyze their relationships.",
+      "category": "Analysis"
+    },
+    {
+      "id": "causal_reasoning",
+      "name": "Causal Reasoning",
+      "description": "Determine cause-and-effect relationships between variables or events.",
+      "category": "Analysis"
+    },
+    {
+      "id": "mathematical_modeling",
+      "name": "Mathematical Modeling",
+      "description": "Translate the problem into mathematical equations or structures.",
+      "category": "Modeling"
+    },
+    {
+      "id": "logic_programming",
+      "name": "Logic Programming",
+      "description": "Formulate the problem as a set of logical rules and facts.",
+      "category": "Modeling"
+    },
+    {
+      "id": "algorithm_design",
+      "name": "Algorithm Design",
+      "description": "Create a specific algorithm or procedure to solve the problem.",
+      "category": "Synthesis"
+    },
+    {
+      "id": "decision_matrix",
+      "name": "Decision Matrix",
+      "description": "Evaluate multiple options against a set of weighted criteria.",
+      "category": "Evaluation"
+    },
+    {
+      "id": "risk_assessment",
+      "name": "Risk Assessment",
+      "description": "Identify potential risks and their impact on the proposed solution.",
+      "category": "Evaluation"
+    },
+    {
+      "id": "resource_allocation",
+      "name": "Resource Allocation",
+      "description": "Optimize the use of available resources (time, computation, memory).",
+      "category": "Optimization"
+    },
+    {
+      "id": "game_theory",
+      "name": "Game Theory",
+      "description": "Analyze the problem as a strategic interaction between rational agents.",
+      "category": "Modeling"
+    },
+    {
+      "id": "historical_analysis",
+      "name": "Historical Analysis",
+      "description": "Look at historical data or context to understand trends.",
+      "category": "Knowledge"
+    },
+    {
+      "id": "ethical_reasoning",
+      "name": "Ethical Reasoning",
+      "description": "Consider ethical implications and moral principles.",
+      "category": "Evaluation"
+    },
+    {
+      "id": "emotional_intelligence",
+      "name": "Emotional Intelligence",
+      "description": "Consider emotional aspects and human factors involved.",
+      "category": "Analysis"
+    },
+    {
+      "id": "cultural_context",
+      "name": "Cultural Context",
+      "description": "Analyze the problem within a specific cultural framework.",
+      "category": "Analysis"
+    },
+    {
+      "id": "linguistic_analysis",
+      "name": "Linguistic Analysis",
+      "description": "Analyze the language, syntax, and semantics of the problem statement.",
+      "category": "Analysis"
+    },
+    {
+      "id": "visual_reasoning",
+      "name": "Visual Reasoning",
+      "description": "Use visual aids, diagrams, or mental imagery to understand the problem.",
+      "category": "visualization"
+    },
+    {
+      "id": "simulation",
+      "name": "Simulation",
+      "description": "Simulate the process or system to observe its behavior under different conditions.",
+      "category": "Validation"
+    },
+    {
+      "id": "counterfactual_thinking",
+      "name": "Counterfactual Thinking",
+      "description": "Imagine 'what if' scenarios to understand dependencies and outcomes.",
+      "category": "Exploration"
+    },
+    {
+      "id": "first_principles",
+      "name": "First Principles",
+      "description": "Break the problem down to its most basic truths and build up from there.",
+      "category": "Decomposition"
+    },
+    {
+      "id": "socratic_questioning",
+      "name": "Socratic Questioning",
+      "description": "Ask probing questions to challenge assumptions and clarify the problem.",
+      "category": "Exploration"
+    },
+    {
+      "id": "lateral_thinking",
+      "name": "Lateral Thinking",
+      "description": "Approach the problem from an indirect or unexpected angle.",
+      "category": "Exploration"
+    },
+    {
+      "id": "backward_reasoning",
+      "name": "Backward Reasoning",
+      "description": "Start from the desired goal and work backwards to the current state.",
+      "category": "Planning"
+    },
+    {
+      "id": "divide_and_conquer",
+      "name": "Divide and Conquer",
+      "description": "Recursively break down a problem into two or more sub-problems of the same or related type.",
+      "category": "Decomposition"
+    },
+    {
+      "id": "root_cause_analysis",
+      "name": "Root Cause Analysis",
+      "description": "Identify the fundamental cause of a problem rather than just addressing symptoms.",
+      "category": "Analysis"
+    },
+    {
+      "id": "gap_analysis",
+      "name": "Gap Analysis",
+      "description": "Compare current state vs desired future state and determine how to bridge the gap.",
+      "category": "Planning"
+    },
+    {
+      "id": "swot_analysis",
+      "name": "SWOT Analysis",
+      "description": "Analyze Strengths, Weaknesses, Opportunities, and Threats.",
+      "category": "Evaluation"
+    },
+    {
+      "id": "cost_benefit_analysis",
+      "name": "Cost-Benefit Analysis",
+      "description": "Weigh the benefits of a solution against its costs.",
+      "category": "Evaluation"
+    },
+    {
+      "id": "pareto_analysis",
+      "name": "Pareto Analysis",
+      "description": "Focus on the 20% of causes that produce 80% of the results (80/20 rule).",
+      "category": "Optimization"
+    },
+    {
+      "id": "scientific_method",
+      "name": "Scientific Method",
+      "description": "Systematic observation, measurement, and experiment, and the formulation, testing, and modification of hypotheses.",
+      "category": "Validation"
+    }
+  ]
+}

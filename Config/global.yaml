@@ -1,0 +1,95 @@
+# Global Configuration for AutoLogic Framework
+
+app:
+  name: "AutoLogic"
+  version: "0.1.0"
+  environment: "development"
+  debug: true
+
+llm:
+  # Active provider and model
+  active_provider: "openrouter"
+  active_model: "google/gemini-2.0-flash-exp:free"
+  
+  # Global LLM parameters
+  temperature: 0.7
+  max_tokens: 4096
+  timeout: 180  # Augmenté pour modèles gratuits
+  max_retries: 3
+  
+  # Configuration de résilience (anti-timeout)
+  resilience:
+    rate_limit: 5.0
+    retry_enabled: true
+    max_retries: 3
+    retry_base_delay: 2.0
+    fallback_enabled: true
+  
+  # Provider-specific configuration
+  providers:
+    openrouter:
+      enabled: true
+      base_url: "https://openrouter.ai/api/v1"
+      default_model: "google/gemini-2.0-flash-exp:free"
+      models:
+        - "google/gemini-2.0-flash-exp:free"
+        - "anthropic/claude-3-opus"
+        - "anthropic/claude-3-sonnet"
+        - "openai/gpt-4-turbo"
+        - "meta-llama/llama-3-70b-instruct"
+    
+    openai:
+      enabled: true
+      base_url: "https://api.openai.com/v1"
+      default_model: "gpt-4-turbo"
+      models:
+        - "gpt-4-turbo"
+        - "gpt-4o"
+        - "gpt-4o-mini"
+        - "gpt-3.5-turbo"
+    
+    ollama:
+      enabled: true
+      # Host configured via OLLAMA_HOST env var
+      base_url: "http://localhost:11434"
+      default_model: "llama3"
+      timeout: 120
+      auto_detect_models: true
+      models:
+        - "llama3"
+        - "llama2"
+        - "mistral"
+        - "mixtral"
+        - "gemma"
+        - "phi3"
+        - "codellama"
+    
+    vllm:
+      enabled: false
+      # Host configured via VLLM_HOST env var
+      default_model: "local-model"
+      auto_detect_models: true
+      models: []
+    
+    huggingface:
+      enabled: true
+      base_url: "https://api-inference.huggingface.co/models"
+      default_model: "meta-llama/Meta-Llama-3-70B-Instruct"
+      models:
+        - "meta-llama/Meta-Llama-3-70B-Instruct"
+        - "mistralai/Mixtral-8x7B-Instruct-v0.1"
+        - "google/gemma-7b"
+        - "microsoft/Phi-3-mini-4k-instruct"
+
+database:
+  host: "localhost"
+  port: 5432
+  name: "autologic_db"
+
+vector_store:
+  provider: "chromadb"
+  path: "./data/chroma"
+
+logging:
+  level: "INFO"
+  file: "Log/backend_app.log"

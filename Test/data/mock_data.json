@@ -1,0 +1,18 @@
+{
+    "sample_task": "Calculer la somme de 1 à 100",
+    "expected_keywords": [
+        "somme",
+        "calcul",
+        "résultat"
+    ],
+    "test_documents": [
+        {
+            "id": "doc1",
+            "content": "Document de test 1"
+        },
+        {
+            "id": "doc2",
+            "content": "Document de test 2"
+        }
+    ]
+}
