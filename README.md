@@ -28,11 +28,12 @@
 | Fonctionnalité | Description |
 |----------------|-------------|
 | 🧠 **Self-Discovery** | Cycle automatique en 4 phases : SELECT → ADAPT → STRUCTURE → EXECUTE |
+| 🔄 **Dual LLM** | Architecture bimodale : **Root LLM** (Stratégique) pour la planification et **Worker LLM** (Tactique) pour l'exécution rapide |
 | 📚 **39 Modules** | Bibliothèque complète de modules de raisonnement (décomposition, analogie, vérification...) |
 | 🔌 **Multi-Provider** | Support OpenRouter, OpenAI, Ollama, vLLM, HuggingFace |
-| 🛡️ **Résilience** | Rate limiting, retry avec backoff exponentiel, fallback automatique |
+| 🛡️ **Résilience** | Rate limiting (5 req/s), retry avec backoff exponentiel, fallback automatique |
 | 🎨 **UI Glassmorphism** | Interface moderne avec effets de verre et animations fluides |
-| ⚙️ **Configurable** | YAML centralisé et panneau de paramètres dynamiques |
+| ⚙️ **Configurable** | YAML centralisé, panneau de paramètres dynamiques, filtres modèles |
 | 🌓 **Thème Sombre/Clair** | Support complet des modes d'affichage |
 
 ---
@@ -49,7 +50,11 @@ AutoLogic/
 │   └── generate_docs.sh    # Génération doc Sphinx
 ├── Code/
 │   ├── Backend/
-│   │   ├── Phase1-Ingestion/   # (Futur) Pipeline d'ingestion RAG
+│   │   ├── Phase1-Ingestion/   # Pipeline d'ingestion RAG
+│   │   │   ├── 01_DataAcquisition/
+│   │   │   ├── 02_Parsing/
+│   │   │   ├── 03_Chunking/
+│   │   │   └── 04_Embedding/
 │   │   └── Phase2-Inference/   # Moteur de raisonnement
 │   │       └── 01_Reasoning/
 │   │           └── autologic/
@@ -77,7 +82,7 @@ AutoLogic/
 
 ### 🔄 Le Cycle Self-Discovery
 
-Le cœur d'AutoLogic repose sur un cycle en **4 phases** :
+Le cœur d'AutoLogic repose sur un cycle en **4 phases**, optimisé par une architecture **Dual LLM** :
 
 ```mermaid
 graph LR
@@ -95,12 +100,12 @@ graph LR
     style F fill:#1e1e2e,stroke:#89dceb,color:#cdd6f4
 ```
 
-| Phase | Description |
-|-------|-------------|
-| **SELECT** | Sélectionne les modules de raisonnement pertinents parmi les 39 disponibles |
-| **ADAPT** | Adapte les modules génériques au contexte spécifique de la tâche |
-| **STRUCTURE** | Génère un plan de raisonnement ordonné avec étapes numérotées |
-| **EXECUTE** | Exécute le plan pas-à-pas pour produire la solution finale |
+| Phase | Rôle | LLM Utilisé | Description |
+|-------|------|-------------|-------------|
+| **SELECT** | Architecte | **Root Core** | Sélectionne les modules de raisonnement pertinents |
+| **ADAPT** | Architecte | **Root Core** | Adapte les modules génériques au contexte de la tâche |
+| **STRUCTURE** | Architecte | **Root Core** | Génère un plan de raisonnement ordonné |
+| **EXECUTE** | Ouvrier | **Worker** | Exécute le plan pas-à-pas pour produire la solution finale |
 
 ---
 
@@ -153,9 +158,6 @@ OPENROUTER_API_KEY=sk-or-v1-xxxxx
 # OpenAI (Optionnel)
 OPENAI_API_KEY=sk-xxxxx
 
-# Anthropic (Optionnel)
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-
 # HuggingFace (Optionnel)
 HUGGINGFACE_API_KEY=hf_xxxxx
 
@@ -196,7 +198,7 @@ CORS_ORIGINS=http://localhost:5173
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | `GET` | `/api/models` | Liste tous les providers et modèles disponibles |
-| `GET` | `/api/providers/config` | Récupère la configuration active |
+| `GET` | `/api/providers/config` | Récupère la configuration active (Root & Worker) |
 | `PUT` | `/api/providers/config` | Met à jour la configuration (provider, model, température) |
 | `GET` | `/api/providers/status` | Statut de disponibilité de chaque provider |
 | `GET` | `/api/providers/{provider}/models` | Modèles disponibles pour un provider |
@@ -217,8 +219,10 @@ curl -X POST http://localhost:8000/reason/full \
   -d '{
     "task": "Analyser les tendances de vente Q4 et proposer 3 actions stratégiques",
     "parameters": {
-      "provider": "openrouter",
-      "model": "google/gemini-2.0-flash-exp:free"
+      "root_provider": "openrouter",
+      "root_model": "google/gemini-2.0-flash-exp:free",
+      "worker_provider": "openrouter",
+      "worker_model": "google/gemini-2.0-flash-exp:free"
     }
   }'
 ```
@@ -249,7 +253,7 @@ curl -X POST http://localhost:8000/reason/full \
 
 ## 🔌 Providers LLM Supportés
 
-AutoLogic supporte **5 providers LLM** avec configuration dynamique :
+AutoLogic supporte **5 providers LLM** avec configuration dynamique et séparation des rôles :
 
 | Provider | Type | Modèle par défaut | Configuration |
 |----------|------|-------------------|---------------|
@@ -261,7 +265,7 @@ AutoLogic supporte **5 providers LLM** avec configuration dynamique :
 
 ### Fonctionnalités de Résilience
 
-Le système inclut des mécanismes de résilience configurables :
+Le système inclut des mécanismes de résilience configurables et indépendants pour **tous les providers** (OpenRouter, OpenAI, Ollama, etc.) :
 
 | Fonctionnalité | Description | Valeur par défaut |
 |----------------|-------------|-------------------|

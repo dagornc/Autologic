@@ -37,9 +37,9 @@ export const SolutionDisplay: React.FC<SolutionDisplayProps> = ({ output }) => {
 
                 {/* Content */}
                 <div className="p-8 pt-12 overflow-x-auto">
-                    <pre className="font-mono text-sm leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                    <div className="font-sans text-sm leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                         {output}
-                    </pre>
+                    </div>
                 </div>
             </div>
         </motion.section>

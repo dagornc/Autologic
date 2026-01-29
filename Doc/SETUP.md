@@ -1,13 +1,13 @@
 # Guide d'Installation et de Démarrage
 
-Ce guide vous accompagne pas-à-pas pour installer et lancer AutoLogic sur votre machine.
+Ce guide vous accompagne pas-à-pas pour installer, configurer et lancer AutoLogic.
 
 ---
 
 ## Prérequis Système
 
-| Logiciel | Version Minimale | Vérification |
-|----------|------------------|--------------|
+| Logiciel | Version Requise | Commande de Vérification |
+|----------|-----------------|--------------------------|
 | **Python** | 3.9+ | `python3 --version` |
 | **Node.js** | 18+ | `node --version` |
 | **npm** | 8+ | `npm --version` |
@@ -15,7 +15,9 @@ Ce guide vous accompagne pas-à-pas pour installer et lancer AutoLogic sur votre
 
 ---
 
-## Installation
+## Installation Rapide (Recommandé)
+
+Le projet inclut un script d'orchestration `start.sh` qui gère l'installation des dépendances et le lancement des services.
 
 ### 1. Cloner le Projet
 
@@ -24,225 +26,132 @@ git clone <url-du-repo>
 cd AutoLogic
 ```
 
-### 2. Configuration des Variables d'Environnement
-
-Créez un fichier `.env` à la racine du projet :
+### 2. Configuration Rapide
 
 ```bash
-touch .env
+# Copier le template de configuration
+cp .env.example .env
+
+# Éditer le fichier pour ajouter votre clé API (ex: OpenRouter)
+nano .env
 ```
 
-Ajoutez vos clés API :
-
-```env
-# === REQUIS ===
-# Clé API OpenRouter (obtenez-la sur https://openrouter.ai/)
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-
-# === OPTIONNEL ===
-# Niveau de logging (DEBUG, INFO, WARNING, ERROR)
-LOG_LEVEL=INFO
-
-# Origines CORS autorisées (séparées par virgule)
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-
-# === PROVIDERS ALTERNATIFS (optionnel) ===
-# OLLAMA_BASE_URL=http://localhost:11434
-# OPENAI_API_KEY=sk-xxx
-# ANTHROPIC_API_KEY=sk-ant-xxx
-```
-
-### 3. Installation Backend (Python)
-
-```bash
-# Créer l'environnement virtuel
-python3 -m venv .venv
-
-# Activer l'environnement
-source .venv/bin/activate  # Linux/macOS
-# ou
-.\.venv\Scripts\activate   # Windows
-
-# Installer les dépendances
-pip install -r requirements.txt
-```
-
-### 4. Installation Frontend (React)
-
-```bash
-cd Code/Frontend
-npm install
-cd ../..
-```
-
----
-
-## Lancement
-
-### Option 1 : Script Automatique (Recommandé)
-
-Le script `start.sh` automatise tout le processus :
+### 3. Lancement
 
 ```bash
 ./start.sh
 ```
 
-Ce script :
-1. ✅ Vérifie les prérequis (Python, Node, npm)
-2. ✅ Crée/active l'environnement virtuel
-3. ✅ Installe les dépendances manquantes
-4. ✅ Démarre le Backend sur `http://localhost:8000`
-5. ✅ Démarre le Frontend sur `http://localhost:5173`
-6. ✅ Ouvre automatiquement le navigateur
+Ce script va automatiquement :
+1. ✅ Vérifier les prérequis
+2. ✅ Créer l'environnement virtuel Python (`.venv`)
+3. ✅ Installer les dépendances Backend (`requirements.txt`) et Frontend (`package.json`)
+4. ✅ Lancer le Backend (Port 8000) et le Frontend (Port 5173)
+5. ✅ Ouvrir votre navigateur sur `http://localhost:5173`
 
-Pour arrêter : `Ctrl+C`
+---
 
-### Option 2 : Lancement Manuel
+## Installation Manuelle
 
-**Terminal 1 - Backend :**
+Si vous préférez installer les composants séparément :
+
+### 1. Backend (Python)
+
 ```bash
-source .venv/bin/activate
-cd Code/Backend/Phase2-Inference/01_Reasoning
-uvicorn autologic.main:app --reload --host 0.0.0.0 --port 8000
+# Création de l'environnement virtuel
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .\.venv\Scripts\activate  # Windows
+
+# Installation des dépendances
+pip install -r requirements.txt
+
+# Lancement du serveur API
+./Cmd/start_backend.sh
+# Ou manuellement :
+# uvicorn autologic.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Terminal 2 - Frontend :**
+### 2. Frontend (React/Vite)
+
 ```bash
 cd Code/Frontend
+
+# Installation
+npm install
+
+# Lancement
 npm run dev
-```
-
-Accédez à l'application : **http://localhost:5173**
-
----
-
-## Vérification de l'Installation
-
-### Test du Backend
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Réponse attendue :
-# {"status":"healthy","version":"0.2.0","service":"AutoLogic Engine"}
-```
-
-### Test de l'API
-
-```bash
-curl -X POST http://localhost:8000/reason/full \
-  -H "Content-Type: application/json" \
-  -d '{"task": "Explique comment fonctionne le système solaire"}'
+# Le frontend sera accessible sur http://localhost:5173
 ```
 
 ---
 
-## Configuration Avancée
+## Configuration Détaillée (.env)
 
-### Fichier `Config/global.yaml`
+Le fichier `.env` configure les clés API, les providers LLM et les paramètres système.
 
-```yaml
-app:
-  name: "AutoLogic"
-  version: "0.1.0"
-  environment: "development"  # development | production
-  debug: true
+### Providers LLM
 
-llm:
-  default_provider: "openrouter"   # openrouter | ollama | openai
-  default_model: "google/gemini-2.0-flash-exp:free"
-  fallback_model: "openai/gpt-3.5-turbo"
-  temperature: 0.7        # 0.0 = déterministe, 1.0 = créatif
-  max_tokens: 4096
-
-vector_store:
-  provider: "chromadb"
-  path: "./data/chroma"
-
-logging:
-  level: "INFO"
-  file: "Log/backend_app.log"
-```
-
-### Changer de Provider LLM
-
-**OpenRouter (défaut) :**
+#### OpenRouter (Recommandé)
 ```env
-OPENROUTER_API_KEY=sk-or-v1-xxx
+OPENROUTER_API_KEY=sk-or-v1-xxxxx
 ```
 
-**Ollama (local) :**
+#### OpenAI
 ```env
-OLLAMA_BASE_URL=http://localhost:11434
+OPENAI_API_KEY=sk-xxxxx
 ```
-Dans `global.yaml` :
-```yaml
-llm:
-  default_provider: "ollama"
-  default_model: "llama3"
+
+#### Locaux (Ollama / vLLM)
+```env
+OLLAMA_HOST=http://localhost:11434
+VLLM_HOST=http://localhost:8000
 ```
+
+### Paramètres Système
+
+```env
+# Niveau de log (DEBUG, INFO, WARNING, ERROR)
+LOG_LEVEL=INFO
+
+# Sécurité API
+SECRET_KEY=votre_cle_secrete_ici
+ALGORITHM=HS256
+```
+
+---
+
+## Scripts Utilitaires
+
+Le dossier `Cmd/` contient des scripts pour faciliter le développement :
+
+| Script | Description | Usage |
+|--------|-------------|-------|
+| `start.sh` | **Recommandé**. Lance tout le système. | `./start.sh` |
+| `Cmd/start_backend.sh` | Lance uniquement le backend. | `./Cmd/start_backend.sh` |
+| `Cmd/start_frontend.sh` | Lance uniquement le frontend. | `./Cmd/start_frontend.sh` |
+| `Cmd/run_tests.sh` | Exécute la suite de tests (pytest). | `./Cmd/run_tests.sh` |
+| `Cmd/lint.sh` | Vérifie la qualité du code (black, flake8, mypy). | `./Cmd/lint.sh` |
+| `Cmd/generate_docs.sh` | Génère la documentation Sphinx HTML. | `./Cmd/generate_docs.sh` |
 
 ---
 
 ## Dépannage
 
-### Le Backend ne démarre pas
-
-1. Vérifiez que l'environnement virtuel est activé
-2. Vérifiez que toutes les dépendances sont installées :
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Vérifiez le fichier `.env` et la clé API
-
-### Erreur CORS
-
-Ajoutez l'origine de votre frontend dans `.env` :
-```env
-CORS_ORIGINS=http://localhost:5173,http://votre-domaine.com
-```
-
-### Le Frontend affiche "Network Error"
-
-1. Vérifiez que le Backend est bien lancé sur le port 8000
-2. Vérifiez les logs : `cat Log/backend_app.log`
-
-### Erreur "Module not found"
-
-```bash
-# Réinstallez les dépendances
-pip install -r requirements.txt --force-reinstall
-```
-
----
-
-## Développement
-
-### Lancer les tests
-
+### Erreur "Module not found" (Python)
+Assurez-vous que l'environnement virtuel est activé :
 ```bash
 source .venv/bin/activate
-pytest
 ```
 
-### Vérifier la qualité du code
+### Timeout ou Erreur de Connexion LLM
+Si vous utilisez un modèle gratuit ou lent, augmentez les paramètres de résilience dans `Config/global.yaml` ou passez par l'API de configuration :
+- Augmentez `timeout`
+- Activez `retry_enabled`
 
-```bash
-# Formatage
-black .
-
-# Linting
-flake8
-
-# Type checking
-mypy .
-```
-
-### Générer la documentation Sphinx
-
-```bash
-cd Doc/sphinx
-make html
-# Ouvrir _build/html/index.html
-```
+### Port déjà utilisé
+Si le port 8000 ou 5173 est occupé :
+1. Identifiez le processus : `lsof -i :8000`
+2. Tuez-le : `kill -9 <PID>`
+3. Ou modifiez les ports dans les scripts de lancement.

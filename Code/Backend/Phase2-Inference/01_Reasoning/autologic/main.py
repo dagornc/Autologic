@@ -30,10 +30,7 @@ LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "Log"
 LOG_FILE = LOG_DIR / "backend_app.log"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-setup_logging(
-    log_level=os.getenv("LOG_LEVEL", "INFO"),
-    log_file=str(LOG_FILE)
-)
+setup_logging(log_level=os.getenv("LOG_LEVEL", "INFO"), log_file=str(LOG_FILE))
 logger = get_logger(__name__)
 
 
@@ -44,24 +41,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Initialise le moteur au démarrage.
     """
     logger.info("Démarrage de l'application AutoLogic")
-    
+
     try:
         # Initialisation du LLM
         root_llm = OpenRouterLLM(model_name="meta-llama/llama-3.3-70b-instruct:free")
         worker_llm = OpenRouterLLM(model_name="meta-llama/llama-3.3-70b-instruct:free")
-        
+
         # Initialisation du moteur
         engine = AutoLogicEngine(root_model=root_llm, worker_model=worker_llm)
         set_engine(engine)
-        
+
         logger.info("AutoLogic Engine initialisé avec succès")
-        
+
     except Exception as e:
         logger.error(f"Échec d'initialisation: {e}")
         # Le moteur sera None, les endpoints retourneront 503
-    
+
     yield
-    
+
     logger.info("Arrêt de l'application AutoLogic")
 
 
@@ -70,7 +67,7 @@ app = FastAPI(
     title="AutoLogic Engine API",
     description="API for the Self-Discover Reasoning Framework",
     version="0.2.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Configuration CORS
@@ -98,21 +95,12 @@ async def root() -> dict[str, str]:
 @app.get("/health", tags=["health"])
 async def health_check() -> dict[str, str]:
     """Endpoint de health check détaillé."""
-    return {
-        "status": "healthy",
-        "version": "0.2.0",
-        "service": "AutoLogic Engine"
-    }
+    return {"status": "healthy", "version": "0.2.0", "service": "AutoLogic Engine"}
 
 
 def start() -> None:
     """Fonction helper pour lancer uvicorn."""
-    uvicorn.run(
-        "autologic.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("autologic.main:app", host="0.0.0.0", port=8000, reload=True)
 
 
 if __name__ == "__main__":

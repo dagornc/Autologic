@@ -1,15 +1,17 @@
 from typing import List, Dict, Any
 from dataclasses import dataclass
 
+
 @dataclass
 class ModelInfo:
     id: str
     name: str
     provider: str
 
+
 class ModelRegistry:
     """Registre des providers et modèles LLM disponibles."""
-    
+
     def __init__(self) -> None:
         # 6 providers avec modèles complets triés alphabétiquement
         self.providers: Dict[str, List[str]] = {
@@ -49,27 +51,22 @@ class ModelRegistry:
                 "google/gemini-2.0-flash-lite-preview-02-05:free",
                 "google/gemini-2.0-pro-exp-02-05:free",
                 "google/gemma-2-9b-it:free",
-                
                 # Meta Llama
                 "meta-llama/llama-3.3-70b-instruct:free",
                 "meta-llama/llama-3.1-8b-instruct:free",
                 "meta-llama/llama-3-8b-instruct:free",
-                
                 # Mistral (Corrected IDs)
-                "mistralai/mistral-7b-instruct",       # Souvent gratuit/très low cost
+                "mistralai/mistral-7b-instruct",  # Souvent gratuit/très low cost
                 "mistralai/mistral-small-24b-instruct-2501",
                 "mistralai/mistral-nemo",
                 "mistralai/mistral-large-2411",
                 "mistralai/mistral-small-3.1-24b-instruct:free",
-                
                 # DeepSeek
                 "deepseek/deepseek-r1:free",
                 "deepseek/deepseek-chat:free",
-                
                 # Microsoft
                 "microsoft/phi-3-medium-128k-instruct:free",
                 "microsoft/phi-3-mini-128k-instruct:free",
-                
                 # Autres Payants (mais populaires)
                 "openai/gpt-4o",
                 "openai/gpt-4o-mini",
@@ -213,9 +210,9 @@ class ModelRegistry:
                 "embed-multilingual-v3.0",
                 "rerank-english-v3.0",
                 "rerank-multilingual-v3.0",
-            ]
+            ],
         }
-        
+
         # Paramètres par défaut pour chaque provider
         self.default_params: Dict[str, Dict[str, Any]] = {
             "OpenAI": {"temperature": 0.7, "max_tokens": 4096, "top_p": 1.0},
@@ -223,7 +220,7 @@ class ModelRegistry:
             "Ollama": {"temperature": 0.8, "max_tokens": 2048, "top_p": 0.9},
             "HuggingFace": {"temperature": 0.7, "max_tokens": 2048, "top_p": 0.95},
             "Anthropic": {"temperature": 1.0, "max_tokens": 4096, "top_p": 1.0},
-            "Cohere": {"temperature": 0.7, "max_tokens": 4000, "top_p": 0.75}
+            "Cohere": {"temperature": 0.7, "max_tokens": 4000, "top_p": 0.75},
         }
 
     def get_providers(self) -> List[str]:
@@ -239,10 +236,7 @@ class ModelRegistry:
     def get_all_models(self) -> Dict[str, List[str]]:
         """Retourne tous les modèles groupés par provider."""
         return {p: sorted(m) for p, m in self.providers.items()}
-    
+
     def get_default_params(self, provider: str) -> Dict[str, Any]:
         """Retourne les paramètres par défaut pour un provider."""
-        return self.default_params.get(provider, {
-            "temperature": 0.7, "max_tokens": 2048, "top_p": 1.0
-        })
-
+        return self.default_params.get(provider, {"temperature": 0.7, "max_tokens": 2048, "top_p": 1.0})

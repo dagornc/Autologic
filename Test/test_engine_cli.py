@@ -7,7 +7,22 @@ import os
 sys.path.append(os.path.join(os.getcwd(), "Code/Backend/Phase2-Inference/01_Reasoning"))
 
 from autologic.core.engine import AutoLogicEngine, BaseLLM
-from autologic.main import MockLLM
+
+class MockLLM(BaseLLM):
+    """LLM mocké pour les tests CLI."""
+    
+    def __init__(self, name: str):
+        self.name = name
+
+    async def call(self, prompt: str, **kwargs) -> str:
+        """Retourne des réponses mockées."""
+        if "BIBLIOTHÈQUE DE MODULES" in prompt:
+            return '{"selected_modules": ["critical_thinking", "step_by_step"]}'
+        if "MODULES SÉLECTIONNÉS" in prompt:
+            return '{"adapted_modules": [{"id": "critical_thinking", "adapted_description": "desc", "specific_actions": ["act1"]}, {"id": "step_by_step", "adapted_description": "desc", "specific_actions": ["act2"]}]}'
+        if "MODULES ADAPTÉS" in prompt:
+            return '{"reasoning_plan": {"steps": [{"step_number": 1, "module_id": "critical_thinking", "module_name": "CT", "action": "think", "expected_output": "thought"}], "estimated_complexity": "low"}}'
+        return f"Executed by {self.name}"
 
 async def main():
     print("🦖 Testing AutoLogic Engine (CLI)...")

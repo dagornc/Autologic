@@ -1,24 +1,25 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="fr" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to AutoLogic’s documentation! &mdash; AutoLogic 0.1.0 documentation</title>
+  <title>AutoLogic - Self-Discovery Reasoning Framework &mdash; AutoLogic Documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/documentation_options.js?v=1b0070ce"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/translations.js?v=e6b791cb"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Recherche" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +35,7 @@
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -42,8 +43,40 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Welcome to AutoLogic’s documentation!</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+<li><a class="reference internal" href="#">AutoLogic - Self-Discovery Reasoning Framework</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#fonctionnalites-cles">Fonctionnalités Clés</a><ul>
+<li><a class="reference internal" href="#multi-provider-llm">Multi-Provider LLM</a></li>
+<li><a class="reference internal" href="#resilience-integree">Résilience Intégrée</a></li>
+<li><a class="reference internal" href="#interface-moderne">Interface Moderne</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#demarrage-rapide">Démarrage Rapide</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a></li>
+<li><a class="reference internal" href="#configuration-minimale">Configuration Minimale</a></li>
+<li><a class="reference internal" href="#utilisation-de-l-api">Utilisation de l’API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#architecture">Architecture</a><ul>
+<li><a class="reference internal" href="#backend">Backend</a><ul>
+<li><a class="reference internal" href="#modules-core">Modules Core</a></li>
+<li><a class="reference internal" href="#endpoints-api-raisonnement">Endpoints API - Raisonnement</a></li>
+<li><a class="reference internal" href="#endpoints-api-configuration">Endpoints API - Configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#frontend">Frontend</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#fichier-config-global-yaml">Fichier <code class="docutils literal notranslate"><span class="pre">Config/global.yaml</span></code></a></li>
+<li><a class="reference internal" href="#variables-d-environnement">Variables d’Environnement</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules-de-raisonnement">Modules de Raisonnement</a></li>
+<li><a class="reference internal" href="#tests">Tests</a></li>
+<li><a class="reference internal" href="#indices-et-tables">Indices et Tables</a></li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -56,13 +89,13 @@
       </nav>
 
       <div class="wy-nav-content">
-        <div class="rst-content">
+        <div class="rst-content style-external-links">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to AutoLogic’s documentation!</li>
+      <li class="breadcrumb-item active">AutoLogic - Self-Discovery Reasoning Framework</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/index.rst.txt" rel="nofollow"> Afficher la source de la page</a>
       </li>
   </ul>
   <hr/>
@@ -70,18 +103,248 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-autologic-s-documentation">
-<h1>Welcome to AutoLogic’s documentation!<a class="headerlink" href="#welcome-to-autologic-s-documentation" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
+  <section id="autologic-self-discovery-reasoning-framework">
+<h1>AutoLogic - Self-Discovery Reasoning Framework<a class="headerlink" href="#autologic-self-discovery-reasoning-framework" title="Lien vers cette rubrique"></a></h1>
+<a class="reference external image-reference" href="https://python.org"><img alt="https://img.shields.io/badge/Python-3.9+-blue.svg" src="https://img.shields.io/badge/Python-3.9+-blue.svg" />
+</a>
+<a class="reference external image-reference" href="https://fastapi.tiangolo.com"><img alt="https://img.shields.io/badge/FastAPI-0.109+-009688.svg" src="https://img.shields.io/badge/FastAPI-0.109+-009688.svg" />
+</a>
+<a class="reference external image-reference" href="https://react.dev"><img alt="https://img.shields.io/badge/React-19+-61DAFB.svg" src="https://img.shields.io/badge/React-19+-61DAFB.svg" />
+</a>
+<img alt="https://img.shields.io/badge/Version-0.2.0-green.svg" src="https://img.shields.io/badge/Version-0.2.0-green.svg" />
+<p><strong>AutoLogic</strong> est un système d’agent IA avancé implémentant le Self-Discovery Reasoning Framework.
+Il utilise une bibliothèque de 39 modules de raisonnement pour résoudre automatiquement des problèmes complexes.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Lien vers cette rubrique"></a></h2>
+<p>AutoLogic décompose les tâches complexes en 4 phases automatiques :</p>
+<ol class="arabic simple">
+<li><p><strong>SELECT</strong> - Sélection des modules de raisonnement pertinents parmi 39 disponibles</p></li>
+<li><p><strong>ADAPT</strong> - Adaptation des modules au contexte spécifique de la tâche</p></li>
+<li><p><strong>STRUCTURE</strong> - Génération d’un plan de raisonnement ordonné</p></li>
+<li><p><strong>EXECUTE</strong> - Exécution du plan pour produire la solution finale</p></li>
+</ol>
+</section>
+<section id="fonctionnalites-cles">
+<h2>Fonctionnalités Clés<a class="headerlink" href="#fonctionnalites-cles" title="Lien vers cette rubrique"></a></h2>
+<section id="multi-provider-llm">
+<h3>Multi-Provider LLM<a class="headerlink" href="#multi-provider-llm" title="Lien vers cette rubrique"></a></h3>
+<p>AutoLogic supporte 5 providers LLM :</p>
+<ul class="simple">
+<li><p><strong>OpenRouter</strong> - Agrégateur multi-providers (OpenAI, Anthropic, Google, Meta)</p></li>
+<li><p><strong>OpenAI</strong> - Accès direct à GPT-4, GPT-4o, GPT-3.5</p></li>
+<li><p><strong>Ollama</strong> - Modèles locaux (Llama 3, Mistral, Phi-3)</p></li>
+<li><p><strong>vLLM</strong> - Serveur haute performance pour modèles personnalisés</p></li>
+<li><p><strong>HuggingFace</strong> - Inference API pour modèles open-source</p></li>
+</ul>
+</section>
+<section id="resilience-integree">
+<h3>Résilience Intégrée<a class="headerlink" href="#resilience-integree" title="Lien vers cette rubrique"></a></h3>
+<p>Le système inclut des mécanismes de résilience avancés :</p>
+<ul class="simple">
+<li><p><strong>Rate Limiting</strong> - Token bucket configurable (défaut: 5 req/s)</p></li>
+<li><p><strong>Retry Automatique</strong> - Backoff exponentiel sur erreurs 429/5xx</p></li>
+<li><p><strong>Fallback Intelligent</strong> - Bascule automatique vers modèle alternatif</p></li>
+</ul>
+</section>
+<section id="interface-moderne">
+<h3>Interface Moderne<a class="headerlink" href="#interface-moderne" title="Lien vers cette rubrique"></a></h3>
+<ul class="simple">
+<li><p>Design <strong>Glassmorphism / Liquid Glass</strong></p></li>
+<li><p>Thème sombre par défaut</p></li>
+<li><p>Panneau de configuration avancée</p></li>
+<li><p>Animations fluides (Framer Motion)</p></li>
+</ul>
+</section>
+</section>
+<section id="demarrage-rapide">
+<h2>Démarrage Rapide<a class="headerlink" href="#demarrage-rapide" title="Lien vers cette rubrique"></a></h2>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Lien vers cette rubrique"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cloner le projet</span>
+git<span class="w"> </span>clone<span class="w"> </span>&lt;url-du-repo&gt;
+<span class="nb">cd</span><span class="w"> </span>AutoLogic
+
+<span class="c1"># Configurer les variables d&#39;environnement</span>
+cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+<span class="c1"># Éditer .env avec votre clé API (au minimum OPENROUTER_API_KEY)</span>
+
+<span class="c1"># Lancer</span>
+./start.sh
+</pre></div>
 </div>
 </section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<section id="configuration-minimale">
+<h3>Configuration Minimale<a class="headerlink" href="#configuration-minimale" title="Lien vers cette rubrique"></a></h3>
+<p>Créez un fichier <code class="docutils literal notranslate"><span class="pre">.env</span></code> avec au minimum :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OPENROUTER_API_KEY</span><span class="o">=</span>sk-or-v1-votre-clé
+</pre></div>
+</div>
+</section>
+<section id="utilisation-de-l-api">
+<h3>Utilisation de l’API<a class="headerlink" href="#utilisation-de-l-api" title="Lien vers cette rubrique"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/reason/full<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;task&quot;: &quot;Votre tâche ici&quot;}&#39;</span>
+</pre></div>
+</div>
+<p>Avec paramètres optionnels :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/reason/full<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;task&quot;: &quot;Analyser les tendances de vente&quot;,</span>
+<span class="s1">    &quot;parameters&quot;: {</span>
+<span class="s1">      &quot;provider&quot;: &quot;openrouter&quot;,</span>
+<span class="s1">      &quot;model&quot;: &quot;google/gemini-2.0-flash-exp:free&quot;,</span>
+<span class="s1">      &quot;temperature&quot;: 0.7,</span>
+<span class="s1">      &quot;max_tokens&quot;: 4096</span>
+<span class="s1">    }</span>
+<span class="s1">  }&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Lien vers cette rubrique"></a></h2>
+<section id="backend">
+<h3>Backend<a class="headerlink" href="#backend" title="Lien vers cette rubrique"></a></h3>
+<p>Le backend est structuré en modules :</p>
+<ul class="simple">
+<li><p><strong>autologic/core/</strong> - Moteur principal, providers LLM, résilience</p></li>
+<li><p><strong>autologic/routers/</strong> - Endpoints FastAPI</p></li>
+<li><p><strong>autologic/utils/</strong> - Logging, helpers</p></li>
+</ul>
+<section id="modules-core">
+<h4>Modules Core<a class="headerlink" href="#modules-core" title="Lien vers cette rubrique"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">engine.py</span></code> - Moteur AutoLogicEngine avec cycle Self-Discovery</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">llm_provider.py</span></code> - Implémentations des 5 providers LLM</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">provider_factory.py</span></code> - Factory pattern pour création dynamique</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_registry.py</span></code> - Registre centralisé des modèles</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resilience.py</span></code> - Rate limiter, retry, fallback (Universel)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models.py</span></code> - Modèles Pydantic</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prompts.py</span></code> - Templates de prompts</p></li>
+</ul>
+</section>
+<section id="endpoints-api-raisonnement">
+<h4>Endpoints API - Raisonnement<a class="headerlink" href="#endpoints-api-raisonnement" title="Lien vers cette rubrique"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/reason/full</span></code> - Cycle complet Self-Discover</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/reason/modules</span></code> - Liste des 39 modules de raisonnement</p></li>
+</ul>
+</section>
+<section id="endpoints-api-configuration">
+<h4>Endpoints API - Configuration<a class="headerlink" href="#endpoints-api-configuration" title="Lien vers cette rubrique"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/models</span></code> - Liste providers et modèles</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET/PUT</span> <span class="pre">/api/providers/config</span></code> - Configuration active</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/providers/status</span></code> - Status des providers</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/api/providers/{p}/models</span></code> - Modèles d’un provider</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/api/providers/verify</span></code> - Test de connexion</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET/PUT</span> <span class="pre">/api/providers/{p}/resilience</span></code> - Configuration résilience</p></li>
+</ul>
+</section>
+</section>
+<section id="frontend">
+<h3>Frontend<a class="headerlink" href="#frontend" title="Lien vers cette rubrique"></a></h3>
+<p>Le frontend React utilise :</p>
+<ul class="simple">
+<li><p><strong>React 19</strong> - Framework UI</p></li>
+<li><p><strong>Vite 7</strong> - Build tool</p></li>
+<li><p><strong>TailwindCSS 4</strong> - Styling</p></li>
+<li><p><strong>Framer Motion</strong> - Animations</p></li>
+</ul>
+<p>Composants principaux :</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">AutoLogicInterface.tsx</span></code> - Layout principal</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SettingsDrawer.tsx</span></code> - Panneau de configuration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sidebar.tsx</span></code> - Navigation latérale</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ThemeProvider.tsx</span></code> - Gestion du thème</p></li>
+</ul>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Lien vers cette rubrique"></a></h2>
+<section id="fichier-config-global-yaml">
+<h3>Fichier <code class="docutils literal notranslate"><span class="pre">Config/global.yaml</span></code><a class="headerlink" href="#fichier-config-global-yaml" title="Lien vers cette rubrique"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">app</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;AutoLogic&quot;</span>
+<span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.2.0&quot;</span>
+
+<span class="nt">llm</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">active_provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;openrouter&quot;</span>
+<span class="w">  </span><span class="nt">active_model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;google/gemini-2.0-flash-exp:free&quot;</span>
+<span class="w">  </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+<span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">180</span>
+
+<span class="w">  </span><span class="nt">resilience</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rate_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">    </span><span class="nt">retry_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">max_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">fallback_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">providers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">openrouter</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">openai</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">ollama</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">vllm</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">huggingface</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</section>
+<section id="variables-d-environnement">
+<h3>Variables d’Environnement<a class="headerlink" href="#variables-d-environnement" title="Lien vers cette rubrique"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">OPENROUTER_API_KEY</span></code> - Clé API OpenRouter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OPENAI_API_KEY</span></code> - Clé API OpenAI</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OLLAMA_HOST</span></code> - URL serveur Ollama (défaut: localhost:11434)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">HUGGINGFACE_API_KEY</span></code> - Clé API HuggingFace</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LOG_LEVEL</span></code> - Niveau de log (défaut: INFO)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CORS_ORIGINS</span></code> - Origines CORS autorisées</p></li>
+</ul>
+</section>
+</section>
+<section id="modules-de-raisonnement">
+<h2>Modules de Raisonnement<a class="headerlink" href="#modules-de-raisonnement" title="Lien vers cette rubrique"></a></h2>
+<p>AutoLogic dispose de 39 modules de raisonnement organisés par catégorie :</p>
+<ul class="simple">
+<li><p><strong>Analyse (8 modules)</strong> - Critical Thinking, Root Cause Analysis…</p></li>
+<li><p><strong>Décomposition (6 modules)</strong> - Task Decomposition, Chunking…</p></li>
+<li><p><strong>Créativité (5 modules)</strong> - Brainstorming, Lateral Thinking…</p></li>
+<li><p><strong>Vérification (5 modules)</strong> - Fact Checking, Consistency Check…</p></li>
+<li><p><strong>Synthèse (5 modules)</strong> - Summarization, Integration…</p></li>
+<li><p><strong>Planification (5 modules)</strong> - Goal Setting, Resource Allocation…</p></li>
+<li><p><strong>Autres (5 modules)</strong> - Analogical Reasoning, Pattern Recognition…</p></li>
+</ul>
+</section>
+<section id="tests">
+<h2>Tests<a class="headerlink" href="#tests" title="Lien vers cette rubrique"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activer l&#39;environnement virtuel</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Lancer tous les tests</span>
+pytest<span class="w"> </span>Test/<span class="w"> </span>-v
+
+<span class="c1"># Avec couverture</span>
+pytest<span class="w"> </span>Test/<span class="w"> </span>--cov<span class="o">=</span>autologic<span class="w"> </span>--cov-report<span class="o">=</span>html
+</pre></div>
+</div>
+</section>
+<section id="indices-et-tables">
+<h2>Indices et Tables<a class="headerlink" href="#indices-et-tables" title="Lien vers cette rubrique"></a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Index du module</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Page de recherche</span></a></p></li>
 </ul>
+<p>—</p>
+<p><em>Version 0.2.0 - Janvier 2025</em></p>
+</section>
 </section>
 
 
@@ -92,12 +355,12 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, AutoLogic Team.</p>
+    <p>&#169; Droits d'auteur 2025, AutoLogic Team.</p>
   </div>
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
    
 
 </footer>

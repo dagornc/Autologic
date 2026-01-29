@@ -5,7 +5,7 @@ Vérifie le bon fonctionnement de l'ensemble du système.
 """
 
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 
 
 class TestAPIIntegration:
@@ -17,7 +17,7 @@ class TestAPIIntegration:
         # Import local pour éviter les problèmes de path
         from autologic.main import app
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health")
 
         assert response.status_code == 200
@@ -30,7 +30,7 @@ class TestAPIIntegration:
         """Test du endpoint racine."""
         from autologic.main import app
 
-        async with AsyncClient(app=app, base_url="http://test") as client:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/")
 
         assert response.status_code == 200

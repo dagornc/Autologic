@@ -11,7 +11,7 @@ from .model_registry import ModelRegistry
 
 __all__ = [
     "ReasoningModule",
-    "AdaptedModule", 
+    "AdaptedModule",
     "ReasoningPlan",
     "ReasoningPlanStep",
     "AutoLogicEngine",

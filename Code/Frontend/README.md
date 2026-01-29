@@ -1,19 +1,92 @@
-# React + TypeScript + Vite
+# AutoLogic Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface utilisateur React pour le moteur de raisonnement AutoLogic.
 
-Currently, two official plugins are available:
+## Stack Technique
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Technologie | Version | Description |
+|-------------|---------|-------------|
+| **React** | 19 | Framework UI |
+| **Vite** | 7 | Build tool ultra-rapide |
+| **TypeScript** | 5.7+ | Typage strict |
+| **TailwindCSS** | 4 | Styling utilitaire |
+| **Framer Motion** | - | Animations fluides |
+| **Lucide React** | - | Icônes modernes |
 
-## React Compiler
+## Design
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+L'interface utilise un design **Glassmorphism / Liquid Glass** moderne :
 
-## Expanding the ESLint configuration
+- Effets de transparence et flou (`backdrop-blur`)
+- Thème sombre par défaut
+- Bordures subtiles translucides
+- Animations fluides
+- Responsive (mobile/desktop)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Structure
+
+```
+src/
+├── components/         # Composants UI
+│   ├── ui/                 # Composants atomiques (Button, Input...)
+│   ├── AutoLogicInterface.tsx  # Layout principal
+│   ├── SettingsDrawer.tsx      # Panneau de configuration
+│   ├── Sidebar.tsx             # Navigation latérale
+│   └── ThemeProvider.tsx       # Gestion du thème
+├── contexts/           # Contextes React
+│   └── ThemeContext.tsx
+├── hooks/              # Custom hooks
+│   ├── useAutoLogic.ts
+│   └── useLocalStorage.ts
+├── services/           # Appels API
+│   └── api.ts
+├── types/              # Types TypeScript
+│   └── index.ts
+├── App.tsx             # Composant racine
+├── main.tsx            # Point d'entrée
+└── index.css           # Styles globaux
+```
+
+## Fonctionnalités
+
+### Interface Principale
+- Saisie de tâches avec validation
+- Affichage du plan de raisonnement
+- Affichage de la solution formatée
+- Indicateurs de chargement
+
+### Panneau Settings
+- Sélection du provider LLM (5 providers)
+- Recherche de modèles avec filtrage
+- Gestion des clés API (stockage sécurisé)
+- Paramètres avancés (temperature, max_tokens, top_p)
+- Configuration de résilience
+- Test de connexion en temps réel
+
+### Sidebar
+- Navigation
+- Historique des conversations (future)
+- Toggle thème dark/light
+
+## Installation
+
+```bash
+# Installer les dépendances
+npm install
+
+# Lancer en mode développement
+npm run dev
+
+# Build de production
+npm run build
+
+# Preview du build
+npm run preview
+```
+
+## Configuration ESLint
+
+Le projet utilise ESLint avec des règles TypeScript strictes :
 
 ```js
 export default defineConfig([
@@ -21,53 +94,78 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
       tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
       tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
     ],
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
       },
-      // other options...
     },
   },
 ])
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## API Client
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Le service `api.ts` centralise tous les appels backend :
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```typescript
+const apiClient = {
+  // Raisonnement
+  solveTask(task: string, config?: LLMConfig): Promise<AutoLogicResult>,
+  getModules(): Promise<ReasoningModule[]>,
+  
+  // Configuration
+  getProvidersConfig(): Promise<ProviderConfig>,
+  updateProvidersConfig(config: ProviderConfig): Promise<void>,
+  
+  // Providers
+  getProvidersStatus(): Promise<ProviderStatus[]>,
+  getProviderModels(provider: string, apiKey?: string): Promise<string[]>,
+  verifyConnection(provider: string, apiKey?: string): Promise<boolean>,
+  
+  // Résilience
+  getResilienceConfig(provider: string): Promise<ResilienceConfig>,
+  updateResilienceConfig(provider: string, config: ResilienceConfig): Promise<void>,
+};
 ```
+
+## Types Principaux
+
+```typescript
+interface LLMConfig {
+  provider: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+}
+
+interface AutoLogicResult {
+  task: string;
+  plan: ReasoningPlan;
+  final_output: string;
+}
+
+interface ResilienceConfig {
+  rateLimit: number;
+  retryEnabled: boolean;
+  maxRetries: number;
+  fallbackEnabled: boolean;
+}
+```
+
+## Scripts NPM
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Serveur de développement (port 5173) |
+| `npm run build` | Build de production |
+| `npm run preview` | Preview du build |
+| `npm run lint` | Vérification ESLint |
+
+---
+
+*Version 0.2.0 - Janvier 2025*

@@ -4,22 +4,19 @@ Templates de prompts pour les différentes phases du cycle Self-Discover.
 Centralise tous les prompts utilisés par le moteur AutoLogic.
 """
 
-from typing import List, Dict, Any
-import json
-
 
 class PromptTemplates:
     """Collection de templates de prompts pour le cycle Self-Discover."""
-    
+
     @staticmethod
     def selection_prompt(modules_json: str, task: str) -> str:
         """
         Génère le prompt pour la phase de sélection des modules.
-        
+
         Args:
             modules_json: Les modules disponibles en format JSON
             task: La tâche à résoudre
-            
+
         Returns:
             Le prompt formaté pour la sélection
         """
@@ -32,7 +29,7 @@ TÂCHE À RÉSOUDRE :
 {task}
 
 INSTRUCTIONS :
-Analyse cette tâche et sélectionne UNIQUEMENT les modules de raisonnement 
+Analyse cette tâche et sélectionne UNIQUEMENT les modules de raisonnement
 qui sont pertinents et nécessaires pour la résoudre efficacement.
 
 Critères de sélection :
@@ -50,11 +47,11 @@ RETOURNE UN JSON STRICT (pas de markdown) :
     def adaptation_prompt(selected_json: str, task: str) -> str:
         """
         Génère le prompt pour la phase d'adaptation des modules.
-        
+
         Args:
             selected_json: Les modules sélectionnés en format JSON
             task: La tâche à résoudre
-            
+
         Returns:
             Le prompt formaté pour l'adaptation
         """
@@ -67,12 +64,12 @@ MODULES SÉLECTIONNÉS (actuellement génériques) :
 {selected_json}
 
 INSTRUCTIONS :
-Réécris et affine chaque module pour qu'il soit SPÉCIFIQUEMENT adapté 
+Réécris et affine chaque module pour qu'il soit SPÉCIFIQUEMENT adapté
 à cette tâche précise. Transforme-les de génériques à contextuels.
 
 Exemple de transformation :
 - Générique : "Simplifier le problème"
-- Adapté pour "Résoudre équation du 2nd degré" : 
+- Adapté pour "Résoudre équation du 2nd degré" :
   "Isoler d'abord le terme en x², puis factoriser ou utiliser le discriminant"
 
 Pour chaque module :
@@ -98,11 +95,11 @@ RETOURNE UN JSON STRICT :
     def structuration_prompt(adapted_json: str, task: str) -> str:
         """
         Génère le prompt pour la phase de structuration du plan.
-        
+
         Args:
             adapted_json: Les modules adaptés en format JSON
             task: La tâche à résoudre
-            
+
         Returns:
             Le prompt formaté pour la structuration
         """
@@ -115,7 +112,7 @@ MODULES ADAPTÉS DISPONIBLES :
 {adapted_json}
 
 INSTRUCTIONS :
-Assemble ces modules en un PLAN DE RAISONNEMENT cohérent, ordonné et 
+Assemble ces modules en un PLAN DE RAISONNEMENT cohérent, ordonné et
 exécutable. Chaque étape doit être :
 - Claire et actionnable
 - Ordonnée logiquement (dépendances respectées)
@@ -147,11 +144,11 @@ RETOURNE UN JSON STRICT :
     def execution_prompt(plan_json: str, task: str) -> str:
         """
         Génère le prompt pour la phase d'exécution.
-        
+
         Args:
             plan_json: Le plan de raisonnement en format JSON
             task: La tâche à résoudre
-            
+
         Returns:
             Le prompt formaté pour l'exécution
         """
