@@ -240,15 +240,31 @@ class AutoLogicEngine:
         response = await llm.call(prompt)
         return response
 
-    async def synthesize_output(self, task: str, raw_output: str, root_llm: Optional[BaseLLM] = None) -> str:
+    async def synthesize_output(self, task: str, raw_output: str, root_llm: Optional[BaseLLM] = None, analysis: Optional[Dict[str, Any]] = None) -> str:
         """PHASE 7: SYNTHÈSE FINALE"""
         llm = root_llm or self.root_llm
         logger.info("Phase 7: Synthèse finale de la réponse")
-        prompt = PromptTemplates.synthesis_prompt(task, raw_output)
-        return await llm.call(prompt)
+        prompt = PromptTemplates.synthesis_prompt(task, raw_output, analysis=analysis)
+        final_output = await llm.call(prompt)
+
+        # OPTIONNEL: Phase 7.5 Audit Final
+        if analysis and analysis.get("constraints"):
+            logger.info("Phase 7.5: Audit de conformité finale")
+            audit_prompt = PromptTemplates.audit_final_prompt(task, final_output, analysis=analysis)
+            audit_response = await llm.call(audit_prompt, response_format={"type": "json_object"})
+            try:
+                audit_data = json.loads(self._clean_json_response(audit_response))
+                if not audit_data.get("is_perfect", True):
+                    logger.warning(f"Audit final négatif: {audit_data.get('missing_elements')}")
+                    # On pourrait ici tenter une passe de correction finale, 
+                    # mais pour l'instant on se contente de logger et d'injecter la suggestion si critique
+            except json.JSONDecodeError:
+                pass
+
+        return final_output
 
     async def execute_with_critic(
-        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, root_llm: Optional[BaseLLM] = None, max_retries: int = 3
+        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, root_llm: Optional[BaseLLM] = None, max_retries: int = 3, analysis: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Orchestre l'exécution avec boucle de rétroaction et Double-Backtrack.
@@ -275,7 +291,7 @@ class AutoLogicEngine:
             
             if evaluation.score >= 0.8:
                  # VALIDATION -> SYNTHÈSE (PHASE 7)
-                 final_output = await self.synthesize_output(task, current_response, root_llm=root_llm)
+                 final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, analysis=analysis)
                  return {
                      "task": task,
                      "plan": current_plan.to_dict(),
@@ -299,7 +315,7 @@ class AutoLogicEngine:
                          pass
 
         # Final pass Synthesis even if low score
-        final_output = await self.synthesize_output(task, current_response, root_llm=root_llm)
+        final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, analysis=analysis)
         return {
             "task": task,
             "plan": current_plan.to_dict(),
@@ -338,7 +354,7 @@ class AutoLogicEngine:
         self.structured_plan = plan
 
         # 5, 6, 7. Execute, Critic, Synthesis
-        result = await self.execute_with_critic(task, plan, worker_llm=worker_llm, root_llm=root_llm)
+        result = await self.execute_with_critic(task, plan, worker_llm=worker_llm, root_llm=root_llm, analysis=analysis)
 
         logger.info("Cycle 8-phases terminé")
         return result

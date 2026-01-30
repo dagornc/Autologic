@@ -61,7 +61,9 @@ export type LoadingStage =
     | 'Verifying plan logic...'
     | 'Executing reasoning steps...'
     | 'Validating with H2 Critic...'
-    | 'Synthesizing final solution...';
+    | 'Synthesizing final solution...'
+    | 'Auditing final response...';
+
 
 /** Prompt structure */
 export interface Prompt {

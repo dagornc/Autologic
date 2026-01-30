@@ -4,6 +4,8 @@ Templates de prompts pour les différentes phases du cycle Self-Discover.
 Centralise tous les prompts utilisés par le moteur AutoLogic.
 """
 
+from typing import List, Dict, Any, Optional
+
 
 class PromptTemplates:
     """Collection de templates de prompts pour le cycle Self-Discover."""
@@ -236,27 +238,58 @@ Corrige ta réponse pour répondre exactement à ce feedback.
         return base_prompt
 
     @staticmethod
-    def synthesis_prompt(task: str, execution_output: str) -> str:
+    def synthesis_prompt(task: str, execution_output: str, analysis: Optional[Dict[str, Any]] = None) -> str:
         """
         PHASE 7: SYNTHÈSE FINALE
-        Affine et polit la réponse finale pour une qualité premium.
+        Affine et polit la réponse finale pour une qualité premium en tenant compte des contraintes initiales.
         """
+        constraints_str = ""
+        if analysis and analysis.get("constraints"):
+            constraints_str = "\nCONTRAINTES À RESPECTER IMPÉRATIVEMENT :\n- " + "\n- ".join(analysis["constraints"])
+
         return f"""Tu es un éditeur expert en communication technique.
 Ta mission est de prendre le résultat brut de l'exécution et de le transformer en une réponse "Premium", claire et parfaitement structurée.
 
 TÂCHE INITIALE :
 {task}
+{constraints_str}
 
-RÉSULTAT BRUT :
+RÉSULTAT BRUT DE RÉFÉRENCE :
 {execution_output}
 
-INSTRUCTIONS :
-1. Améliore la clarté et le ton
-2. Assure une structure hiérarchique parfaite (Markdown)
-3. Supprime les redondances ou les métadonnées inutiles
-4. Ajoute une conclusion percutante
+INSTRUCTIONS DE RÉDACTION :
+1. **Structure Premium** : Utilise une hiérarchie Markdown claire (Titres, listes, gras).
+2. **Fidélité & Précision** : Respecte scrupuleusement les contraintes mentionnées ci-dessus.
+3. **Ton Professionnel** : Adopte un ton expert, concis et utile.
+4. **Clean-up** : Supprime les répétitions d'étapes de raisonnement internes, ne garde que la substance de la réponse.
+5. **Conclusion Logic** : Termine par une synthèse actionnable ou un résumé clair.
 
 RETOURNE LA RÉPONSE FINALE FORMATÉE (Markdown)."""
+
+    @staticmethod
+    def audit_final_prompt(task: str, final_output: str, analysis: Optional[Dict[str, Any]] = None) -> str:
+        """
+        PHASE 7.5: AUDIT FINAL (Optionnel)
+        Vérifie si la réponse finale respecte toutes les contraintes.
+        """
+        constraints_str = ""
+        if analysis and analysis.get("constraints"):
+            constraints_str = "\n- " + "\n- ".join(analysis["constraints"])
+
+        return f"""Tu es un auditeur qualité. Vérifie si cette réponse finale répond parfaitement à la tâche et respecte les contraintes.
+
+TÂCHE : {task}
+CONTRAINTES IDENTIFIÉES :{constraints_str}
+
+RÉPONSE À AUDITER :
+{final_output}
+
+RETOURNE UN JSON STRICT :
+{{
+  "is_perfect": true|false,
+  "missing_elements": ["liste des éléments manquants ou contraintes non respectées"],
+  "improvement_suggestion": "Correction à apporter si nécessaire"
+}}"""
 
     @staticmethod
     def critic_evaluation_prompt(input_task: str, generated_plan: str, candidate_response: str) -> str:
@@ -344,4 +377,3 @@ Tes Instructions Finales :
   "reason": "[Explication courte]",
   "feedback": "[Instructions précises pour l'Agent Intégrateur si score < 0.8]"
 }}"""
-

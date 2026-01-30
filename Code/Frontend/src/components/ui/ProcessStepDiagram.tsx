@@ -20,8 +20,10 @@ export const ProcessStepDiagram: React.FC<ProcessStepDiagramProps> = ({ currentS
         { id: 'verify', label: 'Verify', icon: ShieldCheck, stage: 'Verifying plan logic...' },
         { id: 'execute', label: 'Execute', icon: Play, stage: 'Executing reasoning steps...' },
         { id: 'critic', label: 'Review', icon: ShieldCheck, stage: 'Validating with H2 Critic...' },
-        { id: 'synthesize', label: 'Synthesize', icon: Check, stage: 'Synthesizing final solution...' },
+        { id: 'synthesize', label: 'Synthesize', icon: PenTool, stage: 'Synthesizing final solution...' },
+        { id: 'audit', label: 'Audit', icon: Check, stage: 'Auditing final response...' },
     ];
+
 
     // Find current step index
     const activeStepIndex = steps.findIndex(step => step.stage === currentStage);

@@ -59,7 +59,7 @@ export const TaskInput: React.FC<TaskInputProps> = ({
                                 }
                             }}
                             placeholder="Describe a complex problem to solve..."
-                            className="w-full h-full min-h-[56px] max-h-[200px] bg-transparent text-lg px-4 py-3.5 text-zinc-800 dark:text-slate-100 placeholder:text-zinc-500 dark:placeholder:text-slate-500 focus:outline-none resize-none align-bottom overflow-hidden leading-relaxed"
+                            className="w-full h-full min-h-[56px] max-h-[200px] bg-transparent text-lg px-4 py-3.5 text-black dark:text-slate-100 placeholder:text-zinc-500 dark:placeholder:text-slate-500 focus:outline-none resize-none align-bottom overflow-hidden leading-relaxed"
                             style={{ height: 'auto', fieldSizing: 'content' } as React.CSSProperties & { fieldSizing?: string }}
                         />
                         {/* Fallback for field-sizing if not supported widely yet, but chrome supports it. Alternatively use auto-resize hook. For now simple textarea. */}

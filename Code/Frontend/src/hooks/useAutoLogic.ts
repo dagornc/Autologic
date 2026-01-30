@@ -16,7 +16,9 @@ const LOADING_STAGES: LoadingStage[] = [
     'Executing reasoning steps...',
     'Validating with H2 Critic...',
     'Synthesizing final solution...',
+    'Auditing final response...',
 ];
+
 
 /** Intervalle entre les changements de stage (ms) */
 const STAGE_INTERVAL = 1200;
