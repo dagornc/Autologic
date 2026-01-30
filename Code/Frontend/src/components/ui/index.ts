@@ -2,7 +2,9 @@
  * Export des composants UI atomiques
  */
 
-export { Header } from './Header';
+export * from './ThemeToggle';
+export * from './Header';
+export * from './ProcessStepDiagram';
 export { TaskInput } from './TaskInput';
 export { LoadingOverlay } from './LoadingOverlay';
 export { ErrorMessage } from './ErrorMessage';

@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 from .core.engine import AutoLogicEngine
 from .core.llm_provider import OpenRouterLLM
-from .routers import reasoning_router, models_router
+from .routers import reasoning_router, models_router, history_router, prompts_router
 from .routers.reasoning import set_engine
 from .utils.logging_config import setup_logging, get_logger
 
@@ -83,6 +83,8 @@ app.add_middleware(
 # Enregistrement des routers
 app.include_router(reasoning_router)
 app.include_router(models_router)
+app.include_router(history_router)
+app.include_router(prompts_router)
 
 
 @app.get("/", tags=["health"])
@@ -96,6 +98,32 @@ async def root() -> dict[str, str]:
 async def health_check() -> dict[str, str]:
     """Endpoint de health check détaillé."""
     return {"status": "healthy", "version": "0.2.0", "service": "AutoLogic Engine"}
+
+
+@app.get("/api/help/readme", tags=["help"])
+def get_readme() -> dict[str, str]:
+    """
+    Retourne le contenu du fichier README.md du projet.
+    Requiert que le fichier soit à la racine du projet (PROJECT_ROOT).
+    
+    Note: Définie comme fonction synchrone (def au lieu de async def) pour que
+    FastAPI l'exécute dans un threadpool séparé, évitant de bloquer la boucle
+    d'événements principale lors des opérations I/O sur fichier.
+    """
+    readme_path = PROJECT_ROOT / "README.md"
+    logger.info(f"Demande de lecture du README à: {readme_path}")
+    
+    if not readme_path.exists():
+        logger.error(f"Fichier README introuvable à: {readme_path}")
+        return {"content": f"# Erreur 404\n\nLe fichier README.md est introuvable à l'emplacement: `{readme_path}`."}
+
+    try:
+        content = readme_path.read_text(encoding="utf-8")
+        logger.info(f"README lu avec succès ({len(content)} octets)")
+        return {"content": content}
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture du README à {readme_path}: {e}")
+        return {"content": f"# Erreur 500\n\nImpossible de charger le fichier README.md.\n\nErreur: {str(e)}"}
 
 
 def start() -> None:

@@ -1,12 +1,11 @@
 /**
- * Sidebar Navigation Component - Style OpenAI
+ * Sidebar Navigation Component - Premium Glassmorphism
  * 
- * Panneau latéral gauche fixe avec icônes de navigation
- * et design glassmorphism premium.
+ * Panneau latéral gauche avec effets de verre liquide et animations fluides.
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Home,
     Settings,
@@ -17,6 +16,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
+import { ThemeToggle } from './ui/ThemeToggle';
 
 interface SidebarProps {
     isExpanded: boolean;
@@ -51,40 +51,49 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     return (
         <motion.aside
-            initial={{ width: 64 }}
-            animate={{ width: isExpanded ? 200 : 64 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="fixed left-0 top-0 h-full z-40 flex flex-col"
+            initial={{ width: 80 }}
+            animate={{ width: isExpanded ? 240 : 80 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed left-4 top-4 bottom-4 z-50 rounded-2xl glass-panel flex flex-col overflow-hidden"
         >
-            {/* Glassmorphism Background */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border-r border-white/10" />
+            {/* Liquid Background subtle effect inside the sidebar */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
-            {/* Content */}
-            <div className="relative z-10 flex flex-col h-full py-4">
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col h-full py-6 px-3">
 
                 {/* Logo / Brand */}
-                <div className="px-3 mb-6">
+                <div className="mb-8 px-1">
                     <motion.div
-                        className="flex items-center gap-3 p-2 rounded-xl bg-gradient-to-br from-indigo-600/20 to-violet-600/20 border border-indigo-500/30"
+                        className="flex items-center gap-3 p-2 rounded-xl group cursor-pointer"
                         whileHover={{ scale: 1.02 }}
+                        onClick={() => onNavigate('home')}
                     >
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                            <Sparkles className="w-5 h-5 text-white" />
+                        <div className="relative w-10 h-10 flex-shrink-0">
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur shadow-lg shadow-indigo-500/40" />
+                            <div className="relative w-full h-full bg-white dark:bg-black rounded-xl border border-black/5 dark:border-white/20 flex items-center justify-center">
+                                <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-white transition-colors" />
+                            </div>
                         </div>
-                        {isExpanded && (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="text-sm font-semibold text-white truncate"
-                            >
-                                AutoLogic
-                            </motion.span>
-                        )}
+
+                        <AnimatePresence>
+                            {isExpanded && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    className="flex flex-col overflow-hidden"
+                                >
+                                    <span className="text-lg font-bold text-foreground tracking-wide">AutoLogic</span>
+                                    <span className="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">Agentic AI</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 </div>
 
                 {/* Main Navigation */}
-                <nav className="flex-1 px-2 space-y-1">
+                <nav className="flex-1 space-y-2">
                     {navItems.map((item) => (
                         <NavButton
                             key={item.id}
@@ -96,11 +105,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     ))}
                 </nav>
 
-                {/* Divider */}
-                <div className="mx-3 my-2 h-px bg-white/10" />
-
-                {/* Bottom Navigation */}
-                <div className="px-2 space-y-1">
+                {/* Bottom Section */}
+                <div className="space-y-2 pt-4 border-t border-black/5 dark:border-white/5">
                     {bottomItems.map((item) => (
                         <NavButton
                             key={item.id}
@@ -110,23 +116,33 @@ const Sidebar: React.FC<SidebarProps> = ({
                             onClick={() => onNavigate(item.id)}
                         />
                     ))}
-                </div>
 
-                {/* Toggle Button */}
-                <div className="px-2 mt-2">
+                    {/* Theme Toggle */}
+                    {isExpanded && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="px-1"
+                        >
+                            <ThemeToggle />
+                        </motion.div>
+                    )}
+
+                    {/* Toggle Button */}
                     <motion.button
                         onClick={onToggle}
-                        className="w-full p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-zinc-400 hover:text-white"
+                        className="w-full p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all group flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:text-foreground dark:hover:text-white mt-2"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
                         {isExpanded ? (
-                            <>
-                                <ChevronLeft className="w-4 h-4" />
-                                <span className="text-xs">Réduire</span>
-                            </>
+                            <div className="flex items-center gap-2">
+                                <ChevronLeft className="w-5 h-5" />
+                                <span className="text-sm font-medium">Collapse</span>
+                            </div>
                         ) : (
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                         )}
                     </motion.button>
                 </div>
@@ -157,51 +173,45 @@ const NavButton: React.FC<NavButtonProps> = ({
         <motion.button
             onClick={onClick}
             className={`
-                w-full p-2.5 rounded-xl flex items-center gap-3 transition-all group relative
+                relative w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-300 group
                 ${isActive
-                    ? 'bg-gradient-to-r from-indigo-600/30 to-violet-600/20 border border-indigo-500/40 text-white shadow-lg shadow-indigo-500/10'
-                    : 'hover:bg-white/5 border border-transparent hover:border-white/10 text-zinc-400 hover:text-white'
+                    ? 'text-indigo-500 font-semibold dark:text-white bg-indigo-50/50 dark:bg-white/10'
+                    : 'text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-white hover:bg-indigo-50/30 dark:hover:bg-white/5'
                 }
             `}
-            whileHover={{ x: 2 }}
+            whileHover={{ x: 4 }}
             whileTap={{ scale: 0.98 }}
         >
+            {/* Active Background Glow */}
+            {isActive && (
+                <motion.div
+                    layoutId="activeNav"
+                    className="absolute inset-0 bg-indigo-600/20 border border-indigo-500/30 rounded-xl"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+            )}
+
             {/* Icon */}
-            <div className={`
-                w-8 h-8 rounded-lg flex items-center justify-center transition-all
-                ${isActive
-                    ? 'bg-indigo-500/20 text-indigo-400'
-                    : 'bg-white/5 group-hover:bg-white/10 text-zinc-500 group-hover:text-zinc-300'
-                }
-            `}>
-                <Icon className="w-4 h-4" />
+            <div className={`relative z-10 flex items-center justify-center w-6 h-6`}>
+                <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-400' : 'group-hover:text-indigo-300'}`} />
             </div>
 
             {/* Label */}
-            {isExpanded && (
-                <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="text-sm font-medium truncate"
-                >
-                    {item.label}
-                </motion.span>
-            )}
+            <AnimatePresence>
+                {isExpanded && (
+                    <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ delay: 0.1 }}
+                        className="relative z-10 text-sm font-medium whitespace-nowrap"
+                    >
+                        {item.label}
+                    </motion.span>
+                )}
+            </AnimatePresence>
 
-            {/* Tooltip (when collapsed) */}
-            {!isExpanded && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-zinc-900 border border-zinc-700 rounded-md text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                    {item.tooltip}
-                </div>
-            )}
-
-            {/* Active Indicator */}
-            {isActive && (
-                <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full"
-                />
-            )}
+            {/* Active Side Indicator (optional, removed for cleaner look, relying on background glow) */}
         </motion.button>
     );
 };

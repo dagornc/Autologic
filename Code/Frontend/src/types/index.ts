@@ -57,5 +57,30 @@ export type LoadingStage =
     | 'Analyzing request intent...'
     | 'Selecting reasoning modules...'
     | 'Adapting modules to context...'
-    | 'Structing execution plan...'
+    | 'Structuring execution plan...'
+    | 'Verifying plan logic...'
+    | 'Executing reasoning steps...'
+    | 'Validating with H2 Critic...'
     | 'Synthesizing final solution...';
+
+/** Prompt structure */
+export interface Prompt {
+    id: string;
+    title: string;
+    content: string;
+    tags: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PromptCreate {
+    title: string;
+    content: string;
+    tags?: string[];
+}
+
+export interface PromptUpdate {
+    title?: string;
+    content?: string;
+    tags?: string[];
+}

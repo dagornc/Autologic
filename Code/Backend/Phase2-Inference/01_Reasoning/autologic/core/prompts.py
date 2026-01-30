@@ -9,6 +9,29 @@ class PromptTemplates:
     """Collection de templates de prompts pour le cycle Self-Discover."""
 
     @staticmethod
+    def analyze_prompt(task: str) -> str:
+        """
+        PHASE 0: ANALYSE INITIALE
+        Évalue la tâche, identifie les contraintes et les pré-requis.
+        """
+        return f"""Tu es un analyste expert. Analyse la tâche suivante pour identifier :
+1. L'objectif principal
+2. Les contraintes implicites et explicites
+3. Les connaissances nécessaires
+4. Les pièges potentiels (ex: hallucinations sur 'Antigravity')
+
+TÂCHE :
+{task}
+
+RETOURNE UN JSON STRICT :
+{{
+  "analysis": "Analyse détaillée...",
+  "constraints": ["c1", "c2"],
+  "domain": "Domaine technique",
+  "priority": "low|medium|high"
+}}"""
+
+    @staticmethod
     def selection_prompt(modules_json: str, task: str) -> str:
         """
         Génère le prompt pour la phase de sélection des modules.
@@ -123,36 +146,66 @@ Principes de structuration :
 - Progresser vers l'analyse approfondie
 - Terminer par validation et synthèse
 
-RETOURNE UN JSON STRICT :
+RETOURNE UN JSON STRICT. TA RÉPONSE DOIT ÊTRE UNIQUEMENT UN OBJET JSON.
+PAS DE COMMENTAIRES, PAS DE TEXTE D'ACCOMPAGNEMENT, PAS DE BLOCS MARKDOWN.
+
+FORMAT ATTENDU :
 {{
   "reasoning_plan": {{
     "steps": [
       {{
         "step_number": 1,
-        "module_id": "simplify",
-        "module_name": "Simplification",
-        "action": "Description précise et actionnable de l'étape",
-        "expected_output": "Type de résultat attendu (ex: 'Liste de sous-problèmes')"
-      }},
-      ...
+        "module_id": "ID_DU_MODULE",
+        "module_name": "NOM_DU_MODULE",
+        "action": "Description précise de l'action",
+        "expected_output": "Résultat attendu"
+      }}
     ],
     "estimated_complexity": "low|medium|high"
   }}
 }}"""
 
     @staticmethod
-    def execution_prompt(plan_json: str, task: str) -> str:
+    def verify_plan_prompt(plan_json: str, task: str) -> str:
+        """
+        PHASE 4: VÉRIFICATION DU PLAN
+        Valide la cohérence logique du plan avant exécution.
+        """
+        return f"""Tu es un expert en audit de processus.
+Vérifie si ce plan de raisonnement est complet et logique pour résoudre la tâche.
+
+TÂCHE :
+{task}
+
+PLAN PROPOSÉ :
+{plan_json}
+
+Vérifie :
+- Toutes les contraintes de la tâche sont-elles adressées ?
+- L'ordre des étapes est-il optimal ?
+- Manque-t-il une étape cruciale ?
+
+RETOURNE UN JSON STRICT :
+{{
+  "is_valid": true|false,
+  "feedback": "Feedback si invalide, sinon vide",
+  "suggestions": ["s1", "s2"]
+}}"""
+
+    @staticmethod
+    def execution_prompt(plan_json: str, task: str, previous_feedback: str = "") -> str:
         """
         Génère le prompt pour la phase d'exécution.
 
         Args:
             plan_json: Le plan de raisonnement en format JSON
             task: La tâche à résoudre
+            previous_feedback: Feedback critique d'une tentative précédente (si applicable)
 
         Returns:
             Le prompt formaté pour l'exécution
         """
-        return f"""Tu es un agent d'exécution rigoureux.
+        base_prompt = f"""Tu es un agent d'exécution rigoureux.
 
 TÂCHE À RÉSOUDRE :
 {task}
@@ -170,3 +223,125 @@ Pour chaque étape du plan:
 3. Donne le résultat
 
 Termine par une CONCLUSION FINALE CLAIRE."""
+
+        if previous_feedback:
+            base_prompt += f"""
+
+ALERTE - TENTATIVE DE CORRECTION :
+Une tentative précédente a été rejetée par le Critique. Voici le feedback à intégrer IMPÉRATIVEMENT :
+"{previous_feedback}"
+
+Corrige ta réponse pour répondre exactement à ce feedback.
+"""
+        return base_prompt
+
+    @staticmethod
+    def synthesis_prompt(task: str, execution_output: str) -> str:
+        """
+        PHASE 7: SYNTHÈSE FINALE
+        Affine et polit la réponse finale pour une qualité premium.
+        """
+        return f"""Tu es un éditeur expert en communication technique.
+Ta mission est de prendre le résultat brut de l'exécution et de le transformer en une réponse "Premium", claire et parfaitement structurée.
+
+TÂCHE INITIALE :
+{task}
+
+RÉSULTAT BRUT :
+{execution_output}
+
+INSTRUCTIONS :
+1. Améliore la clarté et le ton
+2. Assure une structure hiérarchique parfaite (Markdown)
+3. Supprime les redondances ou les métadonnées inutiles
+4. Ajoute une conclusion percutante
+
+RETOURNE LA RÉPONSE FINALE FORMATÉE (Markdown)."""
+
+    @staticmethod
+    def critic_evaluation_prompt(input_task: str, generated_plan: str, candidate_response: str) -> str:
+        """
+        Génère le prompt pour l'Agent Critique H2.
+
+        Args:
+            input_task: La tâche utilisateur initiale
+            generated_plan: Le plan AutoLogic généré
+            candidate_response: La réponse à évaluer
+
+        Returns:
+            Le prompt complet pour le critique (Few-Shot)
+        """
+        return f"""Rôle : Tu es l'Agent Critique H2 (Hypothesis & Heuristic Evaluator), un auditeur expert en logique et en vérification factuelle pour des systèmes d'IA avancés. Ton rôle n'est PAS de générer du contenu, mais de juger impitoyablement la qualité de la réponse fournie par l'Agent Intégrateur par rapport au Plan de Raisonnement (AutoLogic) initial.
+
+Contexte du Projet : Tu opères sur le sujet "Google Antigravity". Attention : ce terme est ambigu. Il peut référer à :
+1. L'Easter Egg JavaScript (Google Gravity/Space).
+2. Des recherches de Google DeepMind sur la simulation physique (ex: MuJoCo).
+3. Une technologie de science-fiction inexistante (Risque d'hallucination critique). Ton but est de filtrer les hallucinations et de garantir que la réponse suit strictement le plan.
+
+Entrées que tu vas recevoir :
+1. {{USER_TASK}} : La demande originale de l'utilisateur.
+2. {{AUTOLOGIC_PLAN}} : La structure de raisonnement générée (JSON/Liste) à l'étape de Self-Discovery.
+3. {{GENERATED_RESPONSE}} : La réponse finale proposée par l'Agent Intégrateur.
+
+Protocole d'Évaluation (Heuristiques & Jugement) : Tu dois noter la réponse de 0.0 à 1.0.
+• Score < 0.8 : REJET (Trigger Backtrack). La réponse est fausse, hallucinée, ou ignore le plan.
+• Score >= 0.8 : VALIDATION. La réponse est solide, logique et factuelle.
+
+Exemples d'Apprentissage (Few-Shot Learning) :
+
+--------------------------------------------------------------------------------
+Exemple 1 (Cas d'Hallucination - REJET)
+Task: "Explique comment utiliser l'API Google Antigravity pour faire voler des drones."
+Plan: 1. Vérifier l'existence de l'API. 2. Analyser la documentation technique. 3. Fournir un exemple de code.
+Response: "Pour utiliser l'API Google Antigravity, importez la librairie google.physics.levitation. Utilisez la fonction setGravity(0) pour annuler la masse du drone."
+Sortie Attendue :
+{{
+  "score": 0.1,
+  "status": "REJECT",
+  "reason": "Hallucination critique. Google ne possède pas d'API de lévitation physique. Confusion probable avec des moteurs de simulation ou l'Easter egg.",
+  "feedback": "Arrête d'inventer des API. Vérifie si l'utilisateur parle de l'Easter Egg JS ou de simulation. Refais l'analyse factuelle."
+}}
+
+--------------------------------------------------------------------------------
+Exemple 2 (Cas de Non-Respect du Plan - REJET)
+Task: "Analyse le code de l'Easter Egg Google Gravity."
+Plan: 1. Identifier le moteur physique utilisé (Box2D). 2. Analyser l'injection du script dans le DOM. 3. Critiquer la performance.
+Response: "Google Gravity est un projet amusant créé par Mr. Doob. C'est très drôle à regarder, tout tombe en bas de l'écran."
+Sortie Attendue :
+{{
+  "score": 0.5,
+  "status": "REJECT",
+  "reason": "Réponse superficielle. Le plan demandait une analyse technique (Box2D, DOM), pas une description vague.",
+  "feedback": "Tu as ignoré les étapes 1 et 2 du plan AutoLogic. Exécute l'analyse technique demandée."
+}}
+
+--------------------------------------------------------------------------------
+Exemple 3 (Cas Valide - SUCCÈS)
+Task: "Quel est le lien entre Google, DeepMind et la simulation de gravité ?"
+Plan: 1. Définir le rôle de DeepMind. 2. Identifier les outils de simulation (MuJoCo). 3. Expliquer l'apprentissage par renforcement sous contrainte de gravité.
+Response: "Google DeepMind ne travaille pas sur l'antigravité physique, mais utilise des environnements simulés comme MuJoCo pour entraîner des agents. Dans ces simulations, la gravité est une variable constante que les agents doivent maîtriser via l'apprentissage par renforcement pour se déplacer (locomotion)."
+Sortie Attendue :
+{{
+  "score": 0.95,
+  "status": "VALID",
+  "reason": "Réponse factuelle, nuancée et respectant strictement la structure du plan.",
+  "feedback": "Aucune correction nécessaire."
+}}
+
+--------------------------------------------------------------------------------
+TÂCHE ACTUELLE À ÉVALUER :
+• User Task: {input_task}
+• AutoLogic Plan: {generated_plan}
+• Candidate Response: {candidate_response}
+
+Tes Instructions Finales :
+1. Vérifie si chaque étape du AutoLogic Plan est traitée dans la Candidate Response.
+2. Vérifie l'absence d'hallucination sur le terme "Antigravity".
+3. Génère ta sortie UNIQUEMENT au format JSON.
+{{
+  "score": [float entre 0.0 et 1.0],
+  "status": "[VALID ou REJECT]",
+  "reason": "[Explication courte]",
+  "feedback": "[Instructions précises pour l'Agent Intégrateur si score < 0.8]"
+}}"""
+

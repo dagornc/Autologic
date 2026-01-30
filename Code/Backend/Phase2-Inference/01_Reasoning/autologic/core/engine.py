@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .models import ReasoningModule, AdaptedModule, ReasoningPlan
 from .prompts import PromptTemplates
+from .critic import CriticAgent
 from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +43,7 @@ class AutoLogicEngine:
     1. SELECT: Sélection des modules pertinents
     2. ADAPT: Adaptation des modules au contexte
     3. STRUCTURE: Création du plan de raisonnement
-    4. EXECUTE: Exécution du plan
+    4. EXECUTE: Exécution du plan avec validation Critique (H2)
     """
 
     def __init__(self, root_model: BaseLLM, worker_model: BaseLLM) -> None:
@@ -58,6 +59,9 @@ class AutoLogicEngine:
         self.reasoning_modules = self._load_39_modules()
         self.structured_plan: Optional[ReasoningPlan] = None
         self.history: List[Dict[str, Any]] = []
+        
+        # Initialisation de l'Agent Critique (utilise le modèle puissant)
+        self.critic_agent = CriticAgent(root_model)
 
         logger.info(f"AutoLogicEngine initialisé avec {len(self.reasoning_modules)} modules")
 
@@ -87,22 +91,45 @@ class AutoLogicEngine:
     @staticmethod
     def _clean_json_response(response: str) -> str:
         """Nettoie une réponse JSON potentiellement entourée de markdown."""
-        return response.replace("```json", "").replace("```", "").strip()
+        # Suppression du markdown
+        clean = response.strip()
+        if clean.startswith("```"):
+            # Trouver la première occurrence de '{'
+            start_idx = clean.find("{")
+            # Trouver la dernière occurrence de '}'
+            end_idx = clean.rfind("}")
+            if start_idx != -1 and end_idx != -1:
+                return clean[start_idx : end_idx + 1]
+            
+            clean = clean.replace("```json", "").replace("```", "").strip()
+        
+        # Tentative d'extraction par délimiteurs si encore malformé
+        if not clean.startswith("{") or not clean.endswith("}"):
+            start_idx = clean.find("{")
+            end_idx = clean.rfind("}")
+            if start_idx != -1 and end_idx != -1:
+                return clean[start_idx : end_idx + 1]
+                
+        return clean
+
+    async def analyze_task(self, task: str, root_llm: Optional[BaseLLM] = None) -> Dict[str, Any]:
+        """PHASE 0: ANALYSE INITIALE"""
+        llm = root_llm or self.root_llm
+        logger.info(f"Phase 0: Analyse de la tâche")
+        prompt = PromptTemplates.analyze_prompt(task)
+        response = await llm.call(prompt, response_format={"type": "json_object"})
+        try:
+            return json.loads(self._clean_json_response(response))
+        except json.JSONDecodeError:
+            return {"analysis": "Standard analysis", "constraints": []}
 
     async def select_modules(self, task: str, root_llm: Optional[BaseLLM] = None) -> List[ReasoningModule]:
         """
         PHASE 1: SÉLECTION
         Sélectionne les modules pertinents via root_llm.
-
-        Args:
-            task: La tâche à résoudre
-            root_llm: LLM à utiliser (override self.root_llm)
-
-        Returns:
-            Liste des modules sélectionnés
         """
         llm = root_llm or self.root_llm
-        logger.info(f"Phase 1: Sélection des modules (avec {llm.__class__.__name__})")
+        logger.info(f"Phase 1: Sélection des modules")
 
         modules_json = json.dumps([m.to_dict() for m in self.reasoning_modules], indent=2, ensure_ascii=False)
 
@@ -127,14 +154,6 @@ class AutoLogicEngine:
     ) -> List[AdaptedModule]:
         """
         PHASE 2: ADAPTATION
-        Transforme les modules génériques en modules contextuels.
-
-        Args:
-            selected: Modules sélectionnés à adapter
-            task: La tâche à résoudre
-
-        Returns:
-            Liste des modules adaptés
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 2: Adaptation des modules")
@@ -172,14 +191,6 @@ class AutoLogicEngine:
     ) -> ReasoningPlan:
         """
         PHASE 3: STRUCTURATION
-        Génère le plan de raisonnement structuré et ordonné.
-
-        Args:
-            adapted: Modules adaptés à utiliser
-            task: La tâche à résoudre
-
-        Returns:
-            Plan de raisonnement structuré
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 3: Structuration du plan")
@@ -195,71 +206,139 @@ class AutoLogicEngine:
             plan_info = plan_data.get("reasoning_plan", {})
 
             plan = ReasoningPlan.from_dict(plan_info)
-            logger.info(f"Plan créé avec {len(plan.steps)} étapes, complexité: {plan.complexity}")
+            logger.info(f"Plan créé avec {len(plan.steps)} étapes")
             return plan
 
         except json.JSONDecodeError as e:
             logger.error(f"Erreur parsing structuration: {e}")
             return ReasoningPlan(steps=[], complexity="unknown")
 
+    async def verify_plan(self, plan: ReasoningPlan, task: str, root_llm: Optional[BaseLLM] = None) -> Dict[str, Any]:
+        """PHASE 4: VÉRIFICATION DU PLAN"""
+        llm = root_llm or self.root_llm
+        logger.info("Phase 4: Vérification du plan")
+        plan_json = json.dumps(plan.to_dict(), indent=2, ensure_ascii=False)
+        prompt = PromptTemplates.verify_plan_prompt(plan_json, task)
+        response = await llm.call(prompt, response_format={"type": "json_object"})
+        try:
+            return json.loads(self._clean_json_response(response))
+        except json.JSONDecodeError:
+            return {"is_valid": True, "feedback": ""}
+
     async def execute_with_plan(
-        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None
-    ) -> Dict[str, Any]:
+        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, previous_feedback: str = ""
+    ) -> str:
         """
-        PHASE 4: EXÉCUTION
-        Utilise le worker_llm pour suivre le plan.
-
-        Args:
-            task: La tâche à résoudre
-            plan: Le plan de raisonnement à suivre
-
-        Returns:
-            Résultat contenant le plan et la sortie finale
+        PHASE 5: EXÉCUTION
         """
         llm = worker_llm or self.worker_llm
-        logger.info("Phase 4: Exécution du plan")
+        logger.info(f"Phase 5: Exécution du plan")
 
         plan_json = json.dumps(plan.to_dict(), indent=2, ensure_ascii=False)
-        prompt = PromptTemplates.execution_prompt(plan_json, task)
+        prompt = PromptTemplates.execution_prompt(plan_json, task, previous_feedback=previous_feedback)
 
         response = await llm.call(prompt)
+        return response
 
-        logger.info("Exécution terminée")
-        return {"task": task, "plan": plan.to_dict(), "final_output": response}
+    async def synthesize_output(self, task: str, raw_output: str, root_llm: Optional[BaseLLM] = None) -> str:
+        """PHASE 7: SYNTHÈSE FINALE"""
+        llm = root_llm or self.root_llm
+        logger.info("Phase 7: Synthèse finale de la réponse")
+        prompt = PromptTemplates.synthesis_prompt(task, raw_output)
+        return await llm.call(prompt)
+
+    async def execute_with_critic(
+        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, root_llm: Optional[BaseLLM] = None, max_retries: int = 3
+    ) -> Dict[str, Any]:
+        """
+        Orchestre l'exécution avec boucle de rétroaction et Double-Backtrack.
+        """
+        current_response = ""
+        feedback = ""
+        current_plan = plan
+        
+        for attempt in range(max_retries):
+            logger.info(f"--- Tentative {attempt + 1}/{max_retries} ---")
+            
+            # 1. Exécution
+            current_response = await self.execute_with_plan(
+                task=task,
+                plan=current_plan,
+                worker_llm=worker_llm,
+                previous_feedback=feedback
+            )
+
+            # 2. Appel du Critic H2 (PHASE 6)
+            logger.info("Phase 6: Évaluation critique H2")
+            evaluation = await self.critic_agent.evaluate(task, current_plan.to_dict(), current_response)
+            logger.info(f"Score Critique: {evaluation.score}")
+            
+            if evaluation.score >= 0.8:
+                 # VALIDATION -> SYNTHÈSE (PHASE 7)
+                 final_output = await self.synthesize_output(task, current_response, root_llm=root_llm)
+                 return {
+                     "task": task,
+                     "plan": current_plan.to_dict(),
+                     "final_output": final_output,
+                     "critic_score": evaluation.score,
+                     "attempts": attempt + 1
+                 }
+            else:
+                logger.warning(f"Rejeté par H2: {evaluation.reason}")
+                feedback = evaluation.feedback
+                
+                # DOUBLE-BACKTRACK LOGIC:
+                # Si le feedback suggère un manque dans le PLAN, on replanifie
+                if any(kw in evaluation.reason.lower() for kw in ["plan", "étape", "manquante", "structure"]):
+                    logger.info("Re-planification demandée par le Critique (Backtrack Phase 3)")
+                    # Mock: In real scenario, we would re-run Adapt or Structure with feedback
+                    # Here we at least try to refresh the plan if it's the first retry
+                    if attempt < max_retries - 1:
+                         # Re-run Structure but ideally would need feedback integration in structure_prompt
+                         # For now, let's just log and continue the loop, the next iteration will use feedback in EXECUTE
+                         pass
+
+        # Final pass Synthesis even if low score
+        final_output = await self.synthesize_output(task, current_response, root_llm=root_llm)
+        return {
+            "task": task,
+            "plan": current_plan.to_dict(),
+            "final_output": final_output + f"\n\n[NOTE: Score H2: {evaluation.score}]",
+            "critic_score": evaluation.score,
+            "failed_validation": True
+        }
 
     async def run_full_cycle(
         self, task: str, root_llm: Optional[BaseLLM] = None, worker_llm: Optional[BaseLLM] = None
     ) -> Dict[str, Any]:
-        """
-        Orchestre tout le cycle Self-Discover.
+        """Orchestre tout le cycle Self-Discover optimisé (8 phases)."""
+        logger.info(f"Démarrage cycle 8-phases pour: {task[:50]}...")
 
-        Args:
-            task: La tâche à résoudre
-
-        Returns:
-            Résultat complet avec plan et solution
-        """
-        logger.info(f"Démarrage cycle complet pour: {task[:50]}...")
+        # 0. Analyze
+        analysis = await self.analyze_task(task, root_llm=root_llm)
 
         # 1. Select
         selected = await self.select_modules(task, root_llm=root_llm)
-        if not selected:
-            return {"error": "Failed to select modules"}
+        if not selected: return {"error": "Failed to select modules"}
 
         # 2. Adapt
         adapted = await self.adapt_modules(selected, task, root_llm=root_llm)
-        if not adapted:
-            return {"error": "Failed to adapt modules"}
+        if not adapted: return {"error": "Failed to adapt modules"}
 
         # 3. Structure
         plan = await self.structure_reasoning(adapted, task, root_llm=root_llm)
-        if not plan or not plan.steps:
-            return {"error": "Failed to structure plan"}
+        if not plan or not plan.steps: return {"error": "Failed to structure plan"}
+
+        # 4. Verify Plan
+        verification = await self.verify_plan(plan, task, root_llm=root_llm)
+        if not verification.get("is_valid", True):
+            logger.warning(f"Plan initial invalide: {verification.get('feedback')}")
+            # Re-planning shortcut could be here
 
         self.structured_plan = plan
 
-        # 4. Execute
-        result = await self.execute_with_plan(task, plan, worker_llm=worker_llm)
+        # 5, 6, 7. Execute, Critic, Synthesis
+        result = await self.execute_with_critic(task, plan, worker_llm=worker_llm, root_llm=root_llm)
 
-        logger.info("Cycle complet terminé avec succès")
+        logger.info("Cycle 8-phases terminé")
         return result

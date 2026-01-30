@@ -108,7 +108,7 @@ class ProviderFactory:
 
     def get_active_model(self) -> str:
         """Retourne le modèle actif (Root LLM) selon la configuration."""
-        return self._config.get("active_model", "google/gemini-2.0-flash-exp:free")
+        return self._config.get("active_model", "meta-llama/llama-3.3-70b-instruct:free")
 
     def get_worker_provider(self) -> str:
         """Retourne le provider actif pour le Worker LLM."""

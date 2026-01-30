@@ -26,7 +26,7 @@ async def verify_full_config():
             "timeout": 120,
 
             "worker_provider": "openrouter",
-            "worker_model": "google/gemini-2.0-flash-exp:free",
+            "worker_model": "meta-llama/llama-3.3-70b-instruct:free",
             "worker_temperature": 0.3,
             "worker_max_tokens": 1024,
             "worker_top_p": 0.85,

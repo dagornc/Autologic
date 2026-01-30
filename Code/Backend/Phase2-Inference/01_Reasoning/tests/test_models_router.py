@@ -18,13 +18,13 @@ def reset_factory():
     # Reset to defaults with providers config
     factory._config = {
         "active_provider": "openrouter",
-        "active_model": "google/gemini-2.0-flash-exp:free",
+        "active_model": "meta-llama/llama-3.3-70b-instruct:free",
         "temperature": 0.7,
         "max_tokens": 4096,
         "providers": {
             "openrouter": {
                 "enabled": True,
-                "models": ["google/gemini-2.0-flash-exp:free", "anthropic/claude-3-opus"]
+                "models": ["meta-llama/llama-3.3-70b-instruct:free", "anthropic/claude-3-opus"]
             },
             "openai": {
                 "enabled": True,

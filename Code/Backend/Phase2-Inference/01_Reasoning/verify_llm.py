@@ -17,7 +17,7 @@ async def main():
 
     print(f"Testing OpenRouter with key: {api_key[:10]}...")
     
-    llm = OpenRouterLLM(model_name="google/gemini-2.0-flash-exp:free")
+    llm = OpenRouterLLM(model_name="meta-llama/llama-3.3-70b-instruct:free")
     
     try:
         print("Sending request...")

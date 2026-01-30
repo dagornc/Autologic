@@ -24,6 +24,9 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  --shadow-glass-panel: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  --shadow-glass-button-hover: 0 0 20px rgba(255, 255, 255, 0.05);
 }
 
 @layer base {
@@ -56,21 +59,26 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+    /* Increased radius for modern look */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Deeper, more bluish dark mode for premium feel */
+    --background: 230 25% 6%;
+    /* #0b0d12 */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 230 25% 8%;
+    /* #0e1116 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 230 25% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 250 100% 65%;
+    /* Vibrant Indigo/Violet */
+    --primary-foreground: 210 40% 98%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -78,7 +86,7 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 250 60% 25%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -86,7 +94,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 250 100% 65%;
   }
 }
 
@@ -96,6 +104,86 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground tracking-tight;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  }
+}
+
+/* Glassmorphism & Liquid Effects */
+@layer components {
+
+  /* Basic Glass */
+  .glass {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg;
+  }
+
+  /* Stronger Panel Glass */
+  .glass-panel {
+    @apply bg-white/60 dark:bg-black/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-glass-panel;
+  }
+
+  /* Interactive Glass Button */
+  .glass-button {
+    @apply relative overflow-hidden bg-white/40 dark:bg-white/5 backdrop-blur-md border border-black/5 dark:border-white/10 hover:bg-white/60 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 hover:shadow-glass-button-hover active:scale-95 transition-all duration-300 rounded-xl cursor-pointer;
+  }
+
+  /* Text Gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400;
+  }
+
+  /* Liquid Background Animation */
+  .liquid-bg {
+    position: absolute;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.6;
+    animation: flow 10s ease-in-out infinite alternate;
+  }
+
+  /* Input Field */
+  .input-premium {
+    @apply bg-white/40 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 placeholder-zinc-500 dark:placeholder-zinc-500 text-zinc-900 dark:text-zinc-200 transition-all duration-300;
+  }
+}
+
+/* Animations */
+@keyframes flow {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(20px, -20px) scale(1.1);
+  }
+
+  100% {
+    transform: translate(-10px, 10px) scale(0.9);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
   }
 }

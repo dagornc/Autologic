@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Settings, Moon, Sun, Monitor, Key, Eye, EyeOff,
+    X, Settings, Key, Eye, EyeOff,
     Loader2, CheckCircle2, RefreshCw, Wifi, WifiOff,
     Thermometer, Hash, Sparkles, ChevronDown, Save, RotateCcw, Gift, Zap, Shield, Clock
 } from 'lucide-react';
-import { useTheme } from '../hooks/useTheme';
 
 // ============ TYPES ============
 interface SettingsConfig {
@@ -150,11 +149,11 @@ const Slider: React.FC<{
 }> = ({ value, onChange, min, max, step, label, icon, unit = '' }) => (
     <div className="space-y-2">
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-zinc-400">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {icon}
                 <span>{label}</span>
             </div>
-            <span className="text-sm font-mono text-indigo-400">{value}{unit}</span>
+            <span className="text-sm font-mono text-primary">{value}{unit}</span>
         </div>
         <input
             type="range"
@@ -163,7 +162,7 @@ const Slider: React.FC<{
             step={step}
             value={value}
             onChange={(e) => onChange(parseFloat(e.target.value))}
-            className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
         />
     </div>
 );
@@ -177,12 +176,10 @@ const NumberInput: React.FC<{
     icon: React.ReactNode;
     unit?: string;
 }> = ({ value, onChange, min, max, label, icon, unit = '' }) => (
-    <div className="space-y-2">
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-zinc-400">
-                {icon}
-                <span>{label}</span>
-            </div>
+    <div className="flex items-center justify-between py-1">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            {icon}
+            <span>{label}</span>
         </div>
         <div className="flex items-center gap-2">
             <input
@@ -191,9 +188,9 @@ const NumberInput: React.FC<{
                 max={max}
                 value={value}
                 onChange={(e) => onChange(Math.max(min, Math.min(max, parseFloat(e.target.value) || min)))}
-                className="flex-1 bg-zinc-900 border border-zinc-700/50 rounded-lg px-3 py-2 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono"
+                className="w-20 bg-background border border-input rounded-lg px-2 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right"
             />
-            <span className="text-xs text-zinc-500 min-w-[40px]">{unit}</span>
+            <span className="text-xs text-zinc-600 min-w-[30px]">{unit}</span>
         </div>
     </div>
 );
@@ -219,9 +216,76 @@ const ConnectionIndicator: React.FC<{ status: ProviderStatus }> = ({ status }) =
     </div>
 );
 
+// ============ REUSABLE UI COMPONENTS ============
+const Toggle: React.FC<{
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    label?: React.ReactNode;
+    icon?: React.ReactNode;
+    colorClass?: string; // Kept for types but ignored for uniformity
+}> = ({ checked, onChange, label, icon }) => (
+    <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-xl hover:bg-muted/50 transition-colors">
+        <div className="relative flex-shrink-0">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+                className="sr-only peer"
+            />
+            <div className={`w-11 h-6 bg-input rounded-full peer peer-checked:bg-primary transition-colors border border-border`} />
+            <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 shadow-sm transition-all" />
+        </div>
+        {(label || icon) && (
+            <span className="text-sm text-foreground font-medium group-hover:text-primary transition-colors flex items-center gap-2 select-none">
+                {icon}
+                {label}
+            </span>
+        )}
+    </label>
+);
+
+const ResilienceSection: React.FC<{
+    settings: ResilienceSettings;
+    onChange: (s: ResilienceSettings) => void;
+    colorClass?: string;
+}> = ({ settings, onChange, colorClass = "text-amber-500" }) => (
+    <div className="pt-2 border-t border-border mt-3">
+        <div className="flex items-center gap-2 mb-3 px-1">
+            <Shield className={`w-3 h-3 ${colorClass}`} />
+            <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Résilience</span>
+        </div>
+        <div className="space-y-3">
+            <div className="px-1">
+                <NumberInput
+                    value={settings.rateLimit}
+                    onChange={(v) => onChange({ ...settings, rateLimit: v })}
+                    min={1}
+                    max={100}
+                    label="Rate Limit"
+                    icon={<Clock className="w-3 h-3" />}
+                    unit="req/s"
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                <Toggle
+                    checked={settings.retryEnabled}
+                    onChange={(v) => onChange({ ...settings, retryEnabled: v })}
+                    label="Retry Auto"
+                    colorClass="bg-amber-600"
+                />
+                <Toggle
+                    checked={settings.fallbackEnabled}
+                    onChange={(v) => onChange({ ...settings, fallbackEnabled: v })}
+                    label="Fallback"
+                    colorClass="bg-amber-600"
+                />
+            </div>
+        </div>
+    </div>
+);
+
 // ============ MAIN COMPONENT ============
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConfigChange }) => {
-    const { theme, setTheme } = useTheme();
     const { cache, isValid, updateCache } = useModelCache();
 
     const defaultConfig: SettingsConfig = {
@@ -233,7 +297,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
 
         // Root Params
         temperature: 0.7,
-        maxTokens: 4096,
+        maxTokens: 8192,
         topP: 1.0,
 
         // Worker Params
@@ -243,7 +307,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         workerTimeout: undefined,
 
         apiKey: '',
-        timeout: 120
+        timeout: 600
     };
 
     const { settings, saveSettings } = usePersistedSettings(defaultConfig);
@@ -283,8 +347,8 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
     // Resilience settings state
     const [resilienceSettings, setResilienceSettings] = useState<ResilienceSettings>({
         rateLimit: 5,
-        retryEnabled: false,
-        fallbackEnabled: false
+        retryEnabled: true,
+        fallbackEnabled: true
     });
 
     // Fetch models with cache logic
@@ -407,26 +471,65 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         }
     }, [fetchModels, isOpen]);
 
-    // Fetch resilience config for OpenRouter
+    // State for tracking initial resilience values
+    const [originalResilienceSettings, setOriginalResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 5,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+
+    // Default worker resilience settings to track changes against
+    const [originalWorkerResilienceSettings, setOriginalWorkerResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 5,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+
+    // Fetch resilience config for OpenRouter (Root)
     useEffect(() => {
         if (isOpen && localSettings.provider === 'OpenRouter') {
             fetch('http://127.0.0.1:8000/api/providers/openrouter/resilience')
                 .then(res => res.json())
                 .then(data => {
-                    setResilienceSettings({
+                    const fetched = {
                         rateLimit: data.rate_limit ?? 5,
                         retryEnabled: data.retry_enabled ?? false,
                         fallbackEnabled: data.fallback_enabled ?? false
-                    });
+                    };
+                    setResilienceSettings(fetched);
+                    setOriginalResilienceSettings(fetched);
                 })
                 .catch(err => console.warn('Failed to fetch resilience config:', err));
         }
     }, [isOpen, localSettings.provider]);
 
+    // Fetch resilience config for OpenRouter (Worker)
+    useEffect(() => {
+        if (isOpen && localSettings.workerProvider === 'OpenRouter' && !localSettings.useWorkerSameAsRoot) {
+            fetch('http://127.0.0.1:8000/api/providers/openrouter/resilience')
+                .then(res => res.json())
+                .then(data => {
+                    const fetched = {
+                        rateLimit: data.rate_limit ?? 5,
+                        retryEnabled: data.retry_enabled ?? false,
+                        fallbackEnabled: data.fallback_enabled ?? false
+                    };
+                    setWorkerResilienceSettings(fetched);
+                    setOriginalWorkerResilienceSettings(fetched);
+                })
+                .catch(err => console.warn('Failed to fetch worker resilience config:', err));
+        }
+    }, [isOpen, localSettings.workerProvider, localSettings.useWorkerSameAsRoot]);
+
     // Track changes
     useEffect(() => {
-        setHasChanges(JSON.stringify(localSettings) !== JSON.stringify(settings));
-    }, [localSettings, settings]);
+        const isSettingsChanged = JSON.stringify(localSettings) !== JSON.stringify(settings);
+        const isResilienceChanged = JSON.stringify(resilienceSettings) !== JSON.stringify(originalResilienceSettings);
+        // Track worker resilience changes (only if applicable, but simple check is okay as user editing it implies intent)
+        const isWorkerResilienceChanged = JSON.stringify(workerResilienceSettings) !== JSON.stringify(originalWorkerResilienceSettings);
+
+        setHasChanges(isSettingsChanged || isResilienceChanged || isWorkerResilienceChanged);
+    }, [localSettings, settings, resilienceSettings, originalResilienceSettings, workerResilienceSettings, originalWorkerResilienceSettings]);
 
     // Update model when provider changes
     useEffect(() => {
@@ -447,7 +550,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                 }
             }
         }
-    }, [localSettings.provider, localSettings.workerProvider, modelData, localSettings.useWorkerSameAsRoot]);
+    }, [localSettings.provider, localSettings.workerProvider, modelData, localSettings.useWorkerSameAsRoot, localSettings.model, localSettings.workerModel]);
 
     // Test connection (Root + Worker if separate)
     const testConnection = async () => {
@@ -683,26 +786,26 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
 
                     {/* Drawer */}
                     <motion.div
-                        initial={{ x: '100%' }}
+                        initial={{ x: '-100%' }}
                         animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        exit={{ x: '-100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed right-0 top-0 h-full w-full max-w-md bg-zinc-900 border-l border-zinc-800 shadow-2xl z-50 overflow-hidden flex flex-col"
+                        className="fixed left-0 top-0 h-full w-full max-w-md bg-background/95 backdrop-blur-xl border-r border-border shadow-2xl z-50 overflow-hidden flex flex-col"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg bg-gradient-to-br ${currentProviderInfo.color}`}>
                                     <Settings className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-semibold text-zinc-100">Settings</h2>
+                                    <h2 className="text-lg font-bold text-foreground">Settings</h2>
                                     <ConnectionIndicator status={providerStatus} />
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+                                className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -711,52 +814,34 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-                            {/* Theme Selection */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Apparence</label>
-                                <div className="grid grid-cols-3 gap-2 p-1 bg-zinc-950/50 rounded-xl border border-zinc-800">
-                                    {[
-                                        { key: 'light', icon: Sun, label: 'Clair' },
-                                        { key: 'dark', icon: Moon, label: 'Sombre' },
-                                        { key: 'system', icon: Monitor, label: 'Auto' }
-                                    ].map(({ key, icon: Icon, label }) => (
-                                        <button
-                                            key={key}
-                                            onClick={() => setTheme(key as 'light' | 'dark' | 'system')}
-                                            className={`flex items-center justify-center gap-2 p-2.5 rounded-lg text-sm transition-all ${theme === key
-                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-                                                }`}
-                                        >
-                                            <Icon className="w-4 h-4" />
-                                            <span>{label}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+
+                            {/* Theme Selection - Removed as requested (moved to sidebar) */}
+                            {/* <div className="space-y-3"> ... </div> */}
+
+                            {/* <div className="h-px bg-zinc-800/50" /> */}
 
                             {/* DUAL LLM SELECTION */}
                             <div className="space-y-6">
 
                                 {/* === ROOT LLM (STRATEGIC) === */}
-                                <div className="space-y-3 p-4 border border-zinc-800 rounded-2xl bg-zinc-950/30 relative overflow-hidden group/root">
-                                    <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/root:opacity-100 transition-opacity pointer-events-none" />
+                                <div className="space-y-3 p-4 border border-border rounded-2xl bg-card/40 relative overflow-hidden group/root">
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover/root:opacity-100 transition-opacity pointer-events-none" />
 
                                     <div className="flex items-center justify-between mb-1">
                                         <div className="flex items-center gap-2">
-                                            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                                            <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary">
                                                 <Sparkles className="w-3.5 h-3.5" />
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-semibold text-zinc-200">Stratégique (Root)</h3>
-                                                <p className="text-[10px] text-zinc-500">Planification et Raisonnement</p>
+                                                <h3 className="text-sm font-bold text-foreground">Stratégique (Root)</h3>
+                                                <p className="text-[10px] text-muted-foreground">Planification et Raisonnement</p>
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={() => fetchModels(true, localSettings.provider)}
                                             disabled={loading}
-                                            className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                                             title="Rafraîchir"
                                         >
                                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -769,13 +854,13 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                             value={localSettings.provider}
                                             onChange={(e) => setLocalSettings(prev => ({ ...prev, provider: e.target.value }))}
                                             disabled={loading}
-                                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none cursor-pointer text-sm"
+                                            className="w-full input-premium appearance-none cursor-pointer text-sm"
                                         >
                                             {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
                                                 <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                                     </div>
 
                                     {/* Root Model Select */}
@@ -785,10 +870,10 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                 if (!loading && availableModels.length > 0) setIsModelDropdownOpen(!isModelDropdownOpen);
                                             }}
                                             disabled={loading || availableModels.length === 0}
-                                            className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-left text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/50 flex items-center justify-between hover:bg-zinc-800/80 transition-colors text-sm"
+                                            className="w-full input-premium text-left flex items-center justify-between hover:bg-muted/50 transition-colors text-sm"
                                         >
                                             <span className="truncate">{localSettings.model || "Sélectionner..."}</span>
-                                            <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
+                                            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
                                         </button>
 
                                         <AnimatePresence>
@@ -807,7 +892,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                                 placeholder="Rechercher..."
                                                                 value={modelSearchQuery}
                                                                 onChange={(e) => setModelSearchQuery(e.target.value)}
-                                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-indigo-500/50"
+                                                                className="w-full bg-input border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary/50"
                                                                 autoFocus
                                                             />
                                                         </div>
@@ -819,7 +904,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                                         setLocalSettings(prev => ({ ...prev, model }));
                                                                         setIsModelDropdownOpen(false);
                                                                     }}
-                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.model === model ? 'bg-indigo-600/20 text-indigo-300' : 'text-zinc-300 hover:bg-zinc-800'
+                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.model === model ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
                                                                         }`}
                                                                 >
                                                                     {model}
@@ -831,239 +916,40 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                 </>
                                             )}
                                         </AnimatePresence>
-                                    </div>
-
-                                    {/* OpenRouter specific settings (Root) */}
-                                    {localSettings.provider === 'OpenRouter' && (
-                                        <div className="mt-3 space-y-3 pt-3 border-t border-zinc-800/50">
-                                            {/* Auto mode toggle */}
-                                            <label className="flex items-center gap-2 cursor-pointer group">
-                                                <div className="relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={autoModelSelection}
-                                                        onChange={(e) => {
-                                                            setAutoModelSelection(e.target.checked);
-                                                            if (e.target.checked) {
-                                                                setLocalSettings(prev => ({ ...prev, model: 'openrouter/auto' }));
-                                                            } else {
-                                                                const models = modelData?.models[localSettings.provider] || [];
-                                                                if (models.length > 0) {
-                                                                    setLocalSettings(prev => ({ ...prev, model: models[0] }));
-                                                                }
-                                                            }
-                                                        }}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-7 h-4 bg-zinc-800 rounded-full peer peer-checked:bg-purple-600 transition-colors" />
-                                                    <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-zinc-400 rounded-full peer-checked:translate-x-3 peer-checked:bg-white transition-all" />
-                                                </div>
-                                                <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                                    <Zap className="w-3 h-3 text-purple-400" />
-                                                    Mode Auto
-                                                </span>
-                                            </label>
-
-                                            {/* Free models filter */}
-                                            {!autoModelSelection && (
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <div className="relative">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={freeModelsOnly}
-                                                            onChange={(e) => setFreeModelsOnly(e.target.checked)}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="w-7 h-4 bg-zinc-800 rounded-full peer peer-checked:bg-emerald-600 transition-colors" />
-                                                        <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-zinc-400 rounded-full peer-checked:translate-x-3 peer-checked:bg-white transition-all" />
-                                                    </div>
-                                                    <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                                        <Gift className="w-3 h-3 text-emerald-400" />
-                                                        Modèles gratuits
-                                                    </span>
-                                                </label>
-                                            )}
-
-                                            {/* Resilience */}
-                                            <div className="pt-2">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Shield className="w-3 h-3 text-amber-500" />
-                                                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">Résilience</span>
-                                                </div>
-                                                <div className="mb-3 px-1">
-                                                    <NumberInput
-                                                        value={resilienceSettings.rateLimit}
-                                                        onChange={(v) => setResilienceSettings(prev => ({ ...prev, rateLimit: v }))}
-                                                        min={1}
-                                                        max={100}
-                                                        label="Rate Limit"
-                                                        icon={<Clock className="w-3 h-3" />}
-                                                        unit="req/s"
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                                        <div className={`w-3 h-3 rounded flex items-center justify-center border border-zinc-700 ${resilienceSettings.retryEnabled ? 'bg-amber-600 border-amber-600' : 'bg-transparent'}`}>
-                                                            {resilienceSettings.retryEnabled && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
-                                                        </div>
-                                                        <input type="checkbox" className="hidden" checked={resilienceSettings.retryEnabled} onChange={(e) => setResilienceSettings(prev => ({ ...prev, retryEnabled: e.target.checked }))} />
-                                                        <span className="text-xs text-zinc-400">Retry Auto</span>
-                                                    </label>
-                                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                                        <div className={`w-3 h-3 rounded flex items-center justify-center border border-zinc-700 ${resilienceSettings.fallbackEnabled ? 'bg-amber-600 border-amber-600' : 'bg-transparent'}`}>
-                                                            {resilienceSettings.fallbackEnabled && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
-                                                        </div>
-                                                        <input type="checkbox" className="hidden" checked={resilienceSettings.fallbackEnabled} onChange={(e) => setResilienceSettings(prev => ({ ...prev, fallbackEnabled: e.target.checked }))} />
-                                                        <span className="text-xs text-zinc-400">Fallback</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* Advanced Settings (Root) */}
-                                    <div className="pt-2 border-t border-zinc-800/50 mt-4">
-                                        <button
-                                            onClick={() => setShowAdvanced(!showAdvanced)}
-                                            className="w-full flex items-center justify-between py-2 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
-                                        >
-                                            <span>Paramètres de génération</span>
-                                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        <AnimatePresence>
-                                            {showAdvanced && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    className="space-y-4 pt-2 overflow-hidden"
-                                                >
-                                                    <Slider value={localSettings.temperature} onChange={(v) => setLocalSettings(prev => ({ ...prev, temperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
-                                                    <Slider value={localSettings.maxTokens} onChange={(v) => setLocalSettings(prev => ({ ...prev, maxTokens: v }))} min={256} max={8192} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
-                                                    <Slider value={localSettings.topP} onChange={(v) => setLocalSettings(prev => ({ ...prev, topP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
-                                                    <Slider value={localSettings.timeout} onChange={(v) => setLocalSettings(prev => ({ ...prev, timeout: v }))} min={30} max={300} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
-
-
-                                {/* === WORKER TOGGLE === */}
-                                <label className="flex items-center gap-3 cursor-pointer group p-3 border border-zinc-800 rounded-xl hover:bg-zinc-800/30 transition-colors">
-                                    <div className="relative flex-shrink-0">
-                                        <input
-                                            type="checkbox"
-                                            checked={localSettings.useWorkerSameAsRoot}
-                                            onChange={(e) => setLocalSettings(prev => ({ ...prev, useWorkerSameAsRoot: e.target.checked }))}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-zinc-800 rounded-full peer peer-checked:bg-indigo-600 transition-colors border border-zinc-700" />
-                                        <div className="absolute top-1 left-1 w-4 h-4 bg-zinc-400 rounded-full peer-checked:translate-x-5 peer-checked:bg-white transition-all shadow-sm" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors">
-                                            Même modèle pour l'exécution
-                                        </span>
-                                        <span className="text-xs text-zinc-500">
-                                            Utiliser le modèle stratégique pour les tâches tactiques
-                                        </span>
-                                    </div>
-                                </label>
-
-
-                                {/* === WORKER LLM (TACTICAL) === */}
-                                {!localSettings.useWorkerSameAsRoot && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        className="space-y-3 p-4 border border-zinc-800 rounded-2xl bg-zinc-950/30 relative overflow-hidden group/worker"
-                                    >
-                                        <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover/worker:opacity-100 transition-opacity pointer-events-none" />
-
-                                        <div className="flex items-center justify-between mb-1">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500">
-                                                    <Zap className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-sm font-semibold text-zinc-200">Tactique (Worker)</h3>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-[10px] text-zinc-500">Exécution rapide</p>
-                                                        <ConnectionIndicator status={workerProviderStatus} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => fetchModels(true, localSettings.workerProvider)}
-                                                disabled={loading}
-                                                className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors"
-                                                title="Rafraîchir"
-                                            >
-                                                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                                            </button>
-                                        </div>
-
-                                        {/* Worker Provider Select */}
                                         <div className="relative">
-                                            <select
-                                                value={localSettings.workerProvider}
-                                                onChange={(e) => setLocalSettings(prev => ({ ...prev, workerProvider: e.target.value }))}
-                                                disabled={loading}
-                                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-zinc-100 outline-none focus:ring-2 focus:ring-amber-500/50 appearance-none cursor-pointer text-sm"
-                                            >
-                                                {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
-                                                    <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-                                        </div>
-
-                                        {/* Worker Model Select */}
-                                        <div className="relative">
-                                            <button
-                                                onClick={() => {
-                                                    if (!loading && availableWorkerModels.length > 0) setIsWorkerModelDropdownOpen(!isWorkerModelDropdownOpen);
-                                                }}
-                                                disabled={loading || availableWorkerModels.length === 0}
-                                                className="w-full bg-zinc-900 border border-zinc-700/50 rounded-xl px-4 py-2.5 text-left text-zinc-100 outline-none focus:ring-2 focus:ring-amber-500/50 flex items-center justify-between hover:bg-zinc-800/80 transition-colors text-sm"
-                                            >
-                                                <span className="truncate">{localSettings.workerModel || "Sélectionner..."}</span>
-                                                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isWorkerModelDropdownOpen ? 'rotate-180' : ''}`} />
-                                            </button>
-
                                             <AnimatePresence>
-                                                {isWorkerModelDropdownOpen && (
+                                                {isModelDropdownOpen && (
                                                     <>
-                                                        <div className="fixed inset-0 z-10" onClick={() => setIsWorkerModelDropdownOpen(false)} />
+                                                        <div className="fixed inset-0 z-10" onClick={() => setIsModelDropdownOpen(false)} />
                                                         <motion.div
                                                             initial={{ opacity: 0, y: -10 }}
                                                             animate={{ opacity: 1, y: 0 }}
                                                             exit={{ opacity: 0, y: -10 }}
-                                                            className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl z-20 overflow-hidden flex flex-col max-h-60"
+                                                            className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-xl z-20 overflow-hidden flex flex-col max-h-60"
                                                         >
-                                                            <div className="p-2 border-b border-zinc-800 bg-zinc-900 sticky top-0">
+                                                            <div className="p-2 border-b border-border bg-popover sticky top-0">
                                                                 <input
                                                                     type="text"
                                                                     placeholder="Rechercher..."
-                                                                    value={workerModelSearchQuery}
-                                                                    onChange={(e) => setWorkerModelSearchQuery(e.target.value)}
-                                                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-amber-500/50"
+                                                                    value={modelSearchQuery}
+                                                                    onChange={(e) => setModelSearchQuery(e.target.value)}
+                                                                    className="w-full bg-background border border-input rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary/50"
                                                                     autoFocus
                                                                 />
                                                             </div>
                                                             <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
-                                                                {filteredWorkerModels.map((model) => (
+                                                                {filteredModels.map((model) => (
                                                                     <button
                                                                         key={model}
                                                                         onClick={() => {
-                                                                            setLocalSettings(prev => ({ ...prev, workerModel: model }));
-                                                                            setIsWorkerModelDropdownOpen(false);
+                                                                            setLocalSettings(prev => ({ ...prev, model }));
+                                                                            setIsModelDropdownOpen(false);
                                                                         }}
-                                                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.workerModel === model ? 'bg-amber-600/20 text-amber-300' : 'text-zinc-300 hover:bg-zinc-800'
+                                                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.model === model ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:bg-muted'
                                                                             }`}
                                                                     >
                                                                         {model}
-                                                                        {isModelFree(model, localSettings.workerProvider || '') && <span className="ml-2 text-[9px] bg-emerald-500/20 text-emerald-400 px-1 rounded">FREE</span>}
+                                                                        {isModelFree(model, localSettings.provider) && <span className="ml-2 text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1 rounded">FREE</span>}
                                                                     </button>
                                                                 ))}
                                                             </div>
@@ -1072,134 +958,320 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                 )}
                                             </AnimatePresence>
                                         </div>
-                                        {/* OpenRouter specific settings (Worker) */}
-                                        {localSettings.workerProvider === 'OpenRouter' && (
-                                            <div className="mt-3 space-y-3 pt-3 border-t border-zinc-800/50">
-                                                <label className="flex items-center gap-2 cursor-pointer group">
-                                                    <div className="relative">
-                                                        <input type="checkbox" checked={workerAutoModelSelection} onChange={(e) => {
-                                                            setWorkerAutoModelSelection(e.target.checked);
-                                                            if (e.target.checked) setLocalSettings(prev => ({ ...prev, workerModel: 'openrouter/auto' }));
-                                                        }} className="sr-only peer" />
-                                                        <div className="w-7 h-4 bg-zinc-800 rounded-full peer peer-checked:bg-amber-600 transition-colors" />
-                                                        <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-zinc-400 rounded-full peer-checked:translate-x-3 peer-checked:bg-white transition-all" />
-                                                    </div>
-                                                    <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                                        <Zap className="w-3 h-3 text-amber-400" /> Mode Auto
-                                                    </span>
-                                                </label>
-                                                {!workerAutoModelSelection && (
-                                                    <label className="flex items-center gap-2 cursor-pointer">
-                                                        <div className="relative">
-                                                            <input type="checkbox" checked={workerFreeModelsOnly} onChange={(e) => setWorkerFreeModelsOnly(e.target.checked)} className="sr-only peer" />
-                                                            <div className="w-7 h-4 bg-zinc-800 rounded-full peer peer-checked:bg-emerald-600 transition-colors" />
-                                                            <div className="absolute top-0.5 left-0.5 w-3 h-3 bg-zinc-400 rounded-full peer-checked:translate-x-3 peer-checked:bg-white transition-all" />
-                                                        </div>
-                                                        <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-                                                            <Gift className="w-3 h-3 text-emerald-400" /> Modèles gratuits
-                                                        </span>
-                                                    </label>
+
+
+
+
+                                        {/* OpenRouter specific settings (Root) */}
+                                        {localSettings.provider === 'OpenRouter' && (
+                                            <div className="mt-3 space-y-2 pt-3 border-t border-border">
+                                                {/* Auto mode toggle */}
+                                                <Toggle
+                                                    checked={autoModelSelection}
+                                                    onChange={(checked) => {
+                                                        setAutoModelSelection(checked);
+                                                        if (checked) {
+                                                            setLocalSettings(prev => ({ ...prev, model: 'openrouter/auto' }));
+                                                        } else {
+                                                            const models = modelData?.models[localSettings.provider] || [];
+                                                            if (models.length > 0) {
+                                                                setLocalSettings(prev => ({ ...prev, model: models[0] }));
+                                                            }
+                                                        }
+                                                    }}
+                                                    label="Mode Auto"
+                                                    icon={<Zap className="w-3 h-3 text-purple-400" />}
+                                                    colorClass="bg-purple-600"
+                                                />
+
+                                                {/* Free models filter */}
+                                                {!autoModelSelection && (
+                                                    <Toggle
+                                                        checked={freeModelsOnly}
+                                                        onChange={setFreeModelsOnly}
+                                                        label="Modèles gratuits"
+                                                        icon={<Gift className="w-3 h-3 text-emerald-400" />}
+                                                        colorClass="bg-emerald-600"
+                                                    />
                                                 )}
-                                                <div className="pt-2">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Shield className="w-3 h-3 text-amber-500" />
-                                                        <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">Résilience</span>
-                                                    </div>
-                                                    <div className="mb-3 px-1">
-                                                        <NumberInput
-                                                            value={workerResilienceSettings.rateLimit}
-                                                            onChange={(v) => setWorkerResilienceSettings(prev => ({ ...prev, rateLimit: v }))}
-                                                            min={1}
-                                                            max={100}
-                                                            label="Rate Limit"
-                                                            icon={<Clock className="w-3 h-3" />}
-                                                            unit="req/s"
-                                                        />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                                            <div className={`w-3 h-3 rounded flex items-center justify-center border border-zinc-700 ${workerResilienceSettings.retryEnabled ? 'bg-amber-600 border-amber-600' : 'bg-transparent'}`}>{workerResilienceSettings.retryEnabled && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}</div>
-                                                            <input type="checkbox" className="hidden" checked={workerResilienceSettings.retryEnabled} onChange={(e) => setWorkerResilienceSettings(prev => ({ ...prev, retryEnabled: e.target.checked }))} />
-                                                            <span className="text-xs text-zinc-400">Retry Auto</span>
-                                                        </label>
-                                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                                            <div className={`w-3 h-3 rounded flex items-center justify-center border border-zinc-700 ${workerResilienceSettings.fallbackEnabled ? 'bg-amber-600 border-amber-600' : 'bg-transparent'}`}>{workerResilienceSettings.fallbackEnabled && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}</div>
-                                                            <input type="checkbox" className="hidden" checked={workerResilienceSettings.fallbackEnabled} onChange={(e) => setWorkerResilienceSettings(prev => ({ ...prev, fallbackEnabled: e.target.checked }))} />
-                                                            <span className="text-xs text-zinc-400">Fallback</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
+
+                                                {/* Resilience */}
+                                                <ResilienceSection
+                                                    settings={resilienceSettings}
+                                                    onChange={setResilienceSettings}
+                                                />
                                             </div>
                                         )}
-                                        <div className="pt-2 border-t border-zinc-800/50 mt-4">
-                                            <button onClick={() => setShowWorkerAdvanced(!showWorkerAdvanced)} className="w-full flex items-center justify-between py-2 text-xs font-medium text-zinc-500 hover:text-zinc-300 transition-colors"><span>Paramètres de génération</span><ChevronDown className={`w-3.5 h-3.5 transition-transform ${showWorkerAdvanced ? 'rotate-180' : ''}`} /></button>
+                                        {/* Advanced Settings (Root) */}
+                                        <div className="pt-2 border-t border-white/10 mt-4">
+                                            <button
+                                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                                className="w-full flex items-center justify-between py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                            >
+                                                <span>Paramètres de génération</span>
+                                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+                                            </button>
                                             <AnimatePresence>
-                                                {showWorkerAdvanced && (
-                                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-4 pt-2 overflow-hidden">
-                                                        <Slider value={localSettings.workerTemperature ?? 0.7} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTemperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
-                                                        <Slider value={localSettings.workerMaxTokens ?? 4096} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerMaxTokens: v }))} min={256} max={8192} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
-                                                        <Slider value={localSettings.workerTopP ?? 1.0} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTopP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
-                                                        <Slider value={localSettings.workerTimeout ?? 60} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTimeout: v }))} min={30} max={300} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                {showAdvanced && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        className="space-y-4 pt-2 overflow-hidden"
+                                                    >
+                                                        <Slider value={localSettings.temperature} onChange={(v) => setLocalSettings(prev => ({ ...prev, temperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
+                                                        <Slider value={localSettings.maxTokens} onChange={(v) => setLocalSettings(prev => ({ ...prev, maxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
+                                                        <Slider value={localSettings.topP} onChange={(v) => setLocalSettings(prev => ({ ...prev, topP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
+                                                        <Slider value={localSettings.timeout} onChange={(v) => setLocalSettings(prev => ({ ...prev, timeout: v }))} min={30} max={600} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
                                         </div>
-                                    </motion.div>
+                                    </div>
+
+
+                                    {/* === WORKER TOGGLE === */}
+                                    <div className="py-1">
+                                        <Toggle
+                                            checked={localSettings.useWorkerSameAsRoot}
+                                            onChange={(checked) => setLocalSettings(prev => ({ ...prev, useWorkerSameAsRoot: checked }))}
+                                            label={
+                                                <div className="flex flex-col items-start gap-0.5">
+                                                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                                        Même modèle pour l'exécution
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground font-normal">
+                                                        Utiliser le modèle stratégique pour les tâches tactiques
+                                                    </span>
+                                                </div>
+                                            }
+                                            colorClass="bg-indigo-600"
+                                        />
+                                    </div>
+
+
+                                    {/* === WORKER LLM (TACTICAL) === */}
+                                    {!localSettings.useWorkerSameAsRoot && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="space-y-3 p-4 border border-white/10 rounded-2xl bg-white/5 relative overflow-hidden group/worker"
+                                        >
+                                            <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover/worker:opacity-100 transition-opacity pointer-events-none" />
+
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 rounded-lg bg-accent/10 border border-accent/20 text-accent-foreground">
+                                                        <Zap className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-foreground">Tactique (Worker)</h3>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-muted-foreground">Exécution rapide</p>
+                                                            <ConnectionIndicator status={workerProviderStatus} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => fetchModels(true, localSettings.workerProvider)}
+                                                    disabled={loading}
+                                                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                    title="Rafraîchir"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Worker Provider Select */}
+                                            <div className="relative">
+                                                <select
+                                                    value={localSettings.workerProvider}
+                                                    onChange={(e) => setLocalSettings(prev => ({ ...prev, workerProvider: e.target.value }))}
+                                                    disabled={loading}
+                                                    className="w-full input-premium appearance-none cursor-pointer text-sm"
+                                                >
+                                                    {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
+                                                        <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                                            </div>
+
+                                            {/* Worker Model Select */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        if (!loading && availableWorkerModels.length > 0) setIsWorkerModelDropdownOpen(!isWorkerModelDropdownOpen);
+                                                    }}
+                                                    disabled={loading || availableWorkerModels.length === 0}
+                                                    className="w-full input-premium text-left flex items-center justify-between hover:bg-muted/50 transition-colors text-sm"
+                                                >
+                                                    <span className="truncate">{localSettings.workerModel || "Sélectionner..."}</span>
+                                                    <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isWorkerModelDropdownOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {isWorkerModelDropdownOpen && (
+                                                        <>
+                                                            <div className="fixed inset-0 z-10" onClick={() => setIsWorkerModelDropdownOpen(false)} />
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                exit={{ opacity: 0, y: -10 }}
+                                                                className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-xl z-20 overflow-hidden flex flex-col max-h-60"
+                                                            >
+                                                                <div className="p-2 border-b border-border bg-popover sticky top-0">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Rechercher..."
+                                                                        value={workerModelSearchQuery}
+                                                                        onChange={(e) => setWorkerModelSearchQuery(e.target.value)}
+                                                                        className="w-full bg-input border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-accent/50"
+                                                                        autoFocus
+                                                                    />
+                                                                </div>
+                                                                <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                                                                    {filteredWorkerModels.map((model) => (
+                                                                        <button
+                                                                            key={model}
+                                                                            onClick={() => {
+                                                                                setLocalSettings(prev => ({ ...prev, workerModel: model }));
+                                                                                setIsWorkerModelDropdownOpen(false);
+                                                                            }}
+                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.workerModel === model ? 'bg-accent/20 text-accent-foreground' : 'text-muted-foreground hover:bg-muted'
+                                                                                }`}
+                                                                        >
+                                                                            {model}
+                                                                            {isModelFree(model, localSettings.workerProvider || '') && <span className="ml-2 text-[9px] bg-emerald-500/20 text-emerald-400 px-1 rounded">FREE</span>}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        </>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                            {/* OpenRouter specific settings (Worker) */}
+                                            {localSettings.workerProvider === 'OpenRouter' && (
+                                                <div className="mt-3 space-y-2 pt-3 border-t border-border">
+                                                    {/* Auto mode toggle */}
+                                                    <Toggle
+                                                        checked={workerAutoModelSelection}
+                                                        onChange={(checked) => {
+                                                            setWorkerAutoModelSelection(checked);
+                                                            if (checked) {
+                                                                setLocalSettings(prev => ({ ...prev, workerModel: 'openrouter/auto' }));
+                                                            }
+                                                        }}
+                                                        label="Mode Auto"
+                                                        icon={<Zap className="w-3 h-3 text-amber-400" />}
+                                                        colorClass="bg-amber-600"
+                                                    />
+
+                                                    {/* Free models filter */}
+                                                    {!workerAutoModelSelection && (
+                                                        <Toggle
+                                                            checked={workerFreeModelsOnly}
+                                                            onChange={setWorkerFreeModelsOnly}
+                                                            label="Modèles gratuits"
+                                                            icon={<Gift className="w-3 h-3 text-emerald-400" />}
+                                                            colorClass="bg-emerald-600"
+                                                        />
+                                                    )}
+
+                                                    {/* Resilience */}
+                                                    <ResilienceSection
+                                                        settings={workerResilienceSettings}
+                                                        onChange={setWorkerResilienceSettings}
+                                                        colorClass="text-amber-500"
+                                                    />
+                                                </div>
+                                            )}
+                                            {/* Advanced Settings (Worker) */}
+                                            <div className="pt-2 border-t border-border mt-4">
+                                                <button
+                                                    onClick={() => setShowWorkerAdvanced(!showWorkerAdvanced)}
+                                                    className="w-full flex items-center justify-between py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <span>Paramètres de génération</span>
+                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showWorkerAdvanced ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                <AnimatePresence>
+                                                    {showWorkerAdvanced && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="space-y-4 pt-2 overflow-hidden"
+                                                        >
+                                                            <Slider value={localSettings.workerTemperature ?? 0.7} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTemperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.workerMaxTokens ?? 4096} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerMaxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.workerTopP ?? 1.0} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTopP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.workerTimeout ?? 60} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTimeout: v }))} min={30} max={600} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                {/* API Key (if required) */}
+                                {currentProviderInfo.requiresKey && (
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                                            <Key className="w-3.5 h-3.5" />
+                                            Clé API
+                                        </label>
+                                        <form className="relative" onSubmit={(e) => e.preventDefault()}>
+                                            <input
+                                                type={showApiKey ? 'text' : 'password'}
+                                                value={localSettings.apiKey || ''}
+                                                onChange={(e) => setLocalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                                                placeholder="sk-..."
+                                                className="w-full input-premium pr-12 font-mono text-sm"
+                                                autoComplete="off"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowApiKey(!showApiKey)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                            >
+                                                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </form>
+                                        <p className="text-xs text-muted-foreground">
+                                            🔒 Stockée localement de manière chiffrée
+                                        </p>
+                                    </div>
                                 )}
+
+
+
+                                {/* Test Connection */}
+                                <button
+                                    onClick={testConnection}
+                                    disabled={testingConnection}
+                                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-secondary/50 border border-input text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
+                                >
+                                    {testingConnection ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Wifi className="w-4 h-4" />
+                                    )}
+                                    <span>Tester la connexion</span>
+                                </button>
                             </div>
 
-                            {/* API Key (if required) */}
-                            {currentProviderInfo.requiresKey && (
-                                <div className="space-y-3">
-                                    <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-                                        <Key className="w-3.5 h-3.5" />
-                                        Clé API
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showApiKey ? 'text' : 'password'}
-                                            value={localSettings.apiKey || ''}
-                                            onChange={(e) => setLocalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
-                                            placeholder="sk-..."
-                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 pr-12 text-zinc-100 outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono text-sm"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowApiKey(!showApiKey)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                                        >
-                                            {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-zinc-600">
-                                        🔒 Stockée localement de manière chiffrée
-                                    </p>
-                                </div>
-                            )}
 
-
-
-                            {/* Test Connection */}
-                            <button
-                                onClick={testConnection}
-                                disabled={testingConnection}
-                                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-zinc-800/50 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors disabled:opacity-50"
-                            >
-                                {testingConnection ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Wifi className="w-4 h-4" />
-                                )}
-                                <span>Tester la connexion</span>
-                            </button>
                         </div>
 
                         {/* Footer Actions */}
-                        <div className="px-6 py-4 border-t border-zinc-800 bg-zinc-900/95 backdrop-blur-sm space-y-3">
+                        <div className="px-6 py-4 border-t border-border bg-background/5 backdrop-blur-sm space-y-3">
                             <div className="flex gap-3">
                                 <button
                                     onClick={handleReset}
-                                    className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 p-3 glass-button text-muted-foreground hover:text-foreground"
                                 >
                                     <RotateCcw className="w-4 h-4" />
                                     <span>Réinitialiser</span>
@@ -1208,8 +1280,8 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                     onClick={handleSave}
                                     disabled={!hasChanges}
                                     className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl font-medium transition-all ${hasChanges
-                                        ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/25'
-                                        : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25'
+                                        : 'bg-muted text-muted-foreground cursor-not-allowed'
                                         }`}
                                 >
                                     <Save className="w-4 h-4" />

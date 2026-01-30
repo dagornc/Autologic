@@ -220,9 +220,9 @@ curl -X POST http://localhost:8000/reason/full \
     "task": "Analyser les tendances de vente Q4 et proposer 3 actions stratégiques",
     "parameters": {
       "root_provider": "openrouter",
-      "root_model": "google/gemini-2.0-flash-exp:free",
+      "root_model": "meta-llama/llama-3.3-70b-instruct:free",
       "worker_provider": "openrouter",
-      "worker_model": "google/gemini-2.0-flash-exp:free"
+      "worker_model": "meta-llama/llama-3.3-70b-instruct:free"
     }
   }'
 ```
@@ -257,7 +257,7 @@ AutoLogic supporte **5 providers LLM** avec configuration dynamique et séparati
 
 | Provider | Type | Modèle par défaut | Configuration |
 |----------|------|-------------------|---------------|
-| **OpenRouter** | Cloud | `google/gemini-2.0-flash-exp:free` | `OPENROUTER_API_KEY` |
+| **OpenRouter** | Cloud | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
 | **OpenAI** | Cloud | `gpt-4-turbo` | `OPENAI_API_KEY` |
 | **HuggingFace** | Cloud | `meta-llama/Meta-Llama-3-70B-Instruct` | `HUGGINGFACE_API_KEY` |
 | **Ollama** | Local | `llama3` | `OLLAMA_HOST` |
@@ -307,7 +307,7 @@ app:
 llm:
   # Provider et modèle actifs
   active_provider: "openrouter"
-  active_model: "google/gemini-2.0-flash-exp:free"
+  active_model: "meta-llama/llama-3.3-70b-instruct:free"
   
   # Paramètres globaux
   temperature: 0.7
@@ -327,7 +327,7 @@ llm:
     openrouter:
       enabled: true
       base_url: "https://openrouter.ai/api/v1"
-      default_model: "google/gemini-2.0-flash-exp:free"
+      default_model: "meta-llama/llama-3.3-70b-instruct:free"
     
     ollama:
       enabled: true

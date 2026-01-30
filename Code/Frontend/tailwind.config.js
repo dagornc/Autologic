@@ -28,6 +28,31 @@ export default {
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
             },
+            borderRadius: {
+                lg: "var(--radius)",
+                md: "calc(var(--radius) - 2px)",
+                sm: "calc(var(--radius) - 4px)",
+            },
+            keyframes: {
+                flow: {
+                    '0%': { transform: 'translate(0, 0) scale(1)' },
+                    '50%': { transform: 'translate(20px, -20px) scale(1.1)' },
+                    '100%': { transform: 'translate(-10px, 10px) scale(0.9)' },
+                },
+                float: {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-10px)' },
+                },
+                pulse: {
+                    '0%, 100%': { opacity: 1 },
+                    '50%': { opacity: .5 },
+                },
+            },
+            animation: {
+                flow: 'flow 15s ease-in-out infinite alternate',
+                float: 'float 6s ease-in-out infinite',
+                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
         },
     },
     plugins: [],

@@ -46,34 +46,29 @@ class ModelRegistry:
                 "o3-mini-2025-01-31",
             ],
             "OpenRouter": [
-                # Google
-                "google/gemini-2.0-flash-exp:free",
-                "google/gemini-2.0-flash-lite-preview-02-05:free",
-                "google/gemini-2.0-pro-exp-02-05:free",
-                "google/gemma-2-9b-it:free",
                 # Meta Llama
                 "meta-llama/llama-3.3-70b-instruct:free",
-                "meta-llama/llama-3.1-8b-instruct:free",
-                "meta-llama/llama-3-8b-instruct:free",
-                # Mistral (Corrected IDs)
-                "mistralai/mistral-7b-instruct",  # Souvent gratuit/très low cost
-                "mistralai/mistral-small-24b-instruct-2501",
-                "mistralai/mistral-nemo",
-                "mistralai/mistral-large-2411",
-                "mistralai/mistral-small-3.1-24b-instruct:free",
+                "meta-llama/llama-3.1-405b-instruct:free", 
+                "meta-llama/llama-3.2-3b-instruct:free",
+                # Google
+                "google/gemma-3-27b-it:free",
+                "google/gemma-3-12b-it:free",
                 # DeepSeek
                 "deepseek/deepseek-r1:free",
                 "deepseek/deepseek-chat:free",
-                # Microsoft
-                "microsoft/phi-3-medium-128k-instruct:free",
-                "microsoft/phi-3-mini-128k-instruct:free",
-                # Autres Payants (mais populaires)
+                # Mistral
+                "mistralai/mistral-small-3.1-24b-instruct:free",
+                # Qwen
+                "qwen/qwen-2.5-vl-7b-instruct:free",
+                "qwen/qwen3-coder:free",
+                # Others
+                "nvidia/nemotron-3-nano-30b-a3b:free",
+                "liquid/lfm-2.5-1.2b-instruct:free",
+                # Paid (Popular)
                 "openai/gpt-4o",
                 "openai/gpt-4o-mini",
                 "anthropic/claude-3.5-sonnet",
-                "anthropic/claude-3.5-haiku",
-                "perplexity/llama-3.1-sonar-large-128k-online",
-                "x-ai/grok-2-1212",
+                "google/gemini-2.0-flash-001",
             ],
             "Ollama": [
                 "codellama",

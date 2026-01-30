@@ -11,12 +11,15 @@ const LOADING_STAGES: LoadingStage[] = [
     'Analyzing request intent...',
     'Selecting reasoning modules...',
     'Adapting modules to context...',
-    'Structing execution plan...',
+    'Structuring execution plan...',
+    'Verifying plan logic...',
+    'Executing reasoning steps...',
+    'Validating with H2 Critic...',
     'Synthesizing final solution...',
 ];
 
 /** Intervalle entre les changements de stage (ms) */
-const STAGE_INTERVAL = 800;
+const STAGE_INTERVAL = 1200;
 
 interface UseAutoLogicReturn {
     /** Tâche en cours de saisie */
@@ -77,6 +80,11 @@ export function useAutoLogic(): UseAutoLogicReturn {
         try {
             const data = await reasoningApi.solveFull(task, config);
             setResult(data);
+
+            // Save to history in background
+            reasoningApi.saveHistory(task, data.plan, data.final_output).catch(err => {
+                console.error("Failed to save history:", err);
+            });
         } catch (err) {
             if (err instanceof Error) {
                 if (err.name === 'AbortError') {

@@ -9,12 +9,12 @@ app:
 llm:
   # Active provider and model
   active_provider: "openrouter"
-  active_model: "google/gemini-2.0-flash-exp:free"
+  active_model: "meta-llama/llama-3.3-70b-instruct:free"
   
   # Global LLM parameters
   temperature: 0.7
   max_tokens: 4096
-  timeout: 180  # Augmenté pour modèles gratuits
+  timeout: 600  # 10 minutes pour éviter timeouts sur modèles lents
   max_retries: 3
   
   # Configuration de résilience (anti-timeout)
@@ -30,9 +30,9 @@ llm:
     openrouter:
       enabled: true
       base_url: "https://openrouter.ai/api/v1"
-      default_model: "google/gemini-2.0-flash-exp:free"
+      default_model: "meta-llama/llama-3.3-70b-instruct:free"
       models:
-        - "google/gemini-2.0-flash-exp:free"
+        - "meta-llama/llama-3.3-70b-instruct:free"
         - "anthropic/claude-3-opus"
         - "anthropic/claude-3-sonnet"
         - "openai/gpt-4-turbo"

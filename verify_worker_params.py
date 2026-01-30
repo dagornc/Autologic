@@ -35,7 +35,7 @@ def test():
     logger.info("Step 1: Resetting config to defaults (Root only)...")
     payload_reset = {
         "provider": "OpenRouter",
-        "model": "google/gemini-2.0-flash-exp:free",
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
         "temperature": 0.7,
         "max_tokens": 4096,
         "top_p": 1.0,
@@ -58,7 +58,8 @@ def test():
     logger.info("Step 2: Setting distinct Worker parameters...")
     payload_worker = {
         "provider": "OpenRouter", # Root
-        "model": "google/gemini-2.0-flash-exp:free", # Root
+        "worker_name": "worker-1",
+        "model": "meta-llama/llama-3.3-70b-instruct:free", # Root
         "temperature": 0.5, # Root
         "max_tokens": 2048, # Root
         "top_p": 1.0,
@@ -89,7 +90,7 @@ def test():
     logger.info("Step 3: Resetting Worker (Fallback mode)...")
     payload_fallback = {
          "provider": "OpenRouter",
-         "model": "google/gemini-2.0-flash-exp:free",
+         "model": "meta-llama/llama-3.3-70b-instruct:free",
          "temperature": 0.7,
          "max_tokens": 4096,
          "top_p": 1.0

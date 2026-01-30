@@ -1,20 +1,24 @@
 /**
- * Interface principale AutoLogic - Version refactorisée
- * Orchestre les composants atomiques
+ * Interface principale AutoLogic - Premium Layout
+ * Orchestre les composants avec layout liquide et glassmorphism.
  */
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BrainCircuit, Settings } from 'lucide-react';
-
 import { ThemeProvider } from './ThemeProvider';
+import Sidebar from './Sidebar';
 import SettingsDrawer from './SettingsDrawer';
+import { HelpDisplay } from './HelpDisplay';
+import { PromptsManager } from './PromptsManager';
+import HistoryDisplay from './HistoryDisplay';
 import {
     TaskInput,
     LoadingOverlay,
     ErrorMessage,
     PlanDisplay,
     SolutionDisplay,
+    Header,
+
 } from './ui';
 import { useAutoLogic } from '../hooks/useAutoLogic';
 import type { LLMConfig } from '../types';
@@ -30,6 +34,8 @@ const containerVariants = {
  */
 const AutoLogicContent: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+    const [activeSection, setActiveSection] = useState('home');
     const [config, setConfig] = useState<LLMConfig>({ provider: '', model: '' });
 
     const {
@@ -46,94 +52,125 @@ const AutoLogicContent: React.FC = () => {
         submitTask(config);
     };
 
+    const handleNavigate = (section: string) => {
+        setActiveSection(section);
+        if (section === 'settings') {
+            setIsSettingsOpen(true);
+        }
+    };
+
+    const handleSelectPrompt = (content: string) => {
+        setTask(content);
+        setActiveSection('home');
+    };
+
     return (
-        <div className="min-h-screen w-full bg-[#0a0a0f] dark:bg-[#0a0a0f] bg-slate-50 text-slate-900 dark:text-slate-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden relative transition-colors duration-300">
-            {/* Ambient Background Effects */}
-            <div className="fixed inset-0 z-0 pointer-events-none">
-                <div
-                    className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"
-                    style={{ animationDuration: '4s' }}
-                />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[150px] mix-blend-screen" />
-                <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px] mix-blend-overlay" />
+        <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200 overflow-x-hidden relative">
+
+            {/* Ambient Liquid Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-[flow_15s_infinite_alternate]" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-[flow_20s_infinite_alternate-reverse]" />
+                <div className="absolute top-[30%] left-[20%] w-[400px] h-[400px] bg-blue-500/10 rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animate-[pulse_8s_infinite]" />
             </div>
 
-            <div className="relative z-10 max-w-5xl mx-auto px-6 py-12 md:py-20 space-y-12">
-                {/* Header */}
-                <motion.header
-                    initial={{ y: -50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="flex flex-col md:flex-row items-center justify-between gap-6"
+            {/* Sidebar */}
+            <Sidebar
+                isExpanded={isSidebarExpanded}
+                onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                onNavigate={handleNavigate}
+                activeSection={activeSection}
+            />
+
+            {/* Main Content Area */}
+            <main
+                className={`relative z-10 transition-all duration-300 min-h-screen flex flex-col ${isSidebarExpanded ? 'pl-[260px]' : 'pl-[100px]'
+                    }`}
+            >
+                {/* Main Glass Window */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                    className="max-w-5xl w-full mx-auto my-8 bg-white/60 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-2xl overflow-hidden min-h-[85vh] flex flex-col relative"
                 >
-                    <div className="text-center md:text-left space-y-2">
-                        <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 dark:border-white/10 border-slate-200 shadow-[0_0_30px_rgba(79,70,229,0.15)] hover:bg-white/10 transition-colors">
-                            <BrainCircuit className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                            <span className="text-sm font-medium tracking-wider text-indigo-900 dark:text-indigo-100 uppercase">
-                                System Ready
-                            </span>
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-500 dark:from-white dark:via-indigo-100 dark:to-indigo-400 drop-shadow-sm mt-4">
-                            AutoLogic Framework
-                        </h1>
+                    {/* Interior Scroll Container */}
+                    <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-12 custom-scrollbar">
+
+                        <AnimatePresence mode="wait">
+                            {activeSection === 'home' && (
+                                <motion.div
+                                    key="home"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="space-y-12"
+                                >
+                                    <Header
+                                        status={
+                                            isLoading ? 'loading' : error ? 'error' : 'idle'
+                                        }
+                                    />
+
+                                    <TaskInput
+                                        task={task}
+                                        onTaskChange={setTask}
+                                        onSubmit={handleSubmit}
+                                        isLoading={isLoading}
+                                        config={config}
+                                    />
+
+                                    <LoadingOverlay isVisible={isLoading} stage={loadingStage} />
+
+                                    <ErrorMessage message={error} />
+
+                                    {result && (
+                                        <motion.div
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="hidden"
+                                            className="space-y-12 pb-20"
+                                        >
+                                            <PlanDisplay plan={result.plan} />
+                                            <div className="w-full h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent" />
+                                            <SolutionDisplay output={result.final_output} />
+                                        </motion.div>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {activeSection === 'prompts' && (
+                                <motion.div
+                                    key="prompts"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="h-full"
+                                >
+                                    <PromptsManager onSelect={handleSelectPrompt} />
+                                </motion.div>
+                            )}
+
+                            {activeSection === 'history' && (
+                                <HistoryDisplay />
+                            )}
+
+                            {activeSection === 'help' && (
+                                <HelpDisplay isVisible={true} />
+                            )}
+                        </AnimatePresence>
                     </div>
+                </motion.div>
+            </main>
 
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsSettingsOpen(true)}
-                            className="p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 hover:bg-white/10 transition-colors group"
-                            title="Settings"
-                        >
-                            <Settings className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                        </button>
-                    </div>
-                </motion.header>
-
-                {/* Settings Drawer */}
-                <SettingsDrawer
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
-                    onConfigChange={setConfig}
-                />
-
-                {/* Task Input */}
-                <TaskInput
-                    task={task}
-                    onTaskChange={setTask}
-                    onSubmit={handleSubmit}
-                    isLoading={isLoading}
-                    config={config}
-                />
-
-                {/* Loading State */}
-                <LoadingOverlay isVisible={isLoading} stage={loadingStage} />
-
-                {/* Error Message */}
-                <ErrorMessage message={error} />
-
-                {/* Results Section */}
-                <AnimatePresence mode="wait">
-                    {result && (
-                        <motion.div
-                            variants={containerVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="hidden"
-                            className="space-y-8"
-                        >
-                            {/* Plan Section */}
-                            <PlanDisplay plan={result.plan} />
-
-                            {/* Divider */}
-                            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
-
-                            {/* Final Output Section */}
-                            <SolutionDisplay output={result.final_output} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+            {/* Settings Drawer */}
+            <SettingsDrawer
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                onConfigChange={setConfig}
+            />
         </div>
     );
 };
