@@ -27,8 +27,8 @@
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| 🧠 **Self-Discovery** | Cycle automatique en 5 phases : SELECT → ADAPT → STRUCTURE → EXECUTE → AUDIT |
-| 🕵️ **Audit Layer** | Contrôle qualité continu avec boucle de feedback automatique et critères de succès |
+| 🧠 **Self-Discovery** | Cycle complet en 8 phases : ANALYSE → SELECT → ADAPT → STRUCTURE → VERIFY → EXECUTE → CRITIC → SYNTHESIS |
+| 🕵️ **Double Control** | Validation intermédiaire par **H2 Critic** et validation finale par **Audit Layer** |
 | 🔄 **Triple Agent** | Architecture trimodale : **Strategic** (Plan), **Worker** (Execute), **Audit** (Review) |
 | 📚 **39 Modules** | Bibliothèque complète de modules de raisonnement (décomposition, analogie, vérification...) |
 | 🔌 **Multi-Provider** | Support OpenRouter, OpenAI, Ollama, vLLM, HuggingFace |
@@ -83,34 +83,47 @@ AutoLogic/
 
 ### 🔄 Le Cycle Self-Discovery
 
-Le cœur d'AutoLogic repose sur un cycle en **5 phases**, optimisé par une architecture **Triple Agent** :
+Le cœur d'AutoLogic repose sur un cycle en **8 phases**, assurant une robustesse maximale :
 
 ```mermaid
-graph LR
-    A[📝 Tâche] --> B[🔍 SELECT]
-    B --> C[🔧 ADAPT]
-    C --> D[📐 STRUCTURE]
-    D --> E[⚡ EXECUTE]
-    E --> G{🕵️ AUDIT}
-    G -- ✅ Validé --> F[✅ Solution]
-    G -- ❌ Rejeté --> E
+graph TD
+    T[📝 Tâche] --> 0[🔍 ANALYSE]
+    0 --> 1[Brain SELECT]
+    1 --> 2[🔧 ADAPT]
+    2 --> 3[📐 STRUCTURE]
+    3 --> 4[✅ VERIFY PLAN]
+    4 -- OK --> 5[⚡ EXECUTE]
+    4 -- KO --> 3
+    5 --> 6{⚖️ H2 CRITIC}
+    6 -- Validé --> 7[📝 SYNTHESIS]
+    6 -- Rejeté --> 3
+    7 --> 8{🕵️ AUDIT}
+    8 -- ✅ Succès --> F[🏁 Solution Finale]
+    8 -- ❌ Echec --> 7
     
-    style A fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
-    style B fill:#1e1e2e,stroke:#a6e3a1,color:#cdd6f4
-    style C fill:#1e1e2e,stroke:#f9e2af,color:#cdd6f4
-    style D fill:#1e1e2e,stroke:#cba6f7,color:#cdd6f4
-    style E fill:#1e1e2e,stroke:#fab387,color:#cdd6f4
-    style G fill:#1e1e2e,stroke:#f38ba8,color:#cdd6f4
+    style T fill:#1e1e2e,stroke:#cdd6f4,color:#cdd6f4
+    style 0 fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
+    style 1 fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
+    style 2 fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
+    style 3 fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
+    style 4 fill:#1e1e2e,stroke:#a6e3a1,color:#cdd6f4
+    style 5 fill:#1e1e2e,stroke:#fab387,color:#cdd6f4
+    style 6 fill:#1e1e2e,stroke:#f38ba8,color:#cdd6f4
+    style 7 fill:#1e1e2e,stroke:#cba6f7,color:#cdd6f4
+    style 8 fill:#1e1e2e,stroke:#f9e2af,color:#cdd6f4
     style F fill:#1e1e2e,stroke:#89dceb,color:#cdd6f4
 ```
 
 | Phase | Rôle | LLM Utilisé | Description |
 |-------|------|-------------|-------------|
-| **SELECT** | Architecte | **Root Core** | Sélectionne les modules de raisonnement pertinents |
-| **ADAPT** | Architecte | **Root Core** | Adapte les modules génériques au contexte de la tâche |
+| **ANALYSE** | Architecte | **Strategic** | Analyse l'intention et les contraintes de la tâche |
+| **SELECT/ADAPT** | Architecte | **Strategic** | Sélectionne et adapte les modules de raisonnement |
 | **STRUCTURE** | Architecte | **Strategic** | Génère un plan de raisonnement ordonné |
-| **EXECUTE** | Ouvrier | **Worker** | Exécute le plan pas-à-pas pour produire la solution finale |
-| **AUDIT** | Inspecteur | **Audit** | Vérifie la qualité/complétude et demande des corrections si nécessaire |
+| **VERIFY PLAN** | Architecte | **Strategic** | Vérifie la cohérence logique du plan avant exécution |
+| **EXECUTE** | Ouvrier | **Worker** | Exécute le plan pas-à-pas |
+| **CRITIC (H2)** | Critique | **Strategic** | Évalue la qualité de l'exécution intermédiaire |
+| **SYNTHESIS** | Architecte | **Strategic** | Synthétise la réponse finale |
+| **AUDIT** | Inspecteur | **Audit** | Vérifie la conformité aux contraintes (Suffisance structurelle) |
 
 ---
 

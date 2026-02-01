@@ -48,7 +48,7 @@ class ModelRegistry:
             "OpenRouter": [
                 # Meta Llama
                 "meta-llama/llama-3.3-70b-instruct:free",
-                "meta-llama/llama-3.1-405b-instruct:free", 
+                "meta-llama/llama-3.1-405b-instruct:free",
                 "meta-llama/llama-3.2-3b-instruct:free",
                 # Google
                 "google/gemma-3-27b-it:free",
@@ -234,4 +234,6 @@ class ModelRegistry:
 
     def get_default_params(self, provider: str) -> Dict[str, Any]:
         """Retourne les paramètres par défaut pour un provider."""
-        return self.default_params.get(provider, {"temperature": 0.7, "max_tokens": 2048, "top_p": 1.0})
+        return self.default_params.get(
+            provider, {"temperature": 0.7, "max_tokens": 2048, "top_p": 1.0}
+        )

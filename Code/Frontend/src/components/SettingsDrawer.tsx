@@ -802,8 +802,8 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                     audit_temperature: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTemperature,
                     audit_max_tokens: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditMaxTokens,
                     audit_top_p: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTopP,
-                    audit_timeout: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTimeout,
-                    audit_max_retries: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditMaxRetries
+                    audit_timeout: localSettings.auditTimeout,
+                    audit_max_retries: localSettings.auditMaxRetries
                 })
             });
 
@@ -1589,35 +1589,45 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                 </div>
                                             )}
 
-                                            {/* Advanced Settings (Audit) */}
-                                            <div className="pt-2 border-t border-border mt-4">
-                                                <button
-                                                    onClick={() => setShowAuditAdvanced(!showAuditAdvanced)}
-                                                    className="w-full flex items-center justify-between py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                        </motion.div>
+                                    )}
+
+                                    {/* Advanced Settings (Audit) - Always accessible for Process Params */}
+                                    <div className="pt-2 border-t border-border mt-4">
+                                        <button
+                                            onClick={() => setShowAuditAdvanced(!showAuditAdvanced)}
+                                            className="w-full flex items-center justify-between py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            <span>Paramètres de génération & Processus</span>
+                                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAuditAdvanced ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        <AnimatePresence>
+                                            {showAuditAdvanced && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="space-y-4 pt-2 overflow-hidden"
                                                 >
-                                                    <span>Paramètres de génération</span>
-                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAuditAdvanced ? 'rotate-180' : ''}`} />
-                                                </button>
-                                                <AnimatePresence>
-                                                    {showAuditAdvanced && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: 'auto', opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            className="space-y-4 pt-2 overflow-hidden"
-                                                        >
+                                                    {/* Model Params - Only if custom model */}
+                                                    {!localSettings.useAuditSameAsRoot && (
+                                                        <>
                                                             <Slider value={localSettings.auditTemperature ?? 0.7} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTemperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
                                                             <Slider value={localSettings.auditMaxTokens ?? 4096} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditMaxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
                                                             <Slider value={localSettings.auditTopP ?? 1.0} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTopP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
-                                                            <Slider value={localSettings.auditTimeout ?? 30} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTimeout: v }))} min={30} max={800} step={10} label="Max Audit Duration" icon={<Clock className="w-4 h-4" />} unit="s" />
-                                                            <Slider value={localSettings.auditMaxRetries ?? 3} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditMaxRetries: v }))} min={1} max={10} step={1} label="Max Audit Pass" icon={<RotateCcw className="w-4 h-4" />} />
-                                                        </motion.div>
+                                                        </>
                                                     )}
 
-                                                </AnimatePresence>
-                                            </div>
-                                        </motion.div>
-                                    )}
+                                                    {/* Process Params - Always visible */}
+                                                    <div className="pt-2 border-t border-white/5">
+                                                        <p className="text-[10px] text-muted-foreground mb-3 font-semibold uppercase tracking-wider">Processus d'Audit</p>
+                                                        <Slider value={localSettings.auditTimeout ?? 30} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTimeout: v }))} min={30} max={800} step={10} label="Max Audit Duration" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                        <Slider value={localSettings.auditMaxRetries ?? 3} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditMaxRetries: v }))} min={1} max={10} step={1} label="Max Audit Pass" icon={<RotateCcw className="w-4 h-4" />} />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
 
                                 {/* API Key (if required) */}

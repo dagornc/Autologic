@@ -71,7 +71,9 @@ app = FastAPI(
 )
 
 # Configuration CORS
-ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
+ALLOWED_ORIGINS = os.getenv(
+    "CORS_ORIGINS", "http://localhost:5173,http://localhost:5174"
+).split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -105,17 +107,19 @@ def get_readme() -> dict[str, str]:
     """
     Retourne le contenu du fichier README.md du projet.
     Requiert que le fichier soit à la racine du projet (PROJECT_ROOT).
-    
+
     Note: Définie comme fonction synchrone (def au lieu de async def) pour que
     FastAPI l'exécute dans un threadpool séparé, évitant de bloquer la boucle
     d'événements principale lors des opérations I/O sur fichier.
     """
     readme_path = PROJECT_ROOT / "README.md"
     logger.info(f"Demande de lecture du README à: {readme_path}")
-    
+
     if not readme_path.exists():
         logger.error(f"Fichier README introuvable à: {readme_path}")
-        return {"content": f"# Erreur 404\n\nLe fichier README.md est introuvable à l'emplacement: `{readme_path}`."}
+        return {
+            "content": f"# Erreur 404\n\nLe fichier README.md est introuvable à l'emplacement: `{readme_path}`."
+        }
 
     try:
         content = readme_path.read_text(encoding="utf-8")
@@ -123,7 +127,9 @@ def get_readme() -> dict[str, str]:
         return {"content": content}
     except Exception as e:
         logger.error(f"Erreur lors de la lecture du README à {readme_path}: {e}")
-        return {"content": f"# Erreur 500\n\nImpossible de charger le fichier README.md.\n\nErreur: {str(e)}"}
+        return {
+            "content": f"# Erreur 500\n\nImpossible de charger le fichier README.md.\n\nErreur: {str(e)}"
+        }
 
 
 def start() -> None:

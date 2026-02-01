@@ -95,15 +95,21 @@ Chaque appel LLM est protégé par une couche de résilience configurable :
 2. **Retry Mechanism** : Réessaie automatiquement sur erreurs temporaires (429, 5xx) avec backoff exponentiel.
 3. **Fallback** : Bascule automatiquement vers un modèle de secours si le principal échoue après X tentatives.
 
-### Cycle de Raisonnement (5 Phases)
+### Cycle de Raisonnement (8 Phases)
 
-Le cycle inclut désormais une phase d'audit pour garantir la qualité :
+Le moteur `AutoLogicEngine` orchestre un cycle complet assurant robustesse et qualité :
 
-1.  **SELECT** (Root) : Sélection des modules.
-2.  **ADAPT** (Root) : Adaptation contextuelle.
-3.  **STRUCTURE** (Root) : Planification.
-4.  **EXECUTE** (Worker) : Exécution tactique.
-5.  **AUDIT** (Audit) : Vérification de la solution par rapport aux critères. Si échec, boucle de feedback.
+1.  **ANALYSE** (Phase 0) : Analyse l'intention utilisateur et extrait les contraintes.
+2.  **SELECT** (Phase 1) : Sélectionne les modules pertinents parmi les 39 disponibles.
+3.  **ADAPT** (Phase 2) : Adapte les descriptions des modules au contexte spécifique.
+4.  **STRUCTURE** (Phase 3) : Génère un plan d'exécution étape par étape.
+5.  **VERIFY PLAN** (Phase 4) : Vérifie la logique du plan.
+6.  **EXECUTE** (Phase 5) : Exécute le plan (Worker LLM).
+7.  **CRITIC (H2)** (Phase 6) : Évalue la qualité intermédiaire.
+    - Si score < 0.8 : Feedback et boucle de correction (Double-Backtrack possible vers Phase 3).
+8.  **SYNTHESIS** (Phase 7) : Compile la réponse finale.
+9.  **AUDIT** (Phase 7.5) : Vérifie la suffisance structurelle (Audit LLM).
+    - Si échec : Boucle de raffinement automatique.
 
 ### Routers FastAPI
 

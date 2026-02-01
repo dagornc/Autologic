@@ -94,7 +94,9 @@ class RateLimiter:
             elapsed = now - self._last_update
 
             # Ajouter des tokens basés sur le temps écoulé
-            self._tokens = min(self._rate, self._tokens + elapsed * self._rate)  # Cap à rate (burst max = 1 seconde)
+            self._tokens = min(
+                self._rate, self._tokens + elapsed * self._rate
+            )  # Cap à rate (burst max = 1 seconde)
             self._last_update = now
 
             if self._tokens < 1:
@@ -162,7 +164,9 @@ class ResilientCaller:
         "model unavailable",
     ]
 
-    def __init__(self, config: ResilienceConfig, rate_limiter: Optional[RateLimiter] = None):
+    def __init__(
+        self, config: ResilienceConfig, rate_limiter: Optional[RateLimiter] = None
+    ):
         """
         Initialise le caller résilient.
 
@@ -184,7 +188,11 @@ class ResilientCaller:
         self._rate_limiter.set_rate(config.rate_limit)
 
     async def call(
-        self, func: Callable[..., Any], *args: Any, fallback_func: Optional[Callable[..., Any]] = None, **kwargs: Any
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        fallback_func: Optional[Callable[..., Any]] = None,
+        **kwargs: Any,
     ) -> Any:
         """
         Exécute une fonction avec rate limiting, retry et fallback.
@@ -226,13 +234,18 @@ class ResilientCaller:
 
                 # Si l'erreur n'est pas retryable mais doit faire fallback, sortir de la boucle
                 if not is_retryable and should_fallback:
-                    logger.info(f"ResilientCaller: Erreur non-retryable mais fallback possible: {e}")
+                    logger.info(
+                        f"ResilientCaller: Erreur non-retryable mais fallback possible: {e}"
+                    )
                     break
 
                 if attempt < attempts - 1:
                     # Backoff exponentiel
                     delay = self._config.retry_base_delay * (2**attempt)
-                    logger.warning(f"ResilientCaller: Erreur {e}, retry {attempt + 1}/{attempts} " f"dans {delay:.1f}s")
+                    logger.warning(
+                        f"ResilientCaller: Erreur {e}, retry {attempt + 1}/{attempts} "
+                        f"dans {delay:.1f}s"
+                    )
                     await asyncio.sleep(delay)
                     # Re-acquire rate limit token pour le retry
                     await self._rate_limiter.acquire()
@@ -241,7 +254,12 @@ class ResilientCaller:
         logger.error(f"ResilientCaller: Tous les retries ont échoué: {last_exception}")
 
         # Tenter le fallback si configuré ET si l'erreur le justifie
-        if self._config.fallback_enabled and fallback_func and self._should_fallback(last_exception):
+        if (
+            self._config.fallback_enabled
+            and fallback_func
+            and last_exception
+            and self._should_fallback(last_exception)
+        ):
             logger.info("ResilientCaller: Tentative de fallback...")
             try:
                 await self._rate_limiter.acquire()
@@ -330,7 +348,9 @@ class ResilientCaller:
             return "Le modèle met trop de temps à répondre. Essayez un autre modèle."
 
         if "overloaded" in error_str or "capacity" in error_str:
-            return "Le modèle est surchargé. Un fallback vers un autre modèle sera tenté."
+            return (
+                "Le modèle est surchargé. Un fallback vers un autre modèle sera tenté."
+            )
 
         return str(error)
 

@@ -6,14 +6,13 @@ Stores and retrieves conversation logs (Task, Plan, Solution) from the filesyste
 
 import json
 import uuid
-import glob
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from ..utils.logging_config import get_logger
 
@@ -29,6 +28,7 @@ HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 class HistoryItem(BaseModel):
     """Modèle complet d'un objet historique."""
+
     id: str
     timestamp: str
     task: str
@@ -38,6 +38,7 @@ class HistoryItem(BaseModel):
 
 class CreateHistoryRequest(BaseModel):
     """Requête de création d'historique."""
+
     task: str
     plan: Dict[str, Any]
     final_output: str
@@ -50,7 +51,7 @@ async def list_history(limit: int = 50, offset: int = 0):
     """
     try:
         files = sorted(HISTORY_DIR.glob("*.json"), key=os.path.getmtime, reverse=True)
-        
+
         history_list = []
         # Appliquer la pagination sur les fichiers
         paginated_files = files[offset : offset + limit]
@@ -62,9 +63,11 @@ async def list_history(limit: int = 50, offset: int = 0):
                 if "id" in data and "timestamp" in data:
                     history_list.append(data)
             except Exception as e:
-                logger.warning(f"Impossible de lire le fichier historique {file_path}: {e}")
+                logger.warning(
+                    f"Impossible de lire le fichier historique {file_path}: {e}"
+                )
                 continue
-                
+
         return history_list
 
     except Exception as e:
@@ -78,7 +81,7 @@ async def get_history_item(item_id: str):
     Récupère un élément d'historique spécifique par son ID.
     """
     file_path = HISTORY_DIR / f"{item_id}.json"
-    
+
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Historique non trouvé")
 
@@ -99,23 +102,26 @@ async def save_history(item: CreateHistoryRequest):
         # Génération des métadonnées
         item_id = str(uuid.uuid4())
         timestamp = datetime.now().isoformat()
-        
+
         history_data = {
             "id": item_id,
             "timestamp": timestamp,
             "task": item.task,
             "plan": item.plan,
-            "final_output": item.final_output
+            "final_output": item.final_output,
         }
-        
+
         # Sauvegarde fichier
         file_path = HISTORY_DIR / f"{item_id}.json"
-        
+
         # Validation Pydantic avant écriture pour être sûr
-        validated_item = HistoryItem(**history_data)
-        
-        file_path.write_text(json.dumps(validated_item.model_dump(), indent=2, ensure_ascii=False), encoding="utf-8")
-        
+        validated_item = HistoryItem(**history_data)  # type: ignore
+
+        file_path.write_text(
+            json.dumps(validated_item.model_dump(), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
         logger.info(f"Historique sauvegardé: {item_id}")
         return validated_item
 
@@ -130,7 +136,7 @@ async def delete_history_item(item_id: str):
     Supprime un élément d'historique.
     """
     file_path = HISTORY_DIR / f"{item_id}.json"
-    
+
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Historique non trouvé")
 
@@ -140,4 +146,6 @@ async def delete_history_item(item_id: str):
         return {"status": "success", "message": "Historique supprimé"}
     except Exception as e:
         logger.error(f"Erreur suppression historique {item_id}: {e}")
-        raise HTTPException(status_code=500, detail="Impossible de supprimer le fichier")
+        raise HTTPException(
+            status_code=500, detail="Impossible de supprimer le fichier"
+        )

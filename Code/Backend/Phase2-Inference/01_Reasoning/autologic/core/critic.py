@@ -16,11 +16,13 @@ logger = get_logger(__name__)
 
 class LLMInterface(Protocol):
     """Protocol pour éviter l'import circulaire de BaseLLM."""
+
     async def call(self, prompt: str, **kwargs: Any) -> str: ...
 
 
 class CriticEvaluation(BaseModel):
     """Modèle de sortie de l'évaluation critique."""
+
     score: float
     status: str  # "VALID" ou "REJECT"
     reason: str
@@ -53,7 +55,11 @@ class CriticAgent:
         response_lower = response.lower()
 
         # Si l'utilisateur NE demandait PAS une fiction ou un easter egg, et qu'on voit des termes suspects
-        if "easter egg" not in input_lower and "google gravity" not in input_lower and "game" not in input_lower:
+        if (
+            "easter egg" not in input_lower
+            and "google gravity" not in input_lower
+            and "game" not in input_lower
+        ):
             fake_terms = ["google.physics", "import antigravity", "setgravity("]
             for term in fake_terms:
                 if term in response_lower:
@@ -62,7 +68,7 @@ class CriticAgent:
                         score=0.1,
                         status="REJECT",
                         reason=f"Détection heuristique: Terme suspect '{term}' suggère une hallucination d'API inexistante.",
-                        feedback="Google ne possède pas d'API publique d'antigravité physique. Ne pas inventer de code ou d'imports. Vérifie s'il s'agit de simulation (MuJoCo) ou de l'Easter Egg."
+                        feedback="Google ne possède pas d'API publique d'antigravité physique. Ne pas inventer de code ou d'imports. Vérifie s'il s'agit de simulation (MuJoCo) ou de l'Easter Egg.",
                     )
 
         # Règle 2: Réponse vide ou trop courte
@@ -71,7 +77,7 @@ class CriticAgent:
                 score=0.2,
                 status="REJECT",
                 reason="Réponse trop courte ou vide.",
-                feedback="La réponse est insuffisante. Développe le contenu pour répondre au plan."
+                feedback="La réponse est insuffisante. Développe le contenu pour répondre au plan.",
             )
 
         return None
@@ -80,7 +86,9 @@ class CriticAgent:
         """Nettoie le markdown JSON."""
         return response.replace("```json", "").replace("```", "").strip()
 
-    async def evaluate(self, task: str, plan: Dict[str, Any], response: str) -> CriticEvaluation:
+    async def evaluate(
+        self, task: str, plan: Dict[str, Any], response: str
+    ) -> CriticEvaluation:
         """
         Évalue une réponse candidate.
 
@@ -103,15 +111,19 @@ class CriticAgent:
 
         try:
             # On demande un format JSON
-            llm_response = await self.llm.call(prompt, response_format={"type": "json_object"})
+            llm_response = await self.llm.call(
+                prompt, response_format={"type": "json_object"}
+            )
             clean_resp = self._clean_json_response(llm_response)
             data = json.loads(clean_resp)
 
             return CriticEvaluation(
                 score=float(data.get("score_h2", data.get("score", 0.0))),
                 status=data.get("status", "REJECT"),
-                reason=data.get("feedback", "Pas de raison fournie"), # Mapping feedback to reason as prompt doesn't strictly ask for 'reason' field anymore in output json example
-                feedback=data.get("feedback", "Refaire la réponse en suivant le plan.")
+                reason=data.get(
+                    "feedback", "Pas de raison fournie"
+                ),  # Mapping feedback to reason as prompt doesn't strictly ask for 'reason' field anymore in output json example
+                feedback=data.get("feedback", "Refaire la réponse en suivant le plan."),
             )
 
         except Exception as e:
@@ -122,5 +134,5 @@ class CriticAgent:
                 score=0.0,
                 status="ERROR",
                 reason=f"Crash du critique: {str(e)}",
-                feedback="Une erreur interne est survenue lors de la validation. Vérifier le format et réessayer."
+                feedback="Une erreur interne est survenue lors de la validation. Vérifier le format et réessayer.",
             )

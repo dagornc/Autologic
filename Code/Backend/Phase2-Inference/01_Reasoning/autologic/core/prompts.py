@@ -4,7 +4,7 @@ Templates de prompts pour les différentes phases du cycle Self-Discover.
 Centralise tous les prompts utilisés par le moteur AutoLogic.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 
 
 class PromptTemplates:
@@ -277,14 +277,19 @@ Corrige ta réponse pour répondre exactement à ce feedback.
         return base_prompt
 
     @staticmethod
-    def synthesis_prompt(task: str, execution_output: str, analysis: Optional[Dict[str, Any]] = None) -> str:
+    def synthesis_prompt(
+        task: str, execution_output: str, analysis: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         PHASE 7: SYNTHÈSE FINALE
         Affine et polit la réponse finale pour une qualité premium en tenant compte des contraintes initiales.
         """
         constraints_str = ""
         if analysis and analysis.get("constraints"):
-            constraints_str = "\nCONTRAINTES À RESPECTER IMPÉRATIVEMENT :\n- " + "\n- ".join(analysis["constraints"])
+            constraints_str = (
+                "\nCONTRAINTES À RESPECTER IMPÉRATIVEMENT :\n- "
+                + "\n- ".join(analysis["constraints"])
+            )
 
         return f"""Tu es un éditeur expert en communication technique.
 Ta mission est de prendre le résultat brut de l'exécution et de le transformer en une réponse "Premium", claire et parfaitement structurée.
@@ -306,7 +311,12 @@ INSTRUCTIONS DE RÉDACTION :
 RETOURNE LA RÉPONSE FINALE FORMATÉE (Markdown)."""
 
     @staticmethod
-    def audit_final_prompt(task: str, final_output: str, analysis: Optional[Dict[str, Any]] = None, previous_context: str = "") -> str:
+    def audit_final_prompt(
+        task: str,
+        final_output: str,
+        analysis: Optional[Dict[str, Any]] = None,
+        previous_context: str = "",
+    ) -> str:
         """
         PHASE 7.5: AUDIT FINAL (UNIVERSEL)
         Vérifie la suffisance structurelle (90%) et la loi du rendement décroissant.
@@ -339,7 +349,9 @@ RETOURNE UN JSON STRICT :
 }}"""
 
     @staticmethod
-    def critic_evaluation_prompt(input_task: str, autologic_plan: str, generated_response: str) -> str:
+    def critic_evaluation_prompt(
+        input_task: str, autologic_plan: str, generated_response: str
+    ) -> str:
         """
         Génère le prompt pour l'Agent Critique H2 (Version Google Antigravity).
         """

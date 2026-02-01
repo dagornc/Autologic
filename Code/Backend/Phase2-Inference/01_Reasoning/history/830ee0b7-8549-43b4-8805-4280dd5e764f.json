@@ -1,0 +1,61 @@
+{
+  "id": "830ee0b7-8549-43b4-8805-4280dd5e764f",
+  "timestamp": "2026-02-01T09:13:16.127975",
+  "task": "Quels sont les meilleures opportunités business IA à lancer en france en 2026. je veux une analyse  detaillée (swot, tows, bcg, mc kinsey)  et des descriptions precises pour un business parfait.",
+  "plan": {
+    "steps": [
+      {
+        "step_number": 1,
+        "module_id": "decomposer_le_probleme",
+        "module_name": "Décomposer le problème",
+        "action": "Identifier les principaux secteurs économiques français où l'IA pourrait générer le plus de valeur d'ici 2026 et segmenter le marché français de l'IA par taille d'entreprise, secteur d'activité et région géographique",
+        "expected_output": "Une cartographie détaillée des secteurs prioritaires et des segments de marché pour les opportunités business IA en France en 2026"
+      },
+      {
+        "step_number": 2,
+        "module_id": "brainstorming",
+        "module_name": "Brainstorming",
+        "action": "Lister toutes les applications d'IA dans différents secteurs de l'économie française (santé, finance, agriculture, industrie, etc.) et explorer des cas d'utilisation innovants de l'IA spécifiques aux besoins et réglementations françaises",
+        "expected_output": "Une liste exhaustive des opportunités business IA potentielles pour le marché français en 2026, classées par secteur d'application"
+      },
+      {
+        "step_number": 3,
+        "module_id": "analyser_les_risques_et_opportunites",
+        "module_name": "Analyser les risques et opportunités",
+        "action": "Analyser le cadre réglementaire français en matière d'IA (RGPD, Loi pour une République Numérique, etc.) et évaluer les risques éthiques, sociaux et de conformité liés aux applications d'IA en France",
+        "expected_output": "Une analyse des contraintes réglementaires et des risques associés aux projets d'IA en France, avec des opportunités stratégiques identifiées"
+      },
+      {
+        "step_number": 4,
+        "module_id": "definir_les_criteres_de_decision",
+        "module_name": "Définir les critères de décision",
+        "action": "Définir des indicateurs clés de performance pour mesurer le potentiel de succès d'un projet d'IA en France et établir des critères pour évaluer l'adéquation entre une solution d'IA et les besoins spécifiques du marché français",
+        "expected_output": "Un ensemble de critères décisionnels et indicateurs clés pour évaluer et comparer les opportunités business IA en France"
+      },
+      {
+        "step_number": 5,
+        "module_id": "peser_les_alternatives",
+        "module_name": "Peser les alternatives",
+        "action": "Mettre en place une matrice d'évaluation comparative pour les opportunités d'affaires IA en France et analyser le potentiel de rentabilité, de mise à l'échelle et de différenciation concurrentielle pour chaque opportunité",
+        "expected_output": "Une analyse comparative structurée des opportunités business IA en France, évaluées selon les critères définis précédemment"
+      },
+      {
+        "step_number": 6,
+        "module_id": "verifier_la_coherence",
+        "module_name": "Vérifier la cohérence",
+        "action": "Valider l'alignement de chaque opportunité avec les priorités économiques et industrielles françaises et vérifier la compatibilité technique et réglementaire des solutions d'IA avec l'écosystème français",
+        "expected_output": "Une validation de la cohérence des opportunités business IA identifiées avec le contexte français et les tendances technologiques"
+      },
+      {
+        "step_number": 7,
+        "module_id": "strategic_planning_and_selection",
+        "module_name": "Strategic Planning and Selection",
+        "action": "Développer des plans d'affaires détaillés pour les 3 opportunités business IA les plus prometteurs en France et établir un calendrier stratégique avec des jalons clés pour le lancement et la croissance de chaque opportunité",
+        "expected_output": "Un plan stratégique détaillé pour la mise en œuvre de la meilleure opportunité business IA en France en 2026"
+      }
+    ],
+    "estimated_complexity": "high",
+    "total_steps": 7
+  },
+  "final_output": ""
+}

@@ -77,6 +77,7 @@ def _save_prompts(prompts: List[dict]) -> None:
 
 # --- Endpoints ---
 
+
 @router.get("/", response_model=List[Prompt])
 async def list_prompts():
     """List all saved prompts."""
@@ -87,7 +88,7 @@ async def list_prompts():
 async def create_prompt(prompt_in: PromptCreate):
     """Create a new prompt."""
     prompts = _load_prompts()
-    
+
     now = datetime.utcnow().isoformat()
     new_prompt = {
         "id": str(uuid.uuid4()),
@@ -97,10 +98,10 @@ async def create_prompt(prompt_in: PromptCreate):
         "created_at": now,
         "updated_at": now,
     }
-    
+
     prompts.append(new_prompt)
     _save_prompts(prompts)
-    
+
     logger.info(f"Created prompt: {new_prompt['id']}")
     return new_prompt
 
@@ -109,26 +110,26 @@ async def create_prompt(prompt_in: PromptCreate):
 async def update_prompt(prompt_id: str, prompt_in: PromptUpdate):
     """Update an existing prompt."""
     prompts = _load_prompts()
-    
+
     for i, p in enumerate(prompts):
         if p["id"] == prompt_id:
             updated_p = p.copy()
-            
+
             if prompt_in.title is not None:
                 updated_p["title"] = prompt_in.title
             if prompt_in.content is not None:
                 updated_p["content"] = prompt_in.content
             if prompt_in.tags is not None:
                 updated_p["tags"] = prompt_in.tags
-            
+
             updated_p["updated_at"] = datetime.utcnow().isoformat()
-            
+
             prompts[i] = updated_p
             _save_prompts(prompts)
-            
+
             logger.info(f"Updated prompt: {prompt_id}")
             return updated_p
-            
+
     raise HTTPException(status_code=404, detail="Prompt not found")
 
 
@@ -136,13 +137,13 @@ async def update_prompt(prompt_id: str, prompt_in: PromptUpdate):
 async def delete_prompt(prompt_id: str):
     """Delete a prompt."""
     prompts = _load_prompts()
-    
+
     initial_len = len(prompts)
     prompts = [p for p in prompts if p["id"] != prompt_id]
-    
+
     if len(prompts) == initial_len:
         raise HTTPException(status_code=404, detail="Prompt not found")
-        
+
     _save_prompts(prompts)
     logger.info(f"Deleted prompt: {prompt_id}")
     return None

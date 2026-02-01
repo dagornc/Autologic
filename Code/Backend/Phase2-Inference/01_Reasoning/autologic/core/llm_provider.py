@@ -63,7 +63,10 @@ class OpenRouterLLM(BaseLLM):
         self._resilience_key = resilience_key or "openrouter"
 
         if not self._api_key:
-            raise ValueError("Clé API OpenRouter requise. " "Définir OPENROUTER_API_KEY ou passer api_key.")
+            raise ValueError(
+                "Clé API OpenRouter requise. "
+                "Définir OPENROUTER_API_KEY ou passer api_key."
+            )
 
         self.client = ChatOpenAI(
             model=self._model_name,
@@ -72,7 +75,9 @@ class OpenRouterLLM(BaseLLM):
             timeout=timeout,
             max_retries=max_retries,
         )
-        logger.info(f"OpenRouterLLM initialisé: {model_name} (key={self._resilience_key})")
+        logger.info(
+            f"OpenRouterLLM initialisé: {model_name} (key={self._resilience_key})"
+        )
 
     @property
     def model_name(self) -> str:
@@ -103,16 +108,20 @@ class OpenRouterLLM(BaseLLM):
                 model_kwargs["response_format"] = {"type": "json_object"}
 
             base_url = getattr(self.client, "base_url", "unknown")
-            logger.info(f"OpenRouter Call - Model: {self._model_name}, BaseURL: {base_url}")
+            logger.info(
+                f"OpenRouter Call - Model: {self._model_name}, BaseURL: {base_url}"
+            )
 
             try:
-                response = await self.client.ainvoke(prompt, **model_kwargs)
+                response = await self.client.ainvoke(prompt, **model_kwargs)  # type: ignore
             except Exception as e:
                 # Retry on 400 with response_format issue is a provider quirk, kept here
                 if "400" in str(e) and "response_format" in model_kwargs:
-                    logger.warning(f"Retrying without response_format due to error: {e}")
+                    logger.warning(
+                        f"Retrying without response_format due to error: {e}"
+                    )
                     del model_kwargs["response_format"]
-                    response = await self.client.ainvoke(prompt, **model_kwargs)
+                    response = await self.client.ainvoke(prompt, **model_kwargs)  # type: ignore
                 else:
                     raise e
 
@@ -140,11 +149,11 @@ class OpenRouterLLM(BaseLLM):
                 model_kwargs["response_format"] = {"type": "json_object"}
 
             try:
-                response = await fallback_client.ainvoke(prompt, **model_kwargs)
+                response = await fallback_client.ainvoke(prompt, **model_kwargs)  # type: ignore
             except Exception as e:
                 if "400" in str(e) and "response_format" in model_kwargs:
                     del model_kwargs["response_format"]
-                    response = await fallback_client.ainvoke(prompt, **model_kwargs)
+                    response = await fallback_client.ainvoke(prompt, **model_kwargs)  # type: ignore
                 else:
                     raise e
 
@@ -163,14 +172,20 @@ class OpenRouterLLM(BaseLLM):
         # Rafraîchir le cache si vide
         if not OpenRouterLLM._free_models_cache:
             try:
-                detailed = await self.list_models_detailed(api_key=self._api_key, free_only=True)
-                OpenRouterLLM._free_models_cache = [m["id"] for m in detailed if m["id"] != self._model_name]
+                detailed = await self.list_models_detailed(
+                    api_key=self._api_key, free_only=True
+                )
+                OpenRouterLLM._free_models_cache = [
+                    m["id"] for m in detailed if m["id"] != self._model_name
+                ]
             except Exception as e:
                 logger.warning(f"Impossible de récupérer les modèles de fallback: {e}")
                 return None
 
         # Filtrer le modèle actuel et en choisir un au hasard
-        available = [m for m in OpenRouterLLM._free_models_cache if m != self._model_name]
+        available = [
+            m for m in OpenRouterLLM._free_models_cache if m != self._model_name
+        ]
 
         if not available:
             return None
@@ -178,16 +193,23 @@ class OpenRouterLLM(BaseLLM):
         return random.choice(available)
 
     @classmethod
-    async def list_models(cls, api_key: Optional[str] = None, raise_error: bool = False) -> List[str]:
+    async def list_models(
+        cls, api_key: Optional[str] = None, raise_error: bool = False
+    ) -> List[str]:
         """
         Récupère la liste des modèles disponibles sur OpenRouter.
         """
-        detailed = await cls.list_models_detailed(api_key=api_key, raise_error=raise_error)
+        detailed = await cls.list_models_detailed(
+            api_key=api_key, raise_error=raise_error
+        )
         return [m["id"] for m in detailed]
 
     @classmethod
     async def list_models_detailed(
-        cls, api_key: Optional[str] = None, raise_error: bool = False, free_only: bool = False
+        cls,
+        api_key: Optional[str] = None,
+        raise_error: bool = False,
+        free_only: bool = False,
     ) -> List[dict]:
         """
         Récupère la liste des modèles disponibles sur OpenRouter avec détails.
@@ -213,7 +235,9 @@ class OpenRouterLLM(BaseLLM):
                     "HTTP-Referer": "http://localhost:5173",
                     "X-Title": "AutoLogic",
                 }
-                response = await client.get("https://openrouter.ai/api/v1/models", headers=headers)
+                response = await client.get(
+                    "https://openrouter.ai/api/v1/models", headers=headers
+                )
                 if response.status_code == 200:
                     data = response.json()
                     models = []
@@ -274,7 +298,9 @@ class OpenAILLM(BaseLLM):
         self._resilience_key = resilience_key or "openai"
 
         if not self._api_key:
-            raise ValueError("Clé API OpenAI requise. " "Définir OPENAI_API_KEY ou passer api_key.")
+            raise ValueError(
+                "Clé API OpenAI requise. " "Définir OPENAI_API_KEY ou passer api_key."
+            )
 
         self.client = ChatOpenAI(
             model=self._model_name,
@@ -302,7 +328,7 @@ class OpenAILLM(BaseLLM):
             if kwargs.get("response_format", {}).get("type") == "json_object":
                 model_kwargs["response_format"] = {"type": "json_object"}
 
-            response = await self.client.ainvoke(prompt, **model_kwargs)
+            response = await self.client.ainvoke(prompt, **model_kwargs)  # type: ignore
             return str(response.content)
 
         try:
@@ -313,7 +339,9 @@ class OpenAILLM(BaseLLM):
             raise
 
     @classmethod
-    async def list_models(cls, api_key: Optional[str] = None, raise_error: bool = False) -> List[str]:
+    async def list_models(
+        cls, api_key: Optional[str] = None, raise_error: bool = False
+    ) -> List[str]:
         """
         Récupère la liste des modèles disponibles sur OpenAI.
         """
@@ -326,12 +354,16 @@ class OpenAILLM(BaseLLM):
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 headers = {"Authorization": f"Bearer {key}"}
-                response = await client.get("https://api.openai.com/v1/models", headers=headers)
+                response = await client.get(
+                    "https://api.openai.com/v1/models", headers=headers
+                )
                 if response.status_code == 200:
                     data = response.json()
                     # OpenAI returns { data: [ { id: "..." }, ... ] }
                     models = [
-                        m["id"] for m in data.get("data", []) if "gpt" in m["id"] or "o1" in m["id"] or "o3" in m["id"]
+                        m["id"]
+                        for m in data.get("data", [])
+                        if "gpt" in m["id"] or "o1" in m["id"] or "o3" in m["id"]
                     ]
                     logger.info(f"OpenAI models fetched: {len(models)} models")
                     return sorted(models)
@@ -411,7 +443,11 @@ class OllamaLLM(BaseLLM):
 
     @classmethod
     async def list_models(
-        cls, host: Optional[str] = None, api_key: Optional[str] = None, raise_error: bool = False, **kwargs: Any
+        cls,
+        host: Optional[str] = None,
+        api_key: Optional[str] = None,
+        raise_error: bool = False,
+        **kwargs: Any,
     ) -> List[str]:
         """
         Récupère la liste des modèles disponibles sur le serveur Ollama.
@@ -505,7 +541,11 @@ class VLlmLLM(BaseLLM):
 
     @classmethod
     async def list_models(
-        cls, host: Optional[str] = None, api_key: Optional[str] = None, raise_error: bool = False, **kwargs: Any
+        cls,
+        host: Optional[str] = None,
+        api_key: Optional[str] = None,
+        raise_error: bool = False,
+        **kwargs: Any,
     ) -> List[str]:
         """
         Récupère la liste des modèles servis par vLLM.
@@ -570,7 +610,10 @@ class HuggingFaceLLM(BaseLLM):
         self._resilience_key = resilience_key or "huggingface"
 
         if not self._api_key:
-            raise ValueError("Clé API HuggingFace requise. " "Définir HUGGINGFACE_API_KEY ou passer api_key.")
+            raise ValueError(
+                "Clé API HuggingFace requise. "
+                "Définir HUGGINGFACE_API_KEY ou passer api_key."
+            )
 
         logger.info(f"HuggingFaceLLM initialisé: {model_name}")
 
@@ -623,7 +666,9 @@ class HuggingFaceLLM(BaseLLM):
             raise
 
     @classmethod
-    async def list_models(cls, api_key: Optional[str] = None, raise_error: bool = False) -> List[str]:
+    async def list_models(
+        cls, api_key: Optional[str] = None, raise_error: bool = False
+    ) -> List[str]:
         """
         Récupère les modèles populaires sur HuggingFace.
 
@@ -640,7 +685,12 @@ class HuggingFaceLLM(BaseLLM):
 
                 # Fetch top 50 text-generation models sorted by downloads
                 url = "https://huggingface.co/api/models"
-                params = {"filter": "text-generation", "sort": "downloads", "direction": "-1", "limit": "100"}
+                params = {
+                    "filter": "text-generation",
+                    "sort": "downloads",
+                    "direction": "-1",
+                    "limit": "100",
+                }
 
                 response = await client.get(url, headers=headers, params=params)
 

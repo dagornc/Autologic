@@ -5,10 +5,10 @@ app:
   debug: true
 llm:
   active_provider: openrouter
-  active_model: z-ai/glm-4.5-air:free
+  active_model: deepseek/deepseek-r1-0528:free
   temperature: 0.3
   max_tokens: 2048
-  timeout: 800
+  timeout: 190
   max_retries: 3
   resilience:
     rate_limit: 15.0
@@ -69,10 +69,10 @@ llm:
   audit_provider: openrouter
   audit_model: qwen/qwen3-next-80b-a3b-instruct:free
   audit_temperature: 0.2
-  audit_timeout: 800
+  audit_timeout: 100
   worker_provider: openrouter
   worker_model: openrouter/auto
-  worker_timeout: 800
+  worker_timeout: 140
   worker_temperature: 0.2
 database:
   host: localhost

@@ -19,7 +19,12 @@ class ReasoningModule:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convertit le module en dictionnaire pour sérialisation JSON."""
-        return {"id": self.id, "name": self.name, "description": self.description, "category": self.category}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "category": self.category,
+        }
 
 
 @dataclass

@@ -120,6 +120,22 @@ SECRET_KEY=votre_cle_secrete_ici
 ALGORITHM=HS256
 ```
 
+### Configuration Avancée (`Config/global.yaml`)
+
+Pour une configuration fine des agents (Strategic, Worker, Audit) et de la résilience, privilégiez l'édition de `Config/global.yaml` ou passez par l'interface graphique (Settings Drawer).
+
+```yaml
+llm:
+  # ...
+  audit_provider: openrouter
+  audit_model: qwen/qwen3-next-80b-a3b-instruct:free
+  audit_temperature: 0.2
+  audit_max_retries: 3
+  
+  worker_provider: openrouter
+  worker_model: openrouter/auto
+```
+
 ---
 
 ## Scripts Utilitaires

@@ -74,7 +74,13 @@ class ProviderFactory:
     def _register_providers(self) -> None:
         """Enregistre les classes de providers disponibles."""
         # Import lazy pour éviter les imports circulaires
-        from .llm_provider import OpenRouterLLM, OpenAILLM, OllamaLLM, VLlmLLM, HuggingFaceLLM
+        from .llm_provider import (
+            OpenRouterLLM,
+            OpenAILLM,
+            OllamaLLM,
+            VLlmLLM,
+            HuggingFaceLLM,
+        )
 
         self._providers = {
             ProviderType.OPENROUTER: OpenRouterLLM,
@@ -104,7 +110,9 @@ class ProviderFactory:
                 set_resilience_config(p_name, config)
                 set_resilience_config(f"{p_name}_worker", config)
                 set_resilience_config(f"{p_name}_audit", config)
-            logger.info(f"Configuration de résilience appliquée (y compris workers/audits): {config.to_dict()}")
+            logger.info(
+                f"Configuration de résilience appliquée (y compris workers/audits): {config.to_dict()}"
+            )
 
     def get_active_provider(self) -> str:
         """Retourne le provider actif (Root LLM) selon la configuration."""
@@ -112,7 +120,9 @@ class ProviderFactory:
 
     def get_active_model(self) -> str:
         """Retourne le modèle actif (Root LLM) selon la configuration."""
-        return self._config.get("active_model", "meta-llama/llama-3.3-70b-instruct:free")
+        return self._config.get(
+            "active_model", "meta-llama/llama-3.3-70b-instruct:free"
+        )
 
     def get_worker_provider(self) -> str:
         """Retourne le provider actif pour le Worker LLM."""
@@ -135,7 +145,9 @@ class ProviderFactory:
         providers_config = self._config.get("providers", {})
         return providers_config.get(provider.lower(), {})
 
-    def create_llm(self, provider: Optional[str] = None, model: Optional[str] = None, **kwargs: Any) -> "BaseLLM":
+    def create_llm(
+        self, provider: Optional[str] = None, model: Optional[str] = None, **kwargs: Any
+    ) -> "BaseLLM":
         """
         Crée une instance du provider LLM approprié.
 
@@ -158,12 +170,15 @@ class ProviderFactory:
             provider_type = ProviderType(provider_name.lower())
         except ValueError:
             raise ValueError(
-                f"Provider '{provider_name}' non supporté. " f"Providers disponibles: {[p.value for p in ProviderType]}"
+                f"Provider '{provider_name}' non supporté. "
+                f"Providers disponibles: {[p.value for p in ProviderType]}"
             )
 
         # Vérifier si le provider est activé
         if not self.is_provider_enabled(provider_name):
-            raise ValueError(f"Provider '{provider_name}' n'est pas activé dans la configuration.")
+            raise ValueError(
+                f"Provider '{provider_name}' n'est pas activé dans la configuration."
+            )
 
         # Récupérer la config du provider
         provider_config = self.get_provider_config(provider_name)
@@ -184,7 +199,9 @@ class ProviderFactory:
             model_name = model
         elif is_active_provider and current_active_model:
             model_name = current_active_model
-        elif is_worker_provider and current_worker_model:  # Si on demande explicitement le worker provider sans modèle
+        elif (
+            is_worker_provider and current_worker_model
+        ):  # Si on demande explicitement le worker provider sans modèle
             model_name = current_worker_model
         else:
             model_name = provider_config.get("default_model", current_active_model)
@@ -204,11 +221,11 @@ class ProviderFactory:
         # 2. Temperature
         if "temperature" in self._config:
             default_kwargs["temperature"] = self._config["temperature"]
-        
+
         # 3. Max Tokens
         if "max_tokens" in self._config:
             default_kwargs["max_tokens"] = self._config["max_tokens"]
-            
+
         # 4. Timeout
         if "timeout" in provider_config:
             default_kwargs["timeout"] = provider_config["timeout"]
@@ -241,10 +258,16 @@ class ProviderFactory:
         # Injecter les paramètres Worker spécifiques s'ils existent
         # create_llm utilise setdefault pour les params globaux, donc si on les met ici, ils primeront
 
-        if "temperature" not in kwargs and self._config.get("worker_temperature") is not None:
+        if (
+            "temperature" not in kwargs
+            and self._config.get("worker_temperature") is not None
+        ):
             kwargs["temperature"] = self._config["worker_temperature"]
 
-        if "max_tokens" not in kwargs and self._config.get("worker_max_tokens") is not None:
+        if (
+            "max_tokens" not in kwargs
+            and self._config.get("worker_max_tokens") is not None
+        ):
             kwargs["max_tokens"] = self._config["worker_max_tokens"]
 
         if "top_p" not in kwargs and self._config.get("worker_top_p") is not None:
@@ -311,15 +334,21 @@ class ProviderFactory:
         model = self.get_audit_model()
 
         # Injecter les paramètres Audit spécifiques s'ils existent
-        if "temperature" not in kwargs and self._config.get("audit_temperature") is not None:
+        if (
+            "temperature" not in kwargs
+            and self._config.get("audit_temperature") is not None
+        ):
             kwargs["temperature"] = self._config["audit_temperature"]
 
-        if "max_tokens" not in kwargs and self._config.get("audit_max_tokens") is not None:
+        if (
+            "max_tokens" not in kwargs
+            and self._config.get("audit_max_tokens") is not None
+        ):
             kwargs["max_tokens"] = self._config["audit_max_tokens"]
 
         if "top_p" not in kwargs and self._config.get("audit_top_p") is not None:
             kwargs["top_p"] = self._config["audit_top_p"]
-            
+
         if "timeout" not in kwargs and self._config.get("audit_timeout") is not None:
             kwargs["timeout"] = self._config["audit_timeout"]
 
@@ -350,7 +379,9 @@ def get_provider_factory() -> ProviderFactory:
     return _factory_instance
 
 
-def create_llm(provider: Optional[str] = None, model: Optional[str] = None, **kwargs: Any) -> "BaseLLM":
+def create_llm(
+    provider: Optional[str] = None, model: Optional[str] = None, **kwargs: Any
+) -> "BaseLLM":
     """
     Fonction utilitaire pour créer un LLM via la factory.
 
