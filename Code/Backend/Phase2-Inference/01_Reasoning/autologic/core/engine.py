@@ -60,7 +60,7 @@ class AutoLogicEngine:
         self.root_llm = root_model
         self.worker_llm = worker_model
         self.audit_llm = audit_model or root_model
-        self.reasoning_modules = self._load_39_modules()
+        self.reasoning_modules = self._load_modules()
         self.structured_plan: Optional[ReasoningPlan] = None
         self.history: List[Dict[str, Any]] = []
         
@@ -69,8 +69,8 @@ class AutoLogicEngine:
 
         logger.info(f"AutoLogicEngine initialisé avec {len(self.reasoning_modules)} modules")
 
-    def _load_39_modules(self) -> List[ReasoningModule]:
-        """Charge la bibliothèque complète des 39 modules."""
+    def _load_modules(self) -> List[ReasoningModule]:
+        """Charge la bibliothèque complète des modules."""
         current_dir = Path(__file__).parent
         data_path = current_dir.parent / "data" / "reasoning_modules_complete.json"
 
@@ -260,6 +260,29 @@ class AutoLogicEngine:
         except Exception:
             return {"is_valid": True, "feedback": ""}
 
+    async def restructure_plan(
+        self, old_plan: ReasoningPlan, task: str, feedback: str, root_llm: Optional[BaseLLM] = None
+    ) -> ReasoningPlan:
+        """
+        PHASE 3b: RE-STRUCTURATION (Double-Backtrack)
+        Régénère un plan basé sur le feedback critique.
+        """
+        llm = root_llm or self.root_llm
+        logger.info("Phase 3b: Restructuration du plan (Correction)")
+
+        old_plan_json = json.dumps(old_plan.to_dict(), indent=2, ensure_ascii=False)
+        prompt = PromptTemplates.restructure_prompt(old_plan_json, task, feedback)
+
+        try:
+            plan_data = await self._call_and_parse_json(prompt, llm, "restructure_plan")
+            plan_info = plan_data.get("reasoning_plan", {})
+            new_plan = ReasoningPlan.from_dict(plan_info)
+            logger.info(f"Plan restructuré avec {len(new_plan.steps)} étapes")
+            return new_plan
+        except Exception as e:
+            logger.error(f"Echec restructuration plan: {e}")
+            return old_plan  # Fallback sur l'ancien si échec
+
     async def execute_with_plan(
         self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, previous_feedback: str = ""
     ) -> str:
@@ -417,12 +440,17 @@ class AutoLogicEngine:
                 # Si le feedback suggère un manque dans le PLAN, on replanifie
                 if any(kw in evaluation.reason.lower() for kw in ["plan", "étape", "manquante", "structure"]):
                     logger.info("Re-planification demandée par le Critique (Backtrack Phase 3)")
-                    # Mock: In real scenario, we would re-run Adapt or Structure with feedback
-                    # Here we at least try to refresh the plan if it's the first retry
+                    
                     if attempt < max_retries - 1:
-                         # Re-run Structure but ideally would need feedback integration in structure_prompt
-                         # For now, let's just log and continue the loop, the next iteration will use feedback in EXECUTE
-                         pass
+                        # Appel effectif à la restructuration du plan
+                        new_plan = await self.restructure_plan(current_plan, task, feedback, root_llm)
+                        
+                        # Si le nouveau plan est différent et valide, on le met à jour
+                        if new_plan and new_plan.steps:
+                            current_plan = new_plan
+                            logger.info(f"Plan mis à jour (Tentative {attempt + 1}). Nouvelle exécution avec le nouveau plan.")
+                            # La boucle continue avec 'current_plan' mis à jour
+                            continue
 
         # Final pass Synthesis even if low score
         final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, audit_llm=audit_llm, analysis=analysis, audit_timeout=audit_timeout, audit_max_retries=audit_max_retries)

@@ -108,9 +108,9 @@ class CriticAgent:
             data = json.loads(clean_resp)
 
             return CriticEvaluation(
-                score=float(data.get("score", 0.0)),
+                score=float(data.get("score_h2", data.get("score", 0.0))),
                 status=data.get("status", "REJECT"),
-                reason=data.get("reason", "Erreur de parsing critique"),
+                reason=data.get("feedback", "Pas de raison fournie"), # Mapping feedback to reason as prompt doesn't strictly ask for 'reason' field anymore in output json example
                 feedback=data.get("feedback", "Refaire la réponse en suivant le plan.")
             )
 

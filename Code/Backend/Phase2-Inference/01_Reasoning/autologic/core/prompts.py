@@ -47,7 +47,7 @@ RETOURNE UN JSON STRICT :
         """
         return f"""Tu es un expert en métacognition et stratégies de raisonnement.
 
-BIBLIOTHÈQUE DE MODULES DE RAISONNEMENT (39 modules disponibles) :
+BIBLIOTHÈQUE DE MODULES DE RAISONNEMENT (106 modules disponibles) :
 {modules_json}
 
 TÂCHE À RÉSOUDRE :
@@ -195,6 +195,45 @@ RETOURNE UN JSON STRICT :
 }}"""
 
     @staticmethod
+    def restructure_prompt(old_plan_json: str, task: str, feedback: str) -> str:
+        """
+        PHASE 3b: RE-STRUCTURATION (Backtrack)
+        Corrige le plan rejeté par le Critique.
+        """
+        return f"""Tu es un expert en planification stratégique.
+ALERTE : Le plan précédent a été rejeté par l'Agent Critique.
+
+TÂCHE :
+{task}
+
+ANCIEN PLAN (REJETÉ) :
+{old_plan_json}
+
+FEEDBACK DU CRITIQUE (À INTÉGRER IMPÉRATIVEMENT) :
+"{feedback}"
+
+INSTRUCTIONS :
+Génère une NOUVELLE version du plan de raisonnement qui corrige ces défauts.
+Sois précis et adresse directement les points soulevés dans le feedback.
+Conserve le format strict attendu pour un plan de raisonnement.
+
+RETOURNE UN JSON STRICT (objet 'reasoning_plan') :
+{{
+  "reasoning_plan": {{
+    "steps": [
+      {{
+        "step_number": 1,
+        "module_id": "...",
+        "module_name": "...",
+        "action": "...",
+        "expected_output": "..."
+      }}
+    ],
+    "estimated_complexity": "low|medium|high"
+  }}
+}}"""
+
+    @staticmethod
     def execution_prompt(plan_json: str, task: str, previous_feedback: str = "") -> str:
         """
         Génère le prompt pour la phase d'exécution.
@@ -300,88 +339,67 @@ RETOURNE UN JSON STRICT :
 }}"""
 
     @staticmethod
-    def critic_evaluation_prompt(input_task: str, generated_plan: str, candidate_response: str) -> str:
+    def critic_evaluation_prompt(input_task: str, autologic_plan: str, generated_response: str) -> str:
         """
-        Génère le prompt pour l'Agent Critique H2.
-
-        Args:
-            input_task: La tâche utilisateur initiale
-            generated_plan: Le plan AutoLogic généré
-            candidate_response: La réponse à évaluer
-
-        Returns:
-            Le prompt complet pour le critique (Few-Shot)
+        Génère le prompt pour l'Agent Critique H2 (Version Google Antigravity).
         """
-        return f"""Rôle : Tu es l'Agent Critique H2 (Hypothesis & Heuristic Evaluator), un auditeur expert en logique et en vérification factuelle pour des systèmes d'IA avancés. Ton rôle n'est PAS de générer du contenu, mais de juger impitoyablement la qualité de la réponse fournie par l'Agent Intégrateur par rapport au Plan de Raisonnement (AutoLogic) initial.
+        return f"""RÔLE :
+Tu es l'Agent Critique H2 (Heuristic & Hypothesis Evaluator), un auditeur expert chargé de valider la fiabilité des réponses générées par un système d'IA. Ton rôle est de filtrer les hallucinations et de garantir que l'exécution suit strictement le plan de raisonnement établi.
 
-Contexte du Projet : Tu opères sur le sujet "Google Antigravity". Attention : ce terme est ambigu. Il peut référer à :
-1. L'Easter Egg JavaScript (Google Gravity/Space).
-2. Des recherches de Google DeepMind sur la simulation physique (ex: MuJoCo).
-3. Une technologie de science-fiction inexistante (Risque d'hallucination critique). Ton but est de filtrer les hallucinations et de garantir que la réponse suit strictement le plan.
+CONTEXTE DE VÉRITÉ (Sujet : Google Antigravity) :
+Attention, le terme "Google Antigravity" est piégeux et sujet aux hallucinations. Tu dois sanctionner toute réponse qui s'écarte des faits suivants :
+1. Ce n'est PAS une technologie de propulsion ou de physique réelle développée par Google.
+2. C'est un "Easter Egg" (projet artistique web) créé par Mr. Doob en 2009 utilisant le moteur physique Box2D.
+3. Si le texte parle de recherche scientifique, il doit faire référence à "Google DeepMind" et à des simulations (ex: MuJoCo, AlphaFold) ou à l'optimisation de code (AlphaDev), mais jamais à de l'antigravité physique.
 
-Entrées que tu vas recevoir :
-1. {{USER_TASK}} : La demande originale de l'utilisateur.
-2. {{AUTOLOGIC_PLAN}} : La structure de raisonnement générée (JSON/Liste) à l'étape de Self-Discovery.
-3. {{GENERATED_RESPONSE}} : La réponse finale proposée par l'Agent Intégrateur.
+ENTRÉES :
+1. [USER_TASK] : La demande de l'utilisateur.
+2. [AUTOLOGIC_PLAN] : Le plan structuré généré par le module AutoLogic (étapes de raisonnement).
+3. [CANDIDATE_RESPONSE] : La réponse à évaluer.
 
-Protocole d'Évaluation (Heuristiques & Jugement) : Tu dois noter la réponse de 0.0 à 1.0.
-• Score < 0.8 : REJET (Trigger Backtrack). La réponse est fausse, hallucinée, ou ignore le plan.
-• Score >= 0.8 : VALIDATION. La réponse est solide, logique et factuelle.
+TACHE :
+Évalue la [CANDIDATE_RESPONSE] et attribue un "score_h2" entre 0.0 et 1.0.
+- Score < 0.8 : REJET (Déclenche un Backtrack).
+- Score >= 0.8 : VALIDATION.
 
-Exemples d'Apprentissage (Few-Shot Learning) :
+CRITÈRES DE NOTATION (FEW-SHOT LEARNING) :
 
---------------------------------------------------------------------------------
-Exemple 1 (Cas d'Hallucination - REJET)
-Task: "Explique comment utiliser l'API Google Antigravity pour faire voler des drones."
-Plan: 1. Vérifier l'existence de l'API. 2. Analyser la documentation technique. 3. Fournir un exemple de code.
-Response: "Pour utiliser l'API Google Antigravity, importez la librairie google.physics.levitation. Utilisez la fonction setGravity(0) pour annuler la masse du drone."
-Sortie Attendue :
+--- Exemple 1 (Hallucination - REJET) ---
+Task: "Comment utiliser l'API Google Antigravity pour des drones ?"
+Plan: 1. Vérifier l'existence de l'API. 2. Analyser la documentation.
+Response: "L'API Google Antigravity permet de moduler la masse des drones via le cloud. Utilisez la fonction `setGravity(0)`."
+>> Sortie Attendue :
 {{
-  "score": 0.1,
-  "status": "REJECT",
-  "reason": "Hallucination critique. Google ne possède pas d'API de lévitation physique. Confusion probable avec des moteurs de simulation ou l'Easter egg.",
-  "feedback": "Arrête d'inventer des API. Vérifie si l'utilisateur parle de l'Easter Egg JS ou de simulation. Refais l'analyse factuelle."
+  "score_h2": 0.1,
+  "status": "REJET",
+  "feedback": "Hallucination critique. Google ne possède pas de technologie d'antigravité. Il s'agit d'un Easter Egg JavaScript, pas d'une API physique. Corrigez en clarifiant la nature du projet."
 }}
 
---------------------------------------------------------------------------------
-Exemple 2 (Cas de Non-Respect du Plan - REJET)
-Task: "Analyse le code de l'Easter Egg Google Gravity."
-Plan: 1. Identifier le moteur physique utilisé (Box2D). 2. Analyser l'injection du script dans le DOM. 3. Critiquer la performance.
-Response: "Google Gravity est un projet amusant créé par Mr. Doob. C'est très drôle à regarder, tout tombe en bas de l'écran."
-Sortie Attendue :
+--- Exemple 2 (Non-respect du Plan - REJET) ---
+Task: "Explique le fonctionnement technique de l'Easter Egg Google Gravity."
+Plan: 1. Identifier le moteur physique (Box2D). 2. Expliquer l'injection dans le DOM. 3. Analyser la gestion des collisions.
+Response: "C'est un site très amusant où tout tombe quand on bouge la souris. C'est une blague classique de Google."
+>> Sortie Attendue :
 {{
-  "score": 0.5,
-  "status": "REJECT",
-  "reason": "Réponse superficielle. Le plan demandait une analyse technique (Box2D, DOM), pas une description vague.",
-  "feedback": "Tu as ignoré les étapes 1 et 2 du plan AutoLogic. Exécute l'analyse technique demandée."
+  "score_h2": 0.5,
+  "status": "REJET",
+  "feedback": "La réponse est factuellement vraie mais superficielle. Le plan AutoLogic demandait une analyse technique (Box2D, DOM, Collisions) qui est absente. Exécutez les étapes techniques du plan."
 }}
 
---------------------------------------------------------------------------------
-Exemple 3 (Cas Valide - SUCCÈS)
-Task: "Quel est le lien entre Google, DeepMind et la simulation de gravité ?"
-Plan: 1. Définir le rôle de DeepMind. 2. Identifier les outils de simulation (MuJoCo). 3. Expliquer l'apprentissage par renforcement sous contrainte de gravité.
-Response: "Google DeepMind ne travaille pas sur l'antigravité physique, mais utilise des environnements simulés comme MuJoCo pour entraîner des agents. Dans ces simulations, la gravité est une variable constante que les agents doivent maîtriser via l'apprentissage par renforcement pour se déplacer (locomotion)."
-Sortie Attendue :
+--- Exemple 3 (Réussite - VALIDATION) ---
+Task: "Quel est le lien entre Google et la gravité ?"
+Plan: 1. Disambiguïser le terme (Easter Egg vs Recherche). 2. Citer les projets DeepMind pertinents.
+Response: "Il faut distinguer deux choses. D'un côté, 'Google Gravity' est un projet web artistique de 2009. De l'autre, Google DeepMind utilise l'apprentissage par renforcement pour apprendre à des agents virtuels à marcher sous des contraintes de gravité simulée."
+>> Sortie Attendue :
 {{
-  "score": 0.95,
+  "score_h2": 0.95,
   "status": "VALID",
-  "reason": "Réponse factuelle, nuancée et respectant strictement la structure du plan.",
-  "feedback": "Aucune correction nécessaire."
+  "feedback": "Réponse nuancée, factuelle et conforme au plan."
 }}
 
---------------------------------------------------------------------------------
-TÂCHE ACTUELLE À ÉVALUER :
-• User Task: {input_task}
-• AutoLogic Plan: {generated_plan}
-• Candidate Response: {candidate_response}
+INSTRUCTIONS FINALES :
+Analyse les entrées ci-dessous et génère UNIQUEMENT un objet JSON.
 
-Tes Instructions Finales :
-1. Vérifie si chaque étape du AutoLogic Plan est traitée dans la Candidate Response.
-2. Vérifie l'absence d'hallucination sur le terme "Antigravity".
-3. Génère ta sortie UNIQUEMENT au format JSON.
-{{
-  "score": [float entre 0.0 et 1.0],
-  "status": "[VALID ou REJECT]",
-  "reason": "[Explication courte]",
-  "feedback": "[Instructions précises pour l'Agent Intégrateur si score < 0.8]"
-}}"""
+[USER_TASK] : {input_task}
+[AUTOLOGIC_PLAN] : {autologic_plan}
+[CANDIDATE_RESPONSE] : {generated_response}"""

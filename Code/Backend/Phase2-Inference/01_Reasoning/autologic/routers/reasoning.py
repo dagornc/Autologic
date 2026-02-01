@@ -149,6 +149,6 @@ async def list_modules(engine: AutoLogicEngine = Depends(get_engine)) -> Dict[st
     Liste tous les modules de raisonnement disponibles.
 
     Returns:
-        Liste des 39 modules de raisonnement avec leurs métadonnées
+        Liste des modules de raisonnement avec leurs métadonnées
     """
     return {"modules": [m.to_dict() for m in engine.reasoning_modules]}

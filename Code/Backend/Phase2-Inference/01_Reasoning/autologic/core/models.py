@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class ReasoningModule:
-    """Représente un module de raisonnement cognitif de la bibliothèque des 39 modules."""
+    """Représente un module de raisonnement cognitif de la bibliothèque des modules."""
 
     id: str
     name: str
