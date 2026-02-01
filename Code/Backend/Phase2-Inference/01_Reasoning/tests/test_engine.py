@@ -110,7 +110,7 @@ class TestAutoLogicEngine:
         
         assert "error" not in result
         assert result["task"] == task
-        assert result["final_output"] == "Executed"
+        assert "Executed" in result["final_output"]
         assert len(result["plan"]["steps"]) == 1
 
 

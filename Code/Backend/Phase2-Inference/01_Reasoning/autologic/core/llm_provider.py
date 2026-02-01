@@ -44,6 +44,7 @@ class OpenRouterLLM(BaseLLM):
         base_url: str = "https://openrouter.ai/api/v1",
         timeout: float = 120.0,
         max_retries: int = 2,
+        resilience_key: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -55,9 +56,11 @@ class OpenRouterLLM(BaseLLM):
             base_url: URL de base de l'API
             timeout: Timeout en secondes
             max_retries: Nombre de retries
+            resilience_key: Clé spécifique pour la configuration de résilience (ex: "openrouter_worker")
         """
         self._model_name = model_name
         self._api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        self._resilience_key = resilience_key or "openrouter"
 
         if not self._api_key:
             raise ValueError("Clé API OpenRouter requise. " "Définir OPENROUTER_API_KEY ou passer api_key.")
@@ -69,7 +72,7 @@ class OpenRouterLLM(BaseLLM):
             timeout=timeout,
             max_retries=max_retries,
         )
-        logger.info(f"OpenRouterLLM initialisé: {model_name}")
+        logger.info(f"OpenRouterLLM initialisé: {model_name} (key={self._resilience_key})")
 
     @property
     def model_name(self) -> str:
@@ -91,7 +94,7 @@ class OpenRouterLLM(BaseLLM):
         - Retry automatique sur 429/5xx si activé
         - Fallback vers un autre modèle gratuit si activé
         """
-        resilient_caller = get_resilient_caller("openrouter")
+        resilient_caller = get_resilient_caller(self._resilience_key)
 
         async def _make_call() -> str:
             """Appel interne."""
@@ -105,6 +108,7 @@ class OpenRouterLLM(BaseLLM):
             try:
                 response = await self.client.ainvoke(prompt, **model_kwargs)
             except Exception as e:
+                # Retry on 400 with response_format issue is a provider quirk, kept here
                 if "400" in str(e) and "response_format" in model_kwargs:
                     logger.warning(f"Retrying without response_format due to error: {e}")
                     del model_kwargs["response_format"]
@@ -147,7 +151,7 @@ class OpenRouterLLM(BaseLLM):
             return str(response.content)
 
         try:
-            config = get_resilience_config("openrouter")
+            config = get_resilience_config(self._resilience_key)
             fallback_func = _fallback_call if config.fallback_enabled else None
             return await resilient_caller.call(_make_call, fallback_func=fallback_func)
         except Exception as e:
@@ -251,6 +255,7 @@ class OpenAILLM(BaseLLM):
         base_url: str = "https://api.openai.com/v1",
         timeout: float = 60.0,
         max_retries: int = 2,
+        resilience_key: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -262,9 +267,11 @@ class OpenAILLM(BaseLLM):
             base_url: URL de base de l'API
             timeout: Timeout en secondes
             max_retries: Nombre de retries
+            resilience_key: Clé spécifique pour la configuration de résilience (ex: "openai_worker")
         """
         self._model_name = model_name
         self._api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self._resilience_key = resilience_key or "openai"
 
         if not self._api_key:
             raise ValueError("Clé API OpenAI requise. " "Définir OPENAI_API_KEY ou passer api_key.")
@@ -288,7 +295,7 @@ class OpenAILLM(BaseLLM):
 
     async def call(self, prompt: str, **kwargs: Any) -> str:
         """Exécute un appel à OpenAI avec rate limiting."""
-        resilient_caller = get_resilient_caller("openai")
+        resilient_caller = get_resilient_caller(self._resilience_key)
 
         async def _make_call() -> str:
             model_kwargs = {}
@@ -351,6 +358,7 @@ class OllamaLLM(BaseLLM):
         host: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 120.0,
+        resilience_key: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -361,10 +369,12 @@ class OllamaLLM(BaseLLM):
             host: URL du serveur Ollama. Si None, lit OLLAMA_HOST.
             api_key: Clé API optionnelle (pour services compatibles type Venice)
             timeout: Timeout en secondes (plus long pour modèles locaux)
+            resilience_key: Clé spécifique pour la configuration de résilience
         """
         self._model_name = model_name
         self._host = host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
         self._api_key = api_key or "ollama"
+        self._resilience_key = resilience_key or "ollama"
         self._timeout = timeout
 
         # Ollama expose une API compatible OpenAI
@@ -387,7 +397,7 @@ class OllamaLLM(BaseLLM):
 
     async def call(self, prompt: str, **kwargs: Any) -> str:
         """Exécute un appel à Ollama avec rate limiting."""
-        resilient_caller = get_resilient_caller("ollama")
+        resilient_caller = get_resilient_caller(self._resilience_key)
 
         async def _make_call() -> str:
             response = await self.client.ainvoke(prompt)
@@ -444,6 +454,7 @@ class VLlmLLM(BaseLLM):
         host: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 120.0,
+        resilience_key: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -454,10 +465,12 @@ class VLlmLLM(BaseLLM):
             host: URL du serveur vLLM. Si None, lit VLLM_HOST.
             api_key: Clé API si configurée. Si None, lit VLLM_API_KEY.
             timeout: Timeout en secondes
+            resilience_key: Clé spécifique pour la configuration de résilience
         """
         self._model_name = model_name
         self._host = host or os.getenv("VLLM_HOST", "http://localhost:8000")
         self._api_key = api_key or os.getenv("VLLM_API_KEY", "token-vllm")
+        self._resilience_key = resilience_key or "vllm"
 
         self.client = ChatOpenAI(
             model=self._model_name,
@@ -478,7 +491,7 @@ class VLlmLLM(BaseLLM):
 
     async def call(self, prompt: str, **kwargs: Any) -> str:
         """Exécute un appel à vLLM avec rate limiting."""
-        resilient_caller = get_resilient_caller("vllm")
+        resilient_caller = get_resilient_caller(self._resilience_key)
 
         async def _make_call() -> str:
             response = await self.client.ainvoke(prompt)
@@ -537,6 +550,7 @@ class HuggingFaceLLM(BaseLLM):
         api_key: Optional[str] = None,
         base_url: str = "https://api-inference.huggingface.co/models",
         timeout: float = 60.0,
+        resilience_key: Optional[str] = None,
         **kwargs: Any,
     ):
         """
@@ -547,11 +561,13 @@ class HuggingFaceLLM(BaseLLM):
             api_key: Clé API. Si None, lit HUGGINGFACE_API_KEY.
             base_url: URL de base de l'API
             timeout: Timeout en secondes
+            resilience_key: Clé spécifique pour la configuration de résilience
         """
         self._model_name = model_name
         self._api_key = api_key or os.getenv("HUGGINGFACE_API_KEY")
         self._base_url = base_url
         self._timeout = timeout
+        self._resilience_key = resilience_key or "huggingface"
 
         if not self._api_key:
             raise ValueError("Clé API HuggingFace requise. " "Définir HUGGINGFACE_API_KEY ou passer api_key.")
@@ -568,7 +584,7 @@ class HuggingFaceLLM(BaseLLM):
 
     async def call(self, prompt: str, **kwargs: Any) -> str:
         """Exécute un appel à l'API HuggingFace Inference avec rate limiting."""
-        resilient_caller = get_resilient_caller("huggingface")
+        resilient_caller = get_resilient_caller(self._resilience_key)
 
         async def _make_call() -> str:
             async with httpx.AsyncClient(timeout=self._timeout) as client:

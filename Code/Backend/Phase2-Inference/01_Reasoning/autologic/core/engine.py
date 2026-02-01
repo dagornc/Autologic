@@ -13,6 +13,8 @@ from .models import ReasoningModule, AdaptedModule, ReasoningPlan
 from .prompts import PromptTemplates
 from .critic import CriticAgent
 from ..utils.logging_config import get_logger
+import time
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -46,16 +48,18 @@ class AutoLogicEngine:
     4. EXECUTE: Exécution du plan avec validation Critique (H2)
     """
 
-    def __init__(self, root_model: BaseLLM, worker_model: BaseLLM) -> None:
+    def __init__(self, root_model: BaseLLM, worker_model: BaseLLM, audit_model: Optional[BaseLLM] = None) -> None:
         """
         Initialise le moteur AutoLogic.
 
         Args:
             root_model: LLM puissant pour planification (GPT-4, Gemini Pro)
             worker_model: LLM rapide pour exécution (GPT-4o-mini, Llama 3)
+            audit_model: LLM dédié à l'audit (optionnel, fallback sur root_model)
         """
         self.root_llm = root_model
         self.worker_llm = worker_model
+        self.audit_llm = audit_model or root_model
         self.reasoning_modules = self._load_39_modules()
         self.structured_plan: Optional[ReasoningPlan] = None
         self.history: List[Dict[str, Any]] = []
@@ -112,15 +116,52 @@ class AutoLogicEngine:
                 
         return clean
 
+    async def _call_and_parse_json(
+        self,
+        prompt: str,
+        llm: BaseLLM,
+        method_name: str,
+        retries: int = 3,
+        response_format: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Helper method to call LLM and parse JSON with retries.
+        """
+        response_format = response_format or {"type": "json_object"}
+        last_error = None
+        
+        for attempt in range(retries):
+            try:
+                response = await llm.call(prompt, response_format=response_format)
+                clean_response = self._clean_json_response(response)
+                return json.loads(clean_response)
+            except json.JSONDecodeError as e:
+                last_error = e
+                logger.warning(
+                    f"{method_name}: JSON parsing failed (attempt {attempt + 1}/{retries}): {e}"
+                )
+                # Optional: You could append a "Please fix JSON" instruction to the prompt here for next retry
+            except Exception as e:
+                # Catch other potential errors (like network/provider issues handled by ResilientCaller, 
+                # but good to be safe if they bubble up as something else or if we want to log context)
+                last_error = e
+                logger.warning(f"{method_name}: LLM call failed (attempt {attempt + 1}/{retries}): {e}")
+
+        logger.error(f"{method_name}: Failed to parse JSON after {retries} attempts")
+        if last_error:
+            raise last_error
+        raise RuntimeError(f"{method_name}: Unknown error during JSON parsing")
+
     async def analyze_task(self, task: str, root_llm: Optional[BaseLLM] = None) -> Dict[str, Any]:
         """PHASE 0: ANALYSE INITIALE"""
         llm = root_llm or self.root_llm
         logger.info(f"Phase 0: Analyse de la tâche")
         prompt = PromptTemplates.analyze_prompt(task)
-        response = await llm.call(prompt, response_format={"type": "json_object"})
+        
         try:
-            return json.loads(self._clean_json_response(response))
-        except json.JSONDecodeError:
+            return await self._call_and_parse_json(prompt, llm, "analyze_task")
+        except Exception:
+             # Fallback simple
             return {"analysis": "Standard analysis", "constraints": []}
 
     async def select_modules(self, task: str, root_llm: Optional[BaseLLM] = None) -> List[ReasoningModule]:
@@ -134,19 +175,17 @@ class AutoLogicEngine:
         modules_json = json.dumps([m.to_dict() for m in self.reasoning_modules], indent=2, ensure_ascii=False)
 
         prompt = PromptTemplates.selection_prompt(modules_json, task)
-        response = await llm.call(prompt, response_format={"type": "json_object"})
-
+        
         try:
-            clean_response = self._clean_json_response(response)
-            selected_data = json.loads(clean_response)
+            selected_data = await self._call_and_parse_json(prompt, llm, "select_modules")
             selected_ids = selected_data.get("selected_modules", [])
 
             selected = [m for m in self.reasoning_modules if m.id in selected_ids]
             logger.info(f"Sélectionné {len(selected)} modules: {selected_ids}")
             return selected
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur parsing sélection: {e}")
+        except Exception as e:
+            logger.error(f"Erreur sélection modules après retries: {e}")
             return []
 
     async def adapt_modules(
@@ -161,11 +200,9 @@ class AutoLogicEngine:
         selected_json = json.dumps([m.to_dict() for m in selected], indent=2, ensure_ascii=False)
 
         prompt = PromptTemplates.adaptation_prompt(selected_json, task)
-        response = await llm.call(prompt, response_format={"type": "json_object"})
-
+        
         try:
-            clean_response = self._clean_json_response(response)
-            adapted_data = json.loads(clean_response)
+            adapted_data = await self._call_and_parse_json(prompt, llm, "adapt_modules")
 
             adapted_modules: List[AdaptedModule] = []
             for item in adapted_data.get("adapted_modules", []):
@@ -182,8 +219,8 @@ class AutoLogicEngine:
             logger.info(f"Adapté {len(adapted_modules)} modules")
             return adapted_modules
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur parsing adaptation: {e}")
+        except Exception as e:
+            logger.error(f"Erreur adaptation modules après retries: {e}")
             return []
 
     async def structure_reasoning(
@@ -198,19 +235,17 @@ class AutoLogicEngine:
         adapted_json = json.dumps([m.to_dict() for m in adapted], indent=2, ensure_ascii=False)
 
         prompt = PromptTemplates.structuration_prompt(adapted_json, task)
-        response = await llm.call(prompt, response_format={"type": "json_object"})
-
+        
         try:
-            clean_response = self._clean_json_response(response)
-            plan_data = json.loads(clean_response)
+            plan_data = await self._call_and_parse_json(prompt, llm, "structure_reasoning")
             plan_info = plan_data.get("reasoning_plan", {})
 
             plan = ReasoningPlan.from_dict(plan_info)
             logger.info(f"Plan créé avec {len(plan.steps)} étapes")
             return plan
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Erreur parsing structuration: {e}")
+        except Exception as e:
+            logger.error(f"Erreur structuration plan après retries: {e}")
             return ReasoningPlan(steps=[], complexity="unknown")
 
     async def verify_plan(self, plan: ReasoningPlan, task: str, root_llm: Optional[BaseLLM] = None) -> Dict[str, Any]:
@@ -219,10 +254,10 @@ class AutoLogicEngine:
         logger.info("Phase 4: Vérification du plan")
         plan_json = json.dumps(plan.to_dict(), indent=2, ensure_ascii=False)
         prompt = PromptTemplates.verify_plan_prompt(plan_json, task)
-        response = await llm.call(prompt, response_format={"type": "json_object"})
+        
         try:
-            return json.loads(self._clean_json_response(response))
-        except json.JSONDecodeError:
+            return await self._call_and_parse_json(prompt, llm, "verify_plan")
+        except Exception:
             return {"is_valid": True, "feedback": ""}
 
     async def execute_with_plan(
@@ -240,31 +275,106 @@ class AutoLogicEngine:
         response = await llm.call(prompt)
         return response
 
-    async def synthesize_output(self, task: str, raw_output: str, root_llm: Optional[BaseLLM] = None, analysis: Optional[Dict[str, Any]] = None) -> str:
-        """PHASE 7: SYNTHÈSE FINALE"""
-        llm = root_llm or self.root_llm
+    async def synthesize_output(
+        self,
+        task: str,
+        raw_output: str,
+        root_llm: Optional[BaseLLM] = None,
+        audit_llm: Optional[BaseLLM] = None,
+        analysis: Optional[Dict[str, Any]] = None,
+        audit_timeout: int = 30,
+        audit_max_retries: int = 3
+    ) -> str:
+        """
+        PHASE 7 & 7.5: SYNTHÈSE & AUDIT ITÉRATIF
+        Affine la réponse finale avec une boucle d'audit time-boxed.
+        """
+        # Phase 7: Synthèse (Strategic Model)
+        synthesis_llm = root_llm or self.root_llm
+        audit_llm = audit_llm or self.audit_llm
+
         logger.info("Phase 7: Synthèse finale de la réponse")
         prompt = PromptTemplates.synthesis_prompt(task, raw_output, analysis=analysis)
-        final_output = await llm.call(prompt)
+        current_output = await synthesis_llm.call(prompt)
 
-        # OPTIONNEL: Phase 7.5 Audit Final
-        if analysis and analysis.get("constraints"):
-            logger.info("Phase 7.5: Audit de conformité finale")
-            audit_prompt = PromptTemplates.audit_final_prompt(task, final_output, analysis=analysis)
-            audit_response = await llm.call(audit_prompt, response_format={"type": "json_object"})
+        # Si pas de contraintes, on retourne direct
+        if not (analysis and analysis.get("constraints")):
+             return current_output
+
+        # Phase 7.5: Boucle d'Audit (Universelle) - Utilise le modèle d'Audit dédié
+        logger.info(f"Phase 7.5: Audit Universel (Timeout Global: {audit_timeout}s, Max Retries: {audit_max_retries}, Model: {audit_llm.__class__.__name__})")
+        
+        start_time = time.time()
+        iteration = 0
+        max_iterations = audit_max_retries 
+
+        while True:
+            # Check Timeout (Force Proceed logic - Universal)
+            elapsed = time.time() - start_time
+            if elapsed > audit_timeout:
+                logger.warning(f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s")
+                return current_output + "\n\n[NOTE: Audit stoppé par timeboxing global - Structure préservée]"
+
+            if iteration >= max_iterations:
+                logger.warning("Audit: Max iterations rounded")
+                break
+
+            # Appel Audit Universel (via Audit LLM)
+            audit_prompt = PromptTemplates.audit_final_prompt(task, current_output, analysis=analysis)
             try:
-                audit_data = json.loads(self._clean_json_response(audit_response))
-                if not audit_data.get("is_perfect", True):
-                    logger.warning(f"Audit final négatif: {audit_data.get('missing_elements')}")
-                    # On pourrait ici tenter une passe de correction finale, 
-                    # mais pour l'instant on se contente de logger et d'injecter la suggestion si critique
-            except json.JSONDecodeError:
-                pass
+                # Utilisation du modèle d'audit pour la vérification
+                audit_data = await self._call_and_parse_json(audit_prompt, audit_llm, "audit_final", retries=2)
+                
+                score = audit_data.get("structural_sufficiency_score", 0)
+                is_sufficient = audit_data.get("is_sufficient", False)
+                change_type = audit_data.get("required_changes_type", "MAJOR")
+                missing = audit_data.get("missing_critical_elements", [])
+                
+                logger.info(f"Audit #{iteration+1}: Score={score}, Sufficient={is_sufficient}, Type={change_type}")
 
-        return final_output
+                # Critère 1: Suffisance Structurelle (90%)
+                if is_sufficient or score >= 90:
+                    logger.info("Audit Validé : Suffisance structurelle atteinte")
+                    break
+                
+                # Critère 2: Loi Rendement Décroissant (Minor Changes)
+                if change_type == "MINOR" or change_type == "NONE":
+                    logger.info("Audit Validé : Modifications mineures ignorées (Rendement Décroissant)")
+                    break
+
+                # Critère 3: Stagnation (2 passes Max pour ajustements majeurs si pas de progrès clair)
+                # (Implémenté ici via max_iterations, mais on pourrait être plus strict)
+                
+                # Si instructions d'amélioration MAJEURES -> RAFFINEMENT (via Synthesis LLM)
+                instructions = audit_data.get("improvement_instructions", "Corriger les éléments manquants.")
+                refine_prompt = f"""Tu es un agent de production. AMÉLIORATION REQUISE (Focus Structurel).
+                
+                INSTRUCTIONS PRIORITAIRES : {instructions}
+                MANQUES CRITIQUES : {', '.join(missing)}
+                
+                Répare la structure. Ne touche pas au style."""
+                
+                # Utilisation du modèle de synthèse pour la correction
+                current_output = await synthesis_llm.call(refine_prompt)
+                iteration += 1
+
+            except Exception as e:
+                logger.error(f"Erreur durant l'audit: {e}")
+                break
+
+        return current_output
 
     async def execute_with_critic(
-        self, task: str, plan: ReasoningPlan, worker_llm: Optional[BaseLLM] = None, root_llm: Optional[BaseLLM] = None, max_retries: int = 3, analysis: Optional[Dict[str, Any]] = None
+        self, 
+        task: str, 
+        plan: ReasoningPlan, 
+        worker_llm: Optional[BaseLLM] = None, 
+        root_llm: Optional[BaseLLM] = None, 
+        audit_llm: Optional[BaseLLM] = None,
+        max_retries: int = 3, 
+        analysis: Optional[Dict[str, Any]] = None,
+        audit_timeout: int = 30,
+        audit_max_retries: int = 3
     ) -> Dict[str, Any]:
         """
         Orchestre l'exécution avec boucle de rétroaction et Double-Backtrack.
@@ -291,7 +401,7 @@ class AutoLogicEngine:
             
             if evaluation.score >= 0.8:
                  # VALIDATION -> SYNTHÈSE (PHASE 7)
-                 final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, analysis=analysis)
+                 final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, audit_llm=audit_llm, analysis=analysis, audit_timeout=audit_timeout, audit_max_retries=audit_max_retries)
                  return {
                      "task": task,
                      "plan": current_plan.to_dict(),
@@ -315,7 +425,7 @@ class AutoLogicEngine:
                          pass
 
         # Final pass Synthesis even if low score
-        final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, analysis=analysis)
+        final_output = await self.synthesize_output(task, current_response, root_llm=root_llm, audit_llm=audit_llm, analysis=analysis, audit_timeout=audit_timeout, audit_max_retries=audit_max_retries)
         return {
             "task": task,
             "plan": current_plan.to_dict(),
@@ -325,7 +435,13 @@ class AutoLogicEngine:
         }
 
     async def run_full_cycle(
-        self, task: str, root_llm: Optional[BaseLLM] = None, worker_llm: Optional[BaseLLM] = None
+        self, 
+        task: str, 
+        root_llm: Optional[BaseLLM] = None, 
+        worker_llm: Optional[BaseLLM] = None,
+        audit_llm: Optional[BaseLLM] = None,
+        audit_timeout: int = 30,
+        audit_max_retries: int = 3
     ) -> Dict[str, Any]:
         """Orchestre tout le cycle Self-Discover optimisé (8 phases)."""
         logger.info(f"Démarrage cycle 8-phases pour: {task[:50]}...")
@@ -354,7 +470,16 @@ class AutoLogicEngine:
         self.structured_plan = plan
 
         # 5, 6, 7. Execute, Critic, Synthesis
-        result = await self.execute_with_critic(task, plan, worker_llm=worker_llm, root_llm=root_llm, analysis=analysis)
+        result = await self.execute_with_critic(
+            task, 
+            plan, 
+            worker_llm=worker_llm, 
+            root_llm=root_llm, 
+            audit_llm=audit_llm,
+            analysis=analysis,
+            audit_timeout=audit_timeout,
+            audit_max_retries=audit_max_retries
+        )
 
         logger.info("Cycle 8-phases terminé")
         return result

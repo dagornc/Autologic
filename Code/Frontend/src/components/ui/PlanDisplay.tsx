@@ -41,7 +41,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: index * 0.1 }}
-                        className="group relative overflow-hidden rounded-2xl glass border border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                        className="group relative overflow-hidden rounded-2xl glass-panel-next border border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                     >
                         {/* Step Indicator Gradient Bar */}
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-60 group-hover:opacity-100 transition-opacity" />

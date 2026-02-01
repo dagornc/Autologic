@@ -2,7 +2,7 @@
  * Composant d'affichage de l'aide (README.md) - Premium Layout
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Book, AlertCircle, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -23,13 +23,7 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (isVisible && !content) {
-            fetchReadme();
-        }
-    }, [isVisible]);
-
-    const fetchReadme = async () => {
+    const fetchReadme = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -37,7 +31,7 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
             const response = await fetch('http://localhost:8000/api/help/readme');
 
             if (!response.ok) {
-                const errorText = await response.text();
+                await response.text();
                 throw new Error(`Erreur ${response.status}: ${response.statusText}`);
             }
 
@@ -49,7 +43,13 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isVisible && !content) {
+            fetchReadme();
+        }
+    }, [isVisible, content, fetchReadme]);
 
     if (!isVisible) return null;
 

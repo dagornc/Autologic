@@ -98,9 +98,13 @@ class ProviderFactory:
                 fallback_enabled=resilience_conf.get("fallback_enabled", False),
             )
             # Appliquer à tous les providers
+            # Appliquer à tous les providers et leurs variantes (worker/audit)
             for provider_type in ProviderType:
-                set_resilience_config(provider_type.value, config)
-            logger.info(f"Configuration de résilience appliquée: {config.to_dict()}")
+                p_name = provider_type.value
+                set_resilience_config(p_name, config)
+                set_resilience_config(f"{p_name}_worker", config)
+                set_resilience_config(f"{p_name}_audit", config)
+            logger.info(f"Configuration de résilience appliquée (y compris workers/audits): {config.to_dict()}")
 
     def get_active_provider(self) -> str:
         """Retourne le provider actif (Root LLM) selon la configuration."""
@@ -190,26 +194,36 @@ class ProviderFactory:
         if provider_class is None:
             raise ValueError(f"Classe provider non trouvée pour: {provider_type}")
 
-        # Construire les arguments pour le provider
-        llm_kwargs = {"model_name": model_name, **kwargs}
+        # Construire les arguments pour le provider starting with passed kwargs
+        default_kwargs = {}
 
-        # Ajouter base_url si configuré
+        # 1. Base URL
         if "base_url" in provider_config:
-            llm_kwargs["base_url"] = provider_config["base_url"]
+            default_kwargs["base_url"] = provider_config["base_url"]
 
-        # Ajouter les paramètres globaux
+        # 2. Temperature
         if "temperature" in self._config:
-            llm_kwargs.setdefault("temperature", self._config["temperature"])
+            default_kwargs["temperature"] = self._config["temperature"]
+        
+        # 3. Max Tokens
         if "max_tokens" in self._config:
-            llm_kwargs.setdefault("max_tokens", self._config["max_tokens"])
+            default_kwargs["max_tokens"] = self._config["max_tokens"]
+            
+        # 4. Timeout
         if "timeout" in provider_config:
-            llm_kwargs["timeout"] = provider_config["timeout"]
+            default_kwargs["timeout"] = provider_config["timeout"]
         elif "timeout" in self._config:
-            llm_kwargs.setdefault("timeout", self._config["timeout"])
+            default_kwargs["timeout"] = self._config["timeout"]
+
+        # Merge defaults into kwargs (so kwargs win)
+        # We start with defaults, update with kwargs (except model_name which is handled separately)
+        final_kwargs = default_kwargs.copy()
+        final_kwargs.update(kwargs)
+        final_kwargs["model_name"] = model_name
 
         logger.info(f"Création LLM: provider={provider_name}, model={model_name}")
 
-        return provider_class(**llm_kwargs)
+        return provider_class(**final_kwargs)
 
     def create_worker_llm(self, **kwargs: Any) -> "BaseLLM":
         """
@@ -239,6 +253,12 @@ class ProviderFactory:
         if "timeout" not in kwargs and self._config.get("worker_timeout") is not None:
             kwargs["timeout"] = self._config["worker_timeout"]
 
+        # Inject custom resilience key for Worker
+        kwargs["resilience_key"] = f"{provider}_worker"
+
+        # Clean kwargs to avoid conflicts
+        kwargs.pop("provider", None)
+        kwargs.pop("model", None)
         logger.info(f"Création Worker LLM: {provider}/{model}")
         return self.create_llm(provider=provider, model=model, **kwargs)
 
@@ -266,6 +286,51 @@ class ProviderFactory:
         """
         provider_config = self.get_provider_config(provider)
         return provider_config.get("models", [])
+
+    def get_audit_provider(self) -> str:
+        """Retourne le provider actif pour l'Audit LLM."""
+        # Par défaut, fallback sur le provider principal
+        return self._config.get("audit_provider", self.get_active_provider())
+
+    def get_audit_model(self) -> str:
+        """Retourne le modèle actif pour l'Audit LLM."""
+        # Par défaut, fallback sur le modèle principal
+        return self._config.get("audit_model", self.get_active_model())
+
+    def create_audit_llm(self, **kwargs: Any) -> "BaseLLM":
+        """
+        Crée l'Audit LLM (Evaluateur) configuré.
+
+        Args:
+            **kwargs: Arguments supplémentaires
+
+        Returns:
+            Instance de BaseLLM pour l'audit
+        """
+        provider = self.get_audit_provider()
+        model = self.get_audit_model()
+
+        # Injecter les paramètres Audit spécifiques s'ils existent
+        if "temperature" not in kwargs and self._config.get("audit_temperature") is not None:
+            kwargs["temperature"] = self._config["audit_temperature"]
+
+        if "max_tokens" not in kwargs and self._config.get("audit_max_tokens") is not None:
+            kwargs["max_tokens"] = self._config["audit_max_tokens"]
+
+        if "top_p" not in kwargs and self._config.get("audit_top_p") is not None:
+            kwargs["top_p"] = self._config["audit_top_p"]
+            
+        if "timeout" not in kwargs and self._config.get("audit_timeout") is not None:
+            kwargs["timeout"] = self._config["audit_timeout"]
+
+        # Inject custom resilience key for Audit
+        kwargs["resilience_key"] = f"{provider}_audit"
+
+        # Clean kwargs to avoid conflicts
+        kwargs.pop("provider", None)
+        kwargs.pop("model", None)
+        logger.info(f"Création Audit LLM: {provider}/{model}")
+        return self.create_llm(provider=provider, model=model, **kwargs)
 
 
 # Instance singleton pour usage global

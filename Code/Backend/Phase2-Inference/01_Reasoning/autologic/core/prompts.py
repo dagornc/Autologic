@@ -267,28 +267,36 @@ INSTRUCTIONS DE RÉDACTION :
 RETOURNE LA RÉPONSE FINALE FORMATÉE (Markdown)."""
 
     @staticmethod
-    def audit_final_prompt(task: str, final_output: str, analysis: Optional[Dict[str, Any]] = None) -> str:
+    def audit_final_prompt(task: str, final_output: str, analysis: Optional[Dict[str, Any]] = None, previous_context: str = "") -> str:
         """
-        PHASE 7.5: AUDIT FINAL (Optionnel)
-        Vérifie si la réponse finale respecte toutes les contraintes.
+        PHASE 7.5: AUDIT FINAL (UNIVERSEL)
+        Vérifie la suffisance structurelle (90%) et la loi du rendement décroissant.
         """
         constraints_str = ""
         if analysis and analysis.get("constraints"):
             constraints_str = "\n- " + "\n- ".join(analysis["constraints"])
 
-        return f"""Tu es un auditeur qualité. Vérifie si cette réponse finale répond parfaitement à la tâche et respecte les contraintes.
+        return f"""Tu es un auditeur système de production (Production Supervisor).
+Ta mission est d'assurer l'efficacité : "Le mieux est l'ennemi du bien".
 
-TÂCHE : {task}
-CONTRAINTES IDENTIFIÉES :{constraints_str}
+TÂCHE INITIALE : {task}
+CONTRAINTES GLOBALES : {constraints_str}
 
-RÉPONSE À AUDITER :
+CONTENU À AUDITER :
 {final_output}
+
+RÈGLES D'AUDIT (UNIVERSELLES) :
+1. Suffisance Structurelle : Si 90% des instructions/contraintes sont respectées, VALIDE.
+2. Rendement Décroissant : Si les seules améliorations possibles sont mineures (style, ponctuation, synonymes) ou subjectives, INTERDIS LA BOUCLE (Force Success).
+3. Intégrité : La structure globale prime sur les détails.
 
 RETOURNE UN JSON STRICT :
 {{
-  "is_perfect": true|false,
-  "missing_elements": ["liste des éléments manquants ou contraintes non respectées"],
-  "improvement_suggestion": "Correction à apporter si nécessaire"
+  "structural_sufficiency_score": [0-100],
+  "is_sufficient": true|false,
+  "required_changes_type": "NONE|MINOR|MAJOR",
+  "missing_critical_elements": ["element1", "element2"],
+  "improvement_instructions": "Seulement si changements MAJEURS requis."
 }}"""
 
     @staticmethod

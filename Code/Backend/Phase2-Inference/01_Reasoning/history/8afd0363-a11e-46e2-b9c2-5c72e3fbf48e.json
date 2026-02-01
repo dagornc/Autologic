@@ -1,0 +1,61 @@
+{
+  "id": "8afd0363-a11e-46e2-b9c2-5c72e3fbf48e",
+  "timestamp": "2026-01-31T23:09:33.681259",
+  "task": "comment bien prompter en ia",
+  "plan": {
+    "steps": [
+      {
+        "step_number": 1,
+        "module_id": "information_retrieval",
+        "module_name": "Information Retrieval",
+        "action": "Rassembler les éléments fondamentaux du prompting : composants d'un prompt (contexte, instruction, contraintes, format) et les informations nécessaires pour guider l'IA efficacement.",
+        "expected_output": "Liste structurée des composants essentiels d'un bon prompt et des informations clés à inclure."
+      },
+      {
+        "step_number": 2,
+        "module_id": "pattern_recognition",
+        "module_name": "Pattern Recognition",
+        "action": "Identifier les structures de prompts qui donnent systématiquement de bons résultats (ex: chain-of-thought, few-shot prompting, role-playing) et les modèles linguistiques efficaces.",
+        "expected_output": "Catalogue des patterns de prompts performants avec exemples et contextes d'application."
+      },
+      {
+        "step_number": 3,
+        "module_id": "critical_thinking",
+        "module_name": "Critical Thinking",
+        "action": "Analyser les points d'ambiguïté courants dans les prompts, anticiper les malentendus potentiels de l'IA et identifier les biais ou limites à contourner.",
+        "expected_output": "Liste des pièges fréquents à éviter et des contre-mesures recommandées."
+      },
+      {
+        "step_number": 4,
+        "module_id": "abstraction",
+        "module_name": "Abstraction",
+        "action": "Extraire les principes universels de bon prompting au-delà des techniques spécifiques : clarté, spécificité, contexte, itération.",
+        "expected_output": "Ensemble de principes fondamentaux applicables à tout type de prompt."
+      },
+      {
+        "step_number": 5,
+        "module_id": "step_by_step",
+        "module_name": "Step-by-Step Thinking",
+        "action": "Construire une méthodologie structurée de création de prompt : définition de l'objectif → contexte → tâche → contraintes → format de sortie.",
+        "expected_output": "Processus séquentiel reproductible pour créer des prompts efficaces."
+      },
+      {
+        "step_number": 6,
+        "module_id": "linguistic_analysis",
+        "module_name": "Linguistic Analysis",
+        "action": "Optimiser les formulations pour maximiser la clarté : choix des mots précis, structure syntaxique guidante, cohérence sémantique globale.",
+        "expected_output": "Guide de formulations efficaces et règles de clarté linguistique."
+      },
+      {
+        "step_number": 7,
+        "module_id": "verification",
+        "module_name": "Verification/Self-correction",
+        "action": "Établir un processus de test et validation : vérifier la robustesse du prompt, tester des variations, itérer selon les résultats obtenus.",
+        "expected_output": "Méthode de validation avec critères de succès et processus d'amélioration continue."
+      }
+    ],
+    "estimated_complexity": "medium",
+    "total_steps": 7
+  },
+  "final_output": "```json\n{\n  \"titre\": \"Guide Expert pour un Prompting Efficace en IA\",\n  \"introduction\": \"Le prompting efficace est une compétence essentielle pour exploiter pleinement le potentiel des systèmes d'IA. Cette analyse structurée présente une méthodologie complète pour créer des prompts précis, ciblés et performants.\",\n  \"sections\": [\n    {\n      \"titre\": \"Composants Fondamentaux d'un Prompt\",\n      \"contenu\": [\n        {\n          \"sous_titre\": \"Contexte\",\n          \"points\": [\n            \"Cadre de travail et objet du sujet\",\n            \"Niveau d'expertise attendu\",\n            \"Public cible défini\",\n            \"Connaissances préalables nécessaires\"\n          ]\n        },\n        {\n          \"sous_titre\": \"Instruction\",\n          \"points\": [\n            \"Verbes d'action directs et spécifiques\",\n            \"Précision du résultat attendu\",\n            \"Détail des étapes à suivre si nécessaire\"\n          ]\n        },\n        {\n          \"sous_titre\": \"Contraintes\",\n          \"points\": [\n            \"Restrictions sur longueur/format\",\n            \"Thèmes à éviter\",\n            \"Niveau de formalité/créativité\",\n            \"Directives éthiques ou de sécurité\"\n          ]\n        },\n        {\n          \"sous_titre\": \"Format de Sortie\",\n          \"points\": [\n            \"Type de document attendu\",\n            \"Style de présentation\",\n            \"Organisation logique\",\n            \"Balisage spécifique si nécessaire\"\n          ]\n        }\n      ]\n    },\n    {\n      \"titre\": \"Patterns de Prompting Performants\",\n      \"contenu\": [\n        {\n          \"pattern\": \"Chain-of-Thought\",\n          \"description\": \"Demande à l'IA de détailler son raisonnement étape par étape\",\n          \"contexte\": \"Problèmes complexes, raisonnement logique, résolution de problèmes\"\n        },\n        {\n          \"pattern\": \"Few-Shot Prompting\",\n          \"description\": \"Fournit un petit nombre d'exemples pour guider la réponse\",\n          \"contexte\": \"Classification, génération de contenu spécifique, traduction avec expressions idiomatiques\"\n        },\n        {\n          \"pattern\": \"Role-Prompting\",\n          \"description\": \"Assigne un rôle spécifique à l'IA pour cadrer sa perspective\",\n          \"contexte\": \"Conseils d'expert, création avec voix spécifique, résolution de problèmes spécialisés\"\n        },\n        {\n          \"pattern\": \"Zero-Shot Prompting\",\n          \"description\": \"Demande une tâche sans exemples spécifiques\",\n          \"contexte\": \"Tâches simples, génération de contenu général, questions factuelles\"\n        },\n        {\n          \"pattern\": \"Contradiction Prompting\",\n          \"description\": \"Intentionnellement inclut des éléments contradictoires\",\n          \"contexte\": \"Validation de connaissances, détection de biais, évaluation critique\"\n        }\n      ]\n    },\n    {\n      \"titre\": \"Principes Universels du Bon Prompting\",\n      \"contenu\": [\n        {\n          \"principe\": \"Clarté\",\n          \"application\": \"Langage précis et sans ambiguïté, définition explicite des termes\"\n        },\n        {\n          \"principe\": \"Spécificité\",\n          \"application\": \"Détails précis plutôt que généralités, éléments à inclure/exclure\"\n        },\n        {\n          \"principe\": \"Contexte\",\n          \"application\": \"Cadre de référence complet, objectif final, audience cible\"\n        },\n        {\n          \"principe\": \"Itération\",\n          \"application\": \"Amélioration progressive basée sur les résultats obtenus\"\n        },\n        {\n          \"principe\": \"Adéquation au modèle\",\n          \"application\": \"Adapter le prompt aux spécificités et limites du modèle utilisé\"\n        }\n      ]\n    },\n    {\n      \"titre\": \"Méthodologie Structurée de Création\",\n      \"contenu\": [\n        \"1. Définition de l'objectif : Clarifier le résultat final attendu et son utilisation\",\n        \"2. Contexte : Fournir informations nécessaires pour comprendre la demande\",\n        \"3. Tâche : Définir précisément ce que l'IA doit faire avec verbes d'action directs\",\n        \"4. Contraintes : Définir limites et règles (longueur, exclusions, éthique)\",\n        \"5. Format de sortie : Spécifier structure organisationnelle et présentation\",\n        \"6. Validation et itération : Tester et affiner selon les résultats obtenus\"\n      ]\n    },\n    {\n      \"titre\": \"Optimisation Linguistique\",\n      \"contenu\": [\n        {\n          \"aspect\": \"Choix des mots\",\n          \"recommandation\": \"Remplacer termes vagues par mots spécifiques, éviter synonymes approximatifs\"\n        },\n        {\n          \"aspect\": \"Structure syntaxique\",\n          \"recommandation\": \"Organisation hiérarchique, connecteurs logiques, structure claire\"\n        },\n        {\n          \"aspect\": \"Cohérence sémantique\",\n          \"recommandation\": \"Terminologie cohérente, éviter contradictions, aligner niveau de complexité\"\n        },\n        {\n          \"aspect\": \"Formulations\",\n          \"recommandation\": \"Adapter interrogatives vs déclaratives selon la nature de la demande\"\n        }\n      ]\n    },\n    {\n      \"titre\": \"Processus de Validation\",\n      \"contenu\": [\n        \"1. Définir critères de succès objectifs (qualitatifs et quantitatifs)\",\n        \"2. Tester robustesse face à variations et cas limites\",\n        \"3. Comparer différentes formulations du prompt\",\n        \"4. Itérer en fonction des résultats obtenus\",\n        \"5. Validation croisée pour vérifier cohérence des réponses\",\n        \"6. Documentation systématique des tests et lessons learned\"\n      ]\n    }\n  ],\n  \"conclusion\": {\n    \"synthese\": \"Le prompting efficace combine une compréhension structurelle des composants fondamentaux, l'application de patterns éprouvés, l'anticipation des ambiguïtés, l'application de principes universels, et une méthodologie de création rigoureuse. La clé du succès réside dans la précision des instructions, la richesse du contexte, et le processus itératif d'amélioration continue.\",\n    \"actionnable\": \"Pour commencer à maîtriser le prompting efficace : (1) Identifiez clairement votre objectif final, (2) Structurez votre prompt avec contexte, instruction, contraintes et format, (3) Utilisez des patterns adaptés à votre besoin, (4) Testez et affinez systématiquement vos prompts, (5) Documentez vos succès pour bâtir votre expertise progressive.\"\n  },\n  \"contraintes\": [\n    \"Ambiguïté des termes vagues ('créatif', 'approprié')\",\n    \"Contradictions implicites dans les instructions\",\n    \"Manque de contexte ou de définition du public cible\",\n    \"Limites des modèles d'IA dans certains domaines spécialisés\",\n    \"Biais potentiels dans les réponses générées\"\n  ],\n  \"connaissances_requises\": [\n    \"Compréhension des limites et capacités des modèles d'IA\",\n    \"Maîtrise des principes de communication technique\",\n    \"Connaissance des domaines d'application spécifiques\",\n    \"Analyse critique des résultats générés\",\n    \"Compétence en reformulation et amélioration progressive\"\n  ],\n  \"risques_potentiels\": [\n    \"Génération de contenu inexact ou biaisé\",\n    \"Interprétation erronée des intentions de l'utilisateur\",\n    \"Production de réponses trop générales ou non ciblées\",\n    \"Oubli de contraintes éthiques importantes\",\n    \"Dépendance excessive sans validation critique des résultats\"\n  ],\n  \"meilleures_pratiques\": [\n    \"Commencer par définir l'objectif final avant de rédiger le prompt\",\n    \"Inclure systématiquement contexte et public cible\",\n    \"Utiliser des verbes d'action précis et spécifiques\",\n    \"Tester avec des variations pour valider la robustesse\",\n    \"Itérer en fonction des résultats obtenus\",\n    \"Documenter les succès et les échecs pour l'apprentissage continu\"\n  ]\n}\n```"
+}

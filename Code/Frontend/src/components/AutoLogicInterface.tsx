@@ -46,6 +46,7 @@ const AutoLogicContent: React.FC = () => {
         error,
         loadingStage,
         submitTask,
+        stopTask,
     } = useAutoLogic();
 
     const handleSubmit = () => {
@@ -118,6 +119,7 @@ const AutoLogicContent: React.FC = () => {
                                         onSubmit={handleSubmit}
                                         isLoading={isLoading}
                                         config={config}
+                                        onStop={stopTask}
                                     />
 
                                     <LoadingOverlay isVisible={isLoading} stage={loadingStage} />

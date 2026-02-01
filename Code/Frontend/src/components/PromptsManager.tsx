@@ -25,6 +25,7 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
     // Form state
     const [currentPrompt, setCurrentPrompt] = useState<Partial<Prompt>>({});
     const [tagsInput, setTagsInput] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         loadPrompts();
@@ -57,13 +58,18 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
     };
 
     const handleSave = async () => {
-        if (!currentPrompt.title || !currentPrompt.content) return;
+        if (!currentPrompt.title?.trim() || !currentPrompt.content?.trim()) {
+            setError('Title and Content are required.');
+            return;
+        }
 
         try {
+            setIsSaving(true);
+            setError(null);
             const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
             const promptData = {
-                title: currentPrompt.title,
-                content: currentPrompt.content,
+                title: currentPrompt.title.trim(),
+                content: currentPrompt.content.trim(),
                 tags
             };
 
@@ -75,9 +81,13 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
 
             await loadPrompts();
             setIsEditing(false);
+            setCurrentPrompt({});
+            setTagsInput('');
         } catch (err) {
-            setError('Failed to save prompt.');
+            setError(err instanceof Error ? err.message : 'Failed to save prompt.');
             console.error(err);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -89,6 +99,7 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
             await promptsApi.delete(id);
             await loadPrompts();
         } catch (err) {
+            console.error(err);
             setError('Failed to delete prompt.');
         }
     };
@@ -168,17 +179,23 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
 
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
-                                    onClick={() => setIsEditing(false)}
+                                    onClick={() => { setIsEditing(false); setError(null); }}
                                     className="px-4 py-2 text-zinc-500 hover:text-foreground transition-colors"
+                                    disabled={isSaving}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                                    disabled={isSaving}
+                                    className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
                                 >
-                                    <Save className="w-4 h-4" />
-                                    <span>Save Prompt</span>
+                                    {isSaving ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Save className="w-4 h-4" />
+                                    )}
+                                    <span>{isSaving ? 'Saving...' : 'Save Prompt'}</span>
                                 </button>
                             </div>
                         </div>

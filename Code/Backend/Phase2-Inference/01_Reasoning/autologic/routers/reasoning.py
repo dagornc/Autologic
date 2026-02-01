@@ -94,12 +94,13 @@ async def solve_task(request: TaskRequest, engine: AutoLogicEngine = Depends(get
         # Logique d'instanciation
         if override_provider or override_model:
             # Cas Override : on utilise le même modèle pour tout (mode legacy/test)
-            logger.info(f"Override détecté : Root & Worker utilisent {override_provider}/{override_model}")
+            logger.info(f"Override détecté : Root & Worker & Audit utilisent {override_provider}/{override_model}")
             root_llm = factory.create_llm(provider=override_provider, model=override_model, **common_kwargs)
             worker_llm = factory.create_llm(provider=override_provider, model=override_model, **common_kwargs)
+            audit_llm = factory.create_llm(provider=override_provider, model=override_model, **common_kwargs)
         else:
-            # Cas Configuration Dual (Root != Worker)
-            logger.info("Utilisation de la configuration Dual (Root/Worker)")
+            # Cas Configuration Dual (Root != Worker != Audit)
+            logger.info("Utilisation de la configuration Multi-Agent (Root/Worker/Audit)")
 
             # Root LLM (Stratégique: Select, Adapt, Structure)
             root_llm = factory.create_llm(**common_kwargs)
@@ -107,10 +108,23 @@ async def solve_task(request: TaskRequest, engine: AutoLogicEngine = Depends(get
             # Worker LLM (Tactique: Execute)
             worker_llm = factory.create_worker_llm(**common_kwargs)
 
-        logger.info(f"Cycle configuré -> Root: {root_llm.model_name} | Worker: {worker_llm.model_name}")
+            # Audit LLM (Observer: Critique)
+            audit_llm = factory.create_audit_llm(**common_kwargs)
 
-        # Exécution du cycle avec les deux LLMs
-        result = await engine.run_full_cycle(request.task, root_llm=root_llm, worker_llm=worker_llm)
+        logger.info(f"Cycle configuré -> Root: {root_llm.model_name} | Worker: {worker_llm.model_name} | Audit: {audit_llm.model_name}")
+
+        # Exécution du cycle avec les trois LLMs
+        audit_timeout = params.get("audit_timeout") or factory._config.get("audit_timeout") or 30
+        audit_max_retries = params.get("audit_max_retries") or factory._config.get("audit_max_retries", 3)
+        
+        result = await engine.run_full_cycle(
+            request.task, 
+            root_llm=root_llm, 
+            worker_llm=worker_llm, 
+            audit_llm=audit_llm,
+            audit_timeout=int(audit_timeout),
+            audit_max_retries=int(audit_max_retries)
+        )
 
         if "error" in result:
             logger.error(f"Erreur cycle: {result['error']}")

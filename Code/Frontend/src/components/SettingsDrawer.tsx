@@ -3,8 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Settings, Key, Eye, EyeOff,
     Loader2, CheckCircle2, RefreshCw, Wifi, WifiOff,
-    Thermometer, Hash, Sparkles, ChevronDown, Save, RotateCcw, Gift, Zap, Shield, Clock
+    Thermometer, Hash, Sparkles, ChevronDown, Save, RotateCcw, Gift, Zap, Shield, Clock,
+    Moon, Sun, Monitor
 } from 'lucide-react';
+import { LiquidBackground } from './ui/LiquidBackground';
+import { getStoredTheme, setTheme } from '../utils/theme';
+import type { Theme } from '../utils/theme';
 
 // ============ TYPES ============
 interface SettingsConfig {
@@ -25,6 +29,16 @@ interface SettingsConfig {
     workerMaxTokens?: number;
     workerTopP?: number;
     workerTimeout?: number;
+
+    // Audit specific params
+    auditProvider?: string;
+    auditModel?: string;
+    useAuditSameAsRoot: boolean;
+    auditTemperature?: number;
+    auditMaxTokens?: number;
+    auditTopP?: number;
+    auditTimeout?: number;
+    auditMaxRetries: number;
 }
 
 interface ResilienceSettings {
@@ -147,13 +161,13 @@ const Slider: React.FC<{
     icon: React.ReactNode;
     unit?: string;
 }> = ({ value, onChange, min, max, step, label, icon, unit = '' }) => (
-    <div className="space-y-2">
+    <div className="space-y-3">
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground/80 font-medium">
                 {icon}
                 <span>{label}</span>
             </div>
-            <span className="text-sm font-mono text-primary">{value}{unit}</span>
+            <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-1 rounded-md min-w-[3rem] text-center border border-primary/20">{value}{unit}</span>
         </div>
         <input
             type="range"
@@ -162,7 +176,7 @@ const Slider: React.FC<{
             step={step}
             value={value}
             onChange={(e) => onChange(parseFloat(e.target.value))}
-            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-1.5 bg-secondary/50 rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80 transition-all"
         />
     </div>
 );
@@ -176,8 +190,8 @@ const NumberInput: React.FC<{
     icon: React.ReactNode;
     unit?: string;
 }> = ({ value, onChange, min, max, label, icon, unit = '' }) => (
-    <div className="flex items-center justify-between py-1">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+    <div className="flex items-center justify-between py-1.5">
+        <div className="flex items-center gap-2 text-sm font-medium text-foreground/80">
             {icon}
             <span>{label}</span>
         </div>
@@ -188,9 +202,9 @@ const NumberInput: React.FC<{
                 max={max}
                 value={value}
                 onChange={(e) => onChange(Math.max(min, Math.min(max, parseFloat(e.target.value) || min)))}
-                className="w-20 bg-background border border-input rounded-lg px-2 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/50 font-mono text-right"
+                className="w-20 input-liquid text-sm text-foreground outline-none font-mono text-right"
             />
-            <span className="text-xs text-zinc-600 min-w-[30px]">{unit}</span>
+            <span className="text-[10px] text-muted-foreground min-w-[30px] uppercase font-bold tracking-wider">{unit}</span>
         </div>
     </div>
 );
@@ -224,7 +238,7 @@ const Toggle: React.FC<{
     icon?: React.ReactNode;
     colorClass?: string; // Kept for types but ignored for uniformity
 }> = ({ checked, onChange, label, icon }) => (
-    <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-xl hover:bg-muted/50 transition-colors">
+    <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10">
         <div className="relative flex-shrink-0">
             <input
                 type="checkbox"
@@ -232,8 +246,8 @@ const Toggle: React.FC<{
                 onChange={(e) => onChange(e.target.checked)}
                 className="sr-only peer"
             />
-            <div className={`w-11 h-6 bg-input rounded-full peer peer-checked:bg-primary transition-colors border border-border`} />
-            <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 shadow-sm transition-all" />
+            <div className={`w-11 h-6 bg-black/20 dark:bg-white/10 rounded-full peer peer-checked:bg-primary transition-all duration-300 border border-white/10`} />
+            <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 shadow-sm transition-all duration-300" />
         </div>
         {(label || icon) && (
             <span className="text-sm text-foreground font-medium group-hover:text-primary transition-colors flex items-center gap-2 select-none">
@@ -296,7 +310,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         useWorkerSameAsRoot: true,
 
         // Root Params
-        temperature: 0.7,
+        temperature: 0.3,
         maxTokens: 8192,
         topP: 1.0,
 
@@ -307,7 +321,17 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         workerTimeout: undefined,
 
         apiKey: '',
-        timeout: 600
+        timeout: 600,
+
+        // Audit Params
+        auditProvider: 'OpenRouter',
+        auditModel: 'google/gemini-2.0-flash-exp:free',
+        useAuditSameAsRoot: true,
+        auditTemperature: undefined,
+        auditMaxTokens: undefined,
+        auditTopP: undefined,
+        auditTimeout: undefined,
+        auditMaxRetries: 3
     };
 
     const { settings, saveSettings } = usePersistedSettings(defaultConfig);
@@ -317,6 +341,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
     const [showApiKey, setShowApiKey] = useState(false);
     const [providerStatus, setProviderStatus] = useState<ProviderStatus>({ connected: false, lastCheck: null });
     const [workerProviderStatus, setWorkerProviderStatus] = useState<ProviderStatus>({ connected: false, lastCheck: null });
+    const [auditProviderStatus, setAuditProviderStatus] = useState<ProviderStatus>({ connected: false, lastCheck: null });
     const [testingConnection, setTestingConnection] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -330,23 +355,68 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
     const [isWorkerModelDropdownOpen, setIsWorkerModelDropdownOpen] = useState(false);
     const [workerModelSearchQuery, setWorkerModelSearchQuery] = useState('');
 
-    const [freeModelsOnly, setFreeModelsOnly] = useState(false);
+    // Audit select state
+    const [isAuditModelDropdownOpen, setIsAuditModelDropdownOpen] = useState(false);
+    const [auditModelSearchQuery, setAuditModelSearchQuery] = useState('');
+
+    const [freeModelsOnly, setFreeModelsOnly] = useState(true);
 
     // Worker States
     const [workerResilienceSettings, setWorkerResilienceSettings] = useState<ResilienceSettings>({
-        rateLimit: 5,
+        rateLimit: 15,
         retryEnabled: true,
         fallbackEnabled: true
     });
-    const [workerAutoModelSelection, setWorkerAutoModelSelection] = useState(false);
-    const [workerFreeModelsOnly, setWorkerFreeModelsOnly] = useState(false);
+    const [workerAutoModelSelection, setWorkerAutoModelSelection] = useState(true);
+    const [workerFreeModelsOnly, setWorkerFreeModelsOnly] = useState(true);
+
+    // Audit States
+    const [showAuditAdvanced, setShowAuditAdvanced] = useState(false);
+    const [auditResilienceSettings, setAuditResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 15,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+    const [auditAutoModelSelection, setAuditAutoModelSelection] = useState(false);
+    const [auditFreeModelsOnly, setAuditFreeModelsOnly] = useState(true);
+
     const [autoModelSelection, setAutoModelSelection] = useState(() =>
         settings.model === 'openrouter/auto'
     );
 
+    const [currentTheme, setCurrentTheme] = useState<Theme>('system');
+
+    useEffect(() => {
+        setCurrentTheme(getStoredTheme());
+    }, [isOpen]);
+
+    const handleThemeChange = (theme: Theme) => {
+        setTheme(theme);
+        setCurrentTheme(theme);
+    };
+
     // Resilience settings state
     const [resilienceSettings, setResilienceSettings] = useState<ResilienceSettings>({
-        rateLimit: 5,
+        rateLimit: 15,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+
+    // State for tracking initial resilience values
+    const [originalResilienceSettings, setOriginalResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 15,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+
+    const [originalWorkerResilienceSettings, setOriginalWorkerResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 15,
+        retryEnabled: true,
+        fallbackEnabled: true
+    });
+
+    const [originalAuditResilienceSettings, setOriginalAuditResilienceSettings] = useState<ResilienceSettings>({
+        rateLimit: 15,
         retryEnabled: true,
         fallbackEnabled: true
     });
@@ -358,7 +428,8 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
             ? [providerOverride]
             : Array.from(new Set([
                 localSettings.provider,
-                (!localSettings.useWorkerSameAsRoot && localSettings.workerProvider) ? localSettings.workerProvider : null
+                (!localSettings.useWorkerSameAsRoot && localSettings.workerProvider) ? localSettings.workerProvider : null,
+                (!localSettings.useAuditSameAsRoot && localSettings.auditProvider) ? localSettings.auditProvider : null
             ].filter(Boolean) as string[]));
 
         setLoading(true);
@@ -408,7 +479,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         } finally {
             setLoading(false);
         }
-    }, [cache, isValid, updateCache, localSettings.apiKey, localSettings.provider, localSettings.workerProvider, localSettings.useWorkerSameAsRoot]);
+    }, [cache, isValid, updateCache, localSettings.apiKey, localSettings.provider, localSettings.workerProvider, localSettings.useWorkerSameAsRoot, localSettings.auditProvider, localSettings.useAuditSameAsRoot]);
 
     useEffect(() => {
         if (isOpen) {
@@ -447,7 +518,14 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         workerModel: data.worker_model || data.active_model,
                         useWorkerSameAsRoot: !data.worker_provider,
 
+                        // Audit (using backend naming convention if available, or defaults)
+                        auditProvider: data.audit_provider ? normalizeProvider(data.audit_provider) : (activeProvider),
+                        auditModel: data.audit_model || data.active_model,
+                        useAuditSameAsRoot: !data.audit_provider, // If no audit provider returned, assume fallback to root for now or user hasn't set it
+
                         temperature: data.temperature,
+
+
                         maxTokens: data.max_tokens,
                         topP: data.top_p,
                         timeout: data.timeout,
@@ -455,11 +533,19 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         workerTemperature: data.worker_temperature,
                         workerMaxTokens: data.worker_max_tokens,
                         workerTopP: data.worker_top_p,
-                        workerTimeout: data.worker_timeout
+                        workerTimeout: data.worker_timeout,
+
+                        auditTemperature: data.audit_temperature,
+                        auditMaxTokens: data.audit_max_tokens,
+                        auditTopP: data.audit_top_p,
+                        auditTimeout: data.audit_timeout,
+                        auditMaxRetries: data.audit_max_retries ?? 3
                     }));
 
                     if (data.active_model === 'openrouter/auto') setAutoModelSelection(true);
+
                     if (data.worker_model === 'openrouter/auto') setWorkerAutoModelSelection(true);
+                    if (data.audit_model === 'openrouter/auto') setAuditAutoModelSelection(true);
                 })
                 .catch(err => console.error("Config fetch error:", err));
         }
@@ -471,19 +557,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         }
     }, [fetchModels, isOpen]);
 
-    // State for tracking initial resilience values
-    const [originalResilienceSettings, setOriginalResilienceSettings] = useState<ResilienceSettings>({
-        rateLimit: 5,
-        retryEnabled: true,
-        fallbackEnabled: true
-    });
 
-    // Default worker resilience settings to track changes against
-    const [originalWorkerResilienceSettings, setOriginalWorkerResilienceSettings] = useState<ResilienceSettings>({
-        rateLimit: 5,
-        retryEnabled: true,
-        fallbackEnabled: true
-    });
 
     // Fetch resilience config for OpenRouter (Root)
     useEffect(() => {
@@ -492,9 +566,9 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                 .then(res => res.json())
                 .then(data => {
                     const fetched = {
-                        rateLimit: data.rate_limit ?? 5,
-                        retryEnabled: data.retry_enabled ?? false,
-                        fallbackEnabled: data.fallback_enabled ?? false
+                        rateLimit: data.rate_limit ?? 15,
+                        retryEnabled: data.retry_enabled ?? true,
+                        fallbackEnabled: data.fallback_enabled ?? true
                     };
                     setResilienceSettings(fetched);
                     setOriginalResilienceSettings(fetched);
@@ -506,13 +580,13 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
     // Fetch resilience config for OpenRouter (Worker)
     useEffect(() => {
         if (isOpen && localSettings.workerProvider === 'OpenRouter' && !localSettings.useWorkerSameAsRoot) {
-            fetch('http://127.0.0.1:8000/api/providers/openrouter/resilience')
+            fetch('http://127.0.0.1:8000/api/providers/openrouter_worker/resilience')
                 .then(res => res.json())
                 .then(data => {
                     const fetched = {
-                        rateLimit: data.rate_limit ?? 5,
-                        retryEnabled: data.retry_enabled ?? false,
-                        fallbackEnabled: data.fallback_enabled ?? false
+                        rateLimit: data.rate_limit ?? 15,
+                        retryEnabled: data.retry_enabled ?? true,
+                        fallbackEnabled: data.fallback_enabled ?? true
                     };
                     setWorkerResilienceSettings(fetched);
                     setOriginalWorkerResilienceSettings(fetched);
@@ -521,15 +595,34 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         }
     }, [isOpen, localSettings.workerProvider, localSettings.useWorkerSameAsRoot]);
 
+    // Fetch resilience config for OpenRouter (Audit)
+    useEffect(() => {
+        if (isOpen && localSettings.auditProvider === 'OpenRouter' && !localSettings.useAuditSameAsRoot) {
+            fetch('http://127.0.0.1:8000/api/providers/openrouter_audit/resilience')
+                .then(res => res.json())
+                .then(data => {
+                    const fetched = {
+                        rateLimit: data.rate_limit ?? 15,
+                        retryEnabled: data.retry_enabled ?? true,
+                        fallbackEnabled: data.fallback_enabled ?? true
+                    };
+                    setAuditResilienceSettings(fetched);
+                    setOriginalAuditResilienceSettings(fetched);
+                })
+                .catch(err => console.warn('Failed to fetch audit resilience config:', err));
+        }
+    }, [isOpen, localSettings.auditProvider, localSettings.useAuditSameAsRoot]);
+
     // Track changes
     useEffect(() => {
         const isSettingsChanged = JSON.stringify(localSettings) !== JSON.stringify(settings);
         const isResilienceChanged = JSON.stringify(resilienceSettings) !== JSON.stringify(originalResilienceSettings);
         // Track worker resilience changes (only if applicable, but simple check is okay as user editing it implies intent)
         const isWorkerResilienceChanged = JSON.stringify(workerResilienceSettings) !== JSON.stringify(originalWorkerResilienceSettings);
+        const isAuditResilienceChanged = JSON.stringify(auditResilienceSettings) !== JSON.stringify(originalAuditResilienceSettings);
 
-        setHasChanges(isSettingsChanged || isResilienceChanged || isWorkerResilienceChanged);
-    }, [localSettings, settings, resilienceSettings, originalResilienceSettings, workerResilienceSettings, originalWorkerResilienceSettings]);
+        setHasChanges(isSettingsChanged || isResilienceChanged || isWorkerResilienceChanged || isAuditResilienceChanged);
+    }, [localSettings, settings, resilienceSettings, originalResilienceSettings, workerResilienceSettings, originalWorkerResilienceSettings, auditResilienceSettings, originalAuditResilienceSettings]);
 
     // Update model when provider changes
     useEffect(() => {
@@ -547,10 +640,19 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                 const currentWorkerModel = localSettings.workerModel || '';
                 if (models.length > 0 && (!currentWorkerModel || !models.includes(currentWorkerModel))) {
                     setLocalSettings(prev => ({ ...prev, workerModel: models[0] }));
+                    setLocalSettings(prev => ({ ...prev, workerModel: models[0] }));
+                }
+            }
+            // Audit
+            if (!localSettings.useAuditSameAsRoot && localSettings.auditProvider) {
+                const models = modelData.models[localSettings.auditProvider] || [];
+                const currentAuditModel = localSettings.auditModel || '';
+                if (models.length > 0 && (!currentAuditModel || !models.includes(currentAuditModel))) {
+                    setLocalSettings(prev => ({ ...prev, auditModel: models[0] }));
                 }
             }
         }
-    }, [localSettings.provider, localSettings.workerProvider, modelData, localSettings.useWorkerSameAsRoot, localSettings.model, localSettings.workerModel]);
+    }, [localSettings.provider, localSettings.workerProvider, localSettings.auditProvider, modelData, localSettings.useWorkerSameAsRoot, localSettings.useAuditSameAsRoot, localSettings.model, localSettings.workerModel, localSettings.auditModel]);
 
     // Test connection (Root + Worker if separate)
     const testConnection = async () => {
@@ -627,6 +729,43 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
             setWorkerProviderStatus({ connected: false, lastCheck: null });
         }
 
+        // Test Audit provider if separate
+        if (!localSettings.useAuditSameAsRoot && localSettings.auditProvider) {
+            try {
+                const auditResponse = await fetch('http://127.0.0.1:8000/api/providers/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: localSettings.auditProvider,
+                        api_key: localSettings.apiKey
+                    })
+                });
+
+                if (auditResponse.ok) {
+                    setAuditProviderStatus({
+                        connected: true,
+                        lastCheck: new Date(),
+                        error: undefined
+                    });
+                } else {
+                    const errorData = await auditResponse.json().catch(() => ({}));
+                    setAuditProviderStatus({
+                        connected: false,
+                        lastCheck: new Date(),
+                        error: errorData.detail || `Status: ${auditResponse.status}`
+                    });
+                }
+            } catch (error) {
+                setAuditProviderStatus({
+                    connected: false,
+                    lastCheck: new Date(),
+                    error: error instanceof Error ? error.message : 'Audit connection failed'
+                });
+            }
+        } else {
+            setAuditProviderStatus({ connected: false, lastCheck: null });
+        }
+
         setTestingConnection(false);
     };
 
@@ -654,7 +793,17 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                     worker_temperature: localSettings.useWorkerSameAsRoot ? undefined : localSettings.workerTemperature,
                     worker_max_tokens: localSettings.useWorkerSameAsRoot ? undefined : localSettings.workerMaxTokens,
                     worker_top_p: localSettings.useWorkerSameAsRoot ? undefined : localSettings.workerTopP,
-                    worker_timeout: localSettings.useWorkerSameAsRoot ? undefined : localSettings.workerTimeout
+
+                    worker_timeout: localSettings.useWorkerSameAsRoot ? undefined : localSettings.workerTimeout,
+
+                    // Audit params
+                    audit_provider: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditProvider,
+                    audit_model: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditModel,
+                    audit_temperature: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTemperature,
+                    audit_max_tokens: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditMaxTokens,
+                    audit_top_p: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTopP,
+                    audit_timeout: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditTimeout,
+                    audit_max_retries: localSettings.useAuditSameAsRoot ? undefined : localSettings.auditMaxRetries
                 })
             });
 
@@ -681,12 +830,12 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
             }
 
             // Save resilience config for OpenRouter (Worker), if different from Root
-            if (localSettings.workerProvider === 'OpenRouter' && !localSettings.useWorkerSameAsRoot && localSettings.provider !== 'OpenRouter') {
+            if (localSettings.workerProvider === 'OpenRouter' && !localSettings.useWorkerSameAsRoot) {
                 const resilienceResponse = await fetch('http://127.0.0.1:8000/api/providers/resilience', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        provider: 'openrouter',
+                        provider: 'openrouter_worker',
                         rate_limit: workerResilienceSettings.rateLimit,
                         retry_enabled: workerResilienceSettings.retryEnabled,
                         fallback_enabled: workerResilienceSettings.fallbackEnabled
@@ -695,6 +844,24 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
 
                 if (!resilienceResponse.ok) {
                     console.error('Failed to update worker resilience config');
+                }
+            }
+
+            // Save resilience config for OpenRouter (Audit), if different from Root
+            if (localSettings.auditProvider === 'OpenRouter' && !localSettings.useAuditSameAsRoot) {
+                const resilienceResponse = await fetch('http://127.0.0.1:8000/api/providers/resilience', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: 'openrouter_audit',
+                        rate_limit: auditResilienceSettings.rateLimit,
+                        retry_enabled: auditResilienceSettings.retryEnabled,
+                        fallback_enabled: auditResilienceSettings.fallbackEnabled
+                    })
+                });
+
+                if (!resilienceResponse.ok) {
+                    console.error('Failed to update audit resilience config');
                 }
             }
 
@@ -765,6 +932,28 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
         return availableWorkerModels.filter(m => m.toLowerCase().includes(query));
     }, [availableWorkerModels, workerModelSearchQuery]);
 
+    const availableAuditModels = useMemo(() => {
+        if (!modelData || !localSettings.auditProvider) return [];
+
+        let models = modelData.models[localSettings.auditProvider] || [];
+
+        // Filtrage "Modèles gratuits" pour l'audit
+        if (auditFreeModelsOnly && localSettings.auditProvider === 'OpenRouter' && modelData.modelsDetailed) {
+            const detailed = modelData.modelsDetailed['OpenRouter'] || [];
+            const freeIds = new Set(detailed.filter(m => m.is_free).map(m => m.id));
+            models = models.filter(id => freeIds.has(id));
+        }
+
+        return models.sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: 'base' })
+        );
+    }, [modelData, localSettings.auditProvider, auditFreeModelsOnly]);
+
+    const filteredAuditModels = useMemo(() => {
+        const query = auditModelSearchQuery.toLowerCase();
+        return availableAuditModels.filter(m => m.toLowerCase().includes(query));
+    }, [availableAuditModels, auditModelSearchQuery]);
+
     const currentProviderInfo = PROVIDER_INFO[localSettings.provider] || {
         color: 'from-gray-500 to-gray-600',
         icon: '⚡',
@@ -790,8 +979,10 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         animate={{ x: 0 }}
                         exit={{ x: '-100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed left-0 top-0 h-full w-full max-w-md bg-background/95 backdrop-blur-xl border-r border-border shadow-2xl z-50 overflow-hidden flex flex-col"
+                        className="fixed left-0 top-0 h-full w-full max-w-md glass-panel-next z-50 overflow-hidden flex flex-col"
                     >
+                        <LiquidBackground className="opacity-50" />
+
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50 backdrop-blur-sm">
                             <div className="flex items-center gap-3">
@@ -815,8 +1006,30 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
 
-                            {/* Theme Selection - Removed as requested (moved to sidebar) */}
-                            {/* <div className="space-y-3"> ... </div> */}
+                            {/* Theme Selection */}
+                            <div className="p-1 bg-secondary/50 backdrop-blur-md rounded-2xl flex items-center justify-between border border-border/50">
+                                {[
+                                    { id: 'light', icon: Sun, label: 'Light' },
+                                    { id: 'dark', icon: Moon, label: 'Dark' },
+                                    { id: 'system', icon: Monitor, label: 'System' },
+                                ].map((theme) => {
+                                    const isActive = currentTheme === theme.id;
+                                    const Icon = theme.icon;
+                                    return (
+                                        <button
+                                            key={theme.id}
+                                            onClick={() => handleThemeChange(theme.id as Theme)}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium transition-all duration-300 ${isActive
+                                                ? 'bg-background shadow-sm text-primary scale-100'
+                                                : 'text-muted-foreground hover:bg-background/50 hover:text-foreground scale-95 hover:scale-100'
+                                                }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5" />
+                                            <span>{theme.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
                             {/* <div className="h-px bg-zinc-800/50" /> */}
 
@@ -834,7 +1047,10 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                             </div>
                                             <div>
                                                 <h3 className="text-sm font-bold text-foreground">Stratégique (Root)</h3>
-                                                <p className="text-[10px] text-muted-foreground">Planification et Raisonnement</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-[10px] text-muted-foreground">Planification et Raisonnement</p>
+                                                    <ConnectionIndicator status={providerStatus} />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -854,7 +1070,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                             value={localSettings.provider}
                                             onChange={(e) => setLocalSettings(prev => ({ ...prev, provider: e.target.value }))}
                                             disabled={loading}
-                                            className="w-full input-premium appearance-none cursor-pointer text-sm"
+                                            className="w-full input-liquid appearance-none cursor-pointer text-sm font-medium"
                                         >
                                             {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
                                                 <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
@@ -870,7 +1086,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                 if (!loading && availableModels.length > 0) setIsModelDropdownOpen(!isModelDropdownOpen);
                                             }}
                                             disabled={loading || availableModels.length === 0}
-                                            className="w-full input-premium text-left flex items-center justify-between hover:bg-muted/50 transition-colors text-sm"
+                                            className="w-full input-liquid text-left flex items-center justify-between hover:bg-white/30 dark:hover:bg-white/10 transition-colors text-sm font-medium"
                                         >
                                             <span className="truncate">{localSettings.model || "Sélectionner..."}</span>
                                             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1022,7 +1238,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                         <Slider value={localSettings.temperature} onChange={(v) => setLocalSettings(prev => ({ ...prev, temperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
                                                         <Slider value={localSettings.maxTokens} onChange={(v) => setLocalSettings(prev => ({ ...prev, maxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
                                                         <Slider value={localSettings.topP} onChange={(v) => setLocalSettings(prev => ({ ...prev, topP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
-                                                        <Slider value={localSettings.timeout} onChange={(v) => setLocalSettings(prev => ({ ...prev, timeout: v }))} min={30} max={600} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                        <Slider value={localSettings.timeout} onChange={(v) => setLocalSettings(prev => ({ ...prev, timeout: v }))} min={30} max={800} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
                                                     </motion.div>
                                                 )}
                                             </AnimatePresence>
@@ -1088,7 +1304,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                     value={localSettings.workerProvider}
                                                     onChange={(e) => setLocalSettings(prev => ({ ...prev, workerProvider: e.target.value }))}
                                                     disabled={loading}
-                                                    className="w-full input-premium appearance-none cursor-pointer text-sm"
+                                                    className="w-full input-liquid font-medium appearance-none cursor-pointer text-sm"
                                                 >
                                                     {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
                                                         <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
@@ -1104,7 +1320,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                         if (!loading && availableWorkerModels.length > 0) setIsWorkerModelDropdownOpen(!isWorkerModelDropdownOpen);
                                                     }}
                                                     disabled={loading || availableWorkerModels.length === 0}
-                                                    className="w-full input-premium text-left flex items-center justify-between hover:bg-muted/50 transition-colors text-sm"
+                                                    className="w-full input-liquid font-medium text-left flex items-center justify-between hover:bg-white/30 dark:hover:bg-white/10 transition-colors text-sm"
                                                 >
                                                     <span className="truncate">{localSettings.workerModel || "Sélectionner..."}</span>
                                                     <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isWorkerModelDropdownOpen ? 'rotate-180' : ''}`} />
@@ -1207,9 +1423,197 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                                                             <Slider value={localSettings.workerTemperature ?? 0.7} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTemperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
                                                             <Slider value={localSettings.workerMaxTokens ?? 4096} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerMaxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
                                                             <Slider value={localSettings.workerTopP ?? 1.0} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTopP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
-                                                            <Slider value={localSettings.workerTimeout ?? 60} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTimeout: v }))} min={30} max={600} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                            <Slider value={localSettings.workerTimeout ?? 60} onChange={(v) => setLocalSettings(prev => ({ ...prev, workerTimeout: v }))} min={30} max={800} step={10} label="Timeout" icon={<Clock className="w-4 h-4" />} unit="s" />
                                                         </motion.div>
                                                     )}
+                                                </AnimatePresence>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* === AUDIT TOGGLE === */}
+                                    <div className="py-1">
+                                        <Toggle
+                                            checked={localSettings.useAuditSameAsRoot}
+                                            onChange={(checked) => setLocalSettings(prev => ({ ...prev, useAuditSameAsRoot: checked }))}
+                                            label={
+                                                <div className="flex flex-col items-start gap-0.5">
+                                                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                                        Même modèle pour l'audit
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground font-normal">
+                                                        Utiliser le modèle stratégique pour les critiques/audits
+                                                    </span>
+                                                </div>
+                                            }
+                                            colorClass="bg-fuchsia-600"
+                                        />
+                                    </div>
+
+                                    {/* === AUDIT LLM (OBSERVER) === */}
+                                    {!localSettings.useAuditSameAsRoot && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="space-y-3 p-4 border border-white/10 rounded-2xl bg-white/5 relative overflow-hidden group/audit"
+                                        >
+                                            <div className="absolute inset-0 bg-fuchsia-500/5 opacity-0 group-hover/audit:opacity-100 transition-opacity pointer-events-none" />
+
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-500">
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-foreground">Audit (Observer)</h3>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-muted-foreground">Validation et critique</p>
+                                                            <ConnectionIndicator status={auditProviderStatus} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => fetchModels(true, localSettings.auditProvider)}
+                                                    disabled={loading}
+                                                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                    title="Rafraîchir"
+                                                >
+                                                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            {/* Audit Provider Select */}
+                                            <div className="relative">
+                                                <select
+                                                    value={localSettings.auditProvider}
+                                                    onChange={(e) => setLocalSettings(prev => ({ ...prev, auditProvider: e.target.value }))}
+                                                    disabled={loading}
+                                                    className="w-full input-premium appearance-none cursor-pointer text-sm"
+                                                >
+                                                    {loading ? <option>Chargement...</option> : modelData?.providers.map((p) => (
+                                                        <option key={p} value={p}>{PROVIDER_INFO[p]?.icon || '⚡'} {p}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                                            </div>
+
+                                            {/* Audit Model Select */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => {
+                                                        if (!loading && availableAuditModels.length > 0) setIsAuditModelDropdownOpen(!isAuditModelDropdownOpen);
+                                                    }}
+                                                    disabled={loading || availableAuditModels.length === 0}
+                                                    className="w-full input-premium text-left flex items-center justify-between hover:bg-muted/50 transition-colors text-sm"
+                                                >
+                                                    <span className="truncate">{localSettings.auditModel || "Sélectionner..."}</span>
+                                                    <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isAuditModelDropdownOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {isAuditModelDropdownOpen && (
+                                                        <>
+                                                            <div className="fixed inset-0 z-10" onClick={() => setIsAuditModelDropdownOpen(false)} />
+                                                            <motion.div
+                                                                initial={{ opacity: 0, y: -10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                exit={{ opacity: 0, y: -10 }}
+                                                                className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-xl z-20 overflow-hidden flex flex-col max-h-60"
+                                                            >
+                                                                <div className="p-2 border-b border-border bg-popover sticky top-0">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Rechercher..."
+                                                                        value={auditModelSearchQuery}
+                                                                        onChange={(e) => setAuditModelSearchQuery(e.target.value)}
+                                                                        className="w-full bg-input border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-fuchsia-500/50"
+                                                                        autoFocus
+                                                                    />
+                                                                </div>
+                                                                <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
+                                                                    {filteredAuditModels.map((model) => (
+                                                                        <button
+                                                                            key={model}
+                                                                            onClick={() => {
+                                                                                setLocalSettings(prev => ({ ...prev, auditModel: model }));
+                                                                                setIsAuditModelDropdownOpen(false);
+                                                                            }}
+                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate ${localSettings.auditModel === model ? 'bg-fuchsia-500/20 text-fuchsia-500' : 'text-muted-foreground hover:bg-muted'
+                                                                                }`}
+                                                                        >
+                                                                            {model}
+                                                                            {isModelFree(model, localSettings.auditProvider || '') && <span className="ml-2 text-[9px] bg-emerald-500/20 text-emerald-400 px-1 rounded">FREE</span>}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        </>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+
+                                            {/* OpenRouter specific settings (Audit) */}
+                                            {localSettings.auditProvider === 'OpenRouter' && (
+                                                <div className="mt-3 space-y-2 pt-3 border-t border-border">
+                                                    {/* Auto mode toggle */}
+                                                    <Toggle
+                                                        checked={auditAutoModelSelection}
+                                                        onChange={(checked) => {
+                                                            setAuditAutoModelSelection(checked);
+                                                            if (checked) {
+                                                                setLocalSettings(prev => ({ ...prev, auditModel: 'openrouter/auto' }));
+                                                            }
+                                                        }}
+                                                        label="Mode Auto"
+                                                        icon={<Zap className="w-3 h-3 text-fuchsia-400" />}
+                                                        colorClass="bg-fuchsia-600"
+                                                    />
+
+                                                    {/* Free models filter */}
+                                                    {!auditAutoModelSelection && (
+                                                        <Toggle
+                                                            checked={auditFreeModelsOnly}
+                                                            onChange={setAuditFreeModelsOnly}
+                                                            label="Modèles gratuits"
+                                                            icon={<Gift className="w-3 h-3 text-emerald-400" />}
+                                                            colorClass="bg-emerald-600"
+                                                        />
+                                                    )}
+
+                                                    {/* Resilience */}
+                                                    <ResilienceSection
+                                                        settings={auditResilienceSettings}
+                                                        onChange={setAuditResilienceSettings}
+                                                        colorClass="text-fuchsia-500"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Advanced Settings (Audit) */}
+                                            <div className="pt-2 border-t border-border mt-4">
+                                                <button
+                                                    onClick={() => setShowAuditAdvanced(!showAuditAdvanced)}
+                                                    className="w-full flex items-center justify-between py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <span>Paramètres de génération</span>
+                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAuditAdvanced ? 'rotate-180' : ''}`} />
+                                                </button>
+                                                <AnimatePresence>
+                                                    {showAuditAdvanced && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="space-y-4 pt-2 overflow-hidden"
+                                                        >
+                                                            <Slider value={localSettings.auditTemperature ?? 0.7} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTemperature: v }))} min={0} max={2} step={0.1} label="Température" icon={<Thermometer className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.auditMaxTokens ?? 4096} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditMaxTokens: v }))} min={256} max={32768} step={256} label="Max Tokens" icon={<Hash className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.auditTopP ?? 1.0} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTopP: v }))} min={0} max={1} step={0.05} label="Top P" icon={<Sparkles className="w-4 h-4" />} />
+                                                            <Slider value={localSettings.auditTimeout ?? 30} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditTimeout: v }))} min={30} max={800} step={10} label="Max Audit Duration" icon={<Clock className="w-4 h-4" />} unit="s" />
+                                                            <Slider value={localSettings.auditMaxRetries ?? 3} onChange={(v) => setLocalSettings(prev => ({ ...prev, auditMaxRetries: v }))} min={1} max={10} step={1} label="Max Audit Pass" icon={<RotateCcw className="w-4 h-4" />} />
+                                                        </motion.div>
+                                                    )}
+
                                                 </AnimatePresence>
                                             </div>
                                         </motion.div>
@@ -1296,8 +1700,9 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ isOpen, onClose, onConf
                         </div>
                     </motion.div>
                 </>
-            )}
-        </AnimatePresence>
+            )
+            }
+        </AnimatePresence >
     );
 };
 

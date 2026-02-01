@@ -43,6 +43,7 @@ export interface LLMConfig {
     apiKey?: string;
     /** Timeout en secondes pour les requêtes API (défaut: 120) */
     timeout?: number;
+    auditMaxRetries?: number;
 }
 
 /** Données des modèles disponibles */

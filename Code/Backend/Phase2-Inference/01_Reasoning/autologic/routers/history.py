@@ -114,7 +114,7 @@ async def save_history(item: CreateHistoryRequest):
         # Validation Pydantic avant écriture pour être sûr
         validated_item = HistoryItem(**history_data)
         
-        file_path.write_text(json.dumps(validated_item.dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+        file_path.write_text(json.dumps(validated_item.model_dump(), indent=2, ensure_ascii=False), encoding="utf-8")
         
         logger.info(f"Historique sauvegardé: {item_id}")
         return validated_item

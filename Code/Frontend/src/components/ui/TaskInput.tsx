@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2, ArrowUp, X } from 'lucide-react';
+import { Sparkles, Loader2, ArrowUp, X, Square } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { LLMConfig } from '../../types';
@@ -19,6 +19,7 @@ interface TaskInputProps {
     onSubmit: () => void;
     isLoading: boolean;
     config?: LLMConfig;
+    onStop?: () => void;
 }
 
 export const TaskInput: React.FC<TaskInputProps> = ({
@@ -27,6 +28,7 @@ export const TaskInput: React.FC<TaskInputProps> = ({
     onSubmit,
     isLoading,
     config,
+    onStop,
 }) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,23 +80,34 @@ export const TaskInput: React.FC<TaskInputProps> = ({
                         )}
                     </div>
 
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isLoading || !task.trim()}
-                        className={cn(
-                            'h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-300 mb-0.5',
-                            isLoading || !task.trim()
-                                ? 'bg-white/5 text-slate-600 cursor-not-allowed'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:scale-105 active:scale-95'
-                        )}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <ArrowUp className="w-6 h-6" />
-                        )}
-                    </button>
+                    {/* Submit / Stop Button */}
+                    {isLoading && onStop ? (
+                        <button
+                            type="button"
+                            onClick={onStop}
+                            className="h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-300 mb-0.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 hover:scale-105 active:scale-95"
+                            title="Arrêter"
+                        >
+                            <Square className="w-4 h-4 fill-current" />
+                        </button>
+                    ) : (
+                        <button
+                            type="submit"
+                            disabled={isLoading || !task.trim()}
+                            className={cn(
+                                'h-12 w-12 rounded-xl flex items-center justify-center transition-all duration-300 mb-0.5',
+                                isLoading || !task.trim()
+                                    ? 'bg-white/5 text-slate-600 cursor-not-allowed'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:scale-105 active:scale-95'
+                            )}
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <ArrowUp className="w-6 h-6" />
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {/* Footer / Config Info */}

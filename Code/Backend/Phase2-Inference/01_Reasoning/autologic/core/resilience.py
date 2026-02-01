@@ -24,11 +24,11 @@ T = TypeVar("T")
 class ResilienceConfig:
     """Configuration de résilience pour un provider."""
 
-    rate_limit: float = 5.0  # Requêtes par seconde
-    retry_enabled: bool = False
+    rate_limit: float = 15.0  # Requêtes par seconde
+    retry_enabled: bool = True
     max_retries: int = 3
     retry_base_delay: float = 1.0  # Délai de base pour backoff exponentiel
-    fallback_enabled: bool = False
+    fallback_enabled: bool = True
 
     def to_dict(self) -> dict:
         """Convertit en dictionnaire."""
@@ -44,11 +44,11 @@ class ResilienceConfig:
     def from_dict(cls, data: dict) -> "ResilienceConfig":
         """Crée depuis un dictionnaire."""
         return cls(
-            rate_limit=data.get("rate_limit", 5.0),
-            retry_enabled=data.get("retry_enabled", False),
+            rate_limit=data.get("rate_limit", 15.0),
+            retry_enabled=data.get("retry_enabled", True),
             max_retries=data.get("max_retries", 3),
             retry_base_delay=data.get("retry_base_delay", 1.0),
-            fallback_enabled=data.get("fallback_enabled", False),
+            fallback_enabled=data.get("fallback_enabled", True),
         )
 
 

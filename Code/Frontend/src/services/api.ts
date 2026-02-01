@@ -2,7 +2,7 @@
  * Couche API centralisée pour AutoLogic
  */
 
-import type { AutoLogicResult, ModelData, LLMConfig, Prompt, PromptCreate, PromptUpdate } from '../types';
+import type { AutoLogicResult, ModelData, LLMConfig, Prompt, PromptCreate, PromptUpdate, ReasoningPlan } from '../types';
 
 /** URL de base de l'API backend */
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -35,19 +35,32 @@ export class ApiError extends Error {
 async function fetchWithTimeout(
     url: string,
     options: RequestInit,
-    timeout: number = DEFAULT_TIMEOUT
+    timeout: number = DEFAULT_TIMEOUT,
+    externalSignal?: AbortSignal
 ): Promise<Response> {
     const controller = new AbortController();
+
+    // Si un signal externe est fourni, on écoute son événement abort
+    if (externalSignal) {
+        externalSignal.addEventListener('abort', () => controller.abort());
+    }
+
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
         const response = await fetch(url, {
             ...options,
-            signal: controller.signal,
+            // En fait, fetch ne prend qu'un seul signal.
+            // Si on veut supporter les deux (timeout interne ET abort externe), il faut une logique plus complexe.
+            // Simplification : On utilise le signal du controller interne, et on l'abort si le signal externe abort.
+            signal: controller.signal
         });
         return response;
     } finally {
         clearTimeout(timeoutId);
+        if (externalSignal) {
+            externalSignal.removeEventListener('abort', () => controller.abort());
+        }
     }
 }
 
@@ -58,7 +71,7 @@ export const reasoningApi = {
     /**
      * Exécute le cycle complet de raisonnement
      */
-    async solveFull(task: string, config?: LLMConfig): Promise<AutoLogicResult> {
+    async solveFull(task: string, config?: LLMConfig, signal?: AbortSignal): Promise<AutoLogicResult> {
         // Utilise le timeout de la config (en secondes) ou le défaut (120s)
         const timeoutMs = config?.timeout ? config.timeout * 1000 : DEFAULT_TIMEOUT;
 
@@ -73,11 +86,13 @@ export const reasoningApi = {
                         provider: config.provider,
                         model: config.model,
                         api_key: config.apiKey,
-                        timeout: config.timeout
+                        timeout: config.timeout,
+                        audit_max_retries: config.auditMaxRetries
                     } : {},
                 }),
             },
-            timeoutMs
+            timeoutMs,
+            signal
         );
 
         if (!response.ok) {
@@ -108,7 +123,7 @@ export const reasoningApi = {
     /**
      * Sauvegarde la conversation dans l'historique
      */
-    async saveHistory(task: string, plan: any, final_output: string): Promise<void> {
+    async saveHistory(task: string, plan: ReasoningPlan, final_output: string): Promise<void> {
         await fetch(`${API_BASE_URL}/history/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

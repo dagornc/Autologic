@@ -27,8 +27,9 @@
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| 🧠 **Self-Discovery** | Cycle automatique en 4 phases : SELECT → ADAPT → STRUCTURE → EXECUTE |
-| 🔄 **Dual LLM** | Architecture bimodale : **Root LLM** (Stratégique) pour la planification et **Worker LLM** (Tactique) pour l'exécution rapide |
+| 🧠 **Self-Discovery** | Cycle automatique en 5 phases : SELECT → ADAPT → STRUCTURE → EXECUTE → AUDIT |
+| 🕵️ **Audit Layer** | Contrôle qualité continu avec boucle de feedback automatique et critères de succès |
+| 🔄 **Triple Agent** | Architecture trimodale : **Strategic** (Plan), **Worker** (Execute), **Audit** (Review) |
 | 📚 **39 Modules** | Bibliothèque complète de modules de raisonnement (décomposition, analogie, vérification...) |
 | 🔌 **Multi-Provider** | Support OpenRouter, OpenAI, Ollama, vLLM, HuggingFace |
 | 🛡️ **Résilience** | Rate limiting (5 req/s), retry avec backoff exponentiel, fallback automatique |
@@ -82,7 +83,7 @@ AutoLogic/
 
 ### 🔄 Le Cycle Self-Discovery
 
-Le cœur d'AutoLogic repose sur un cycle en **4 phases**, optimisé par une architecture **Dual LLM** :
+Le cœur d'AutoLogic repose sur un cycle en **5 phases**, optimisé par une architecture **Triple Agent** :
 
 ```mermaid
 graph LR
@@ -90,13 +91,16 @@ graph LR
     B --> C[🔧 ADAPT]
     C --> D[📐 STRUCTURE]
     D --> E[⚡ EXECUTE]
-    E --> F[✅ Solution]
+    E --> G{🕵️ AUDIT}
+    G -- ✅ Validé --> F[✅ Solution]
+    G -- ❌ Rejeté --> E
     
     style A fill:#1e1e2e,stroke:#89b4fa,color:#cdd6f4
     style B fill:#1e1e2e,stroke:#a6e3a1,color:#cdd6f4
     style C fill:#1e1e2e,stroke:#f9e2af,color:#cdd6f4
     style D fill:#1e1e2e,stroke:#cba6f7,color:#cdd6f4
     style E fill:#1e1e2e,stroke:#fab387,color:#cdd6f4
+    style G fill:#1e1e2e,stroke:#f38ba8,color:#cdd6f4
     style F fill:#1e1e2e,stroke:#89dceb,color:#cdd6f4
 ```
 
@@ -104,8 +108,9 @@ graph LR
 |-------|------|-------------|-------------|
 | **SELECT** | Architecte | **Root Core** | Sélectionne les modules de raisonnement pertinents |
 | **ADAPT** | Architecte | **Root Core** | Adapte les modules génériques au contexte de la tâche |
-| **STRUCTURE** | Architecte | **Root Core** | Génère un plan de raisonnement ordonné |
+| **STRUCTURE** | Architecte | **Strategic** | Génère un plan de raisonnement ordonné |
 | **EXECUTE** | Ouvrier | **Worker** | Exécute le plan pas-à-pas pour produire la solution finale |
+| **AUDIT** | Inspecteur | **Audit** | Vérifie la qualité/complétude et demande des corrections si nécessaire |
 
 ---
 
@@ -254,6 +259,9 @@ curl -X POST http://localhost:8000/reason/full \
 ## 🔌 Providers LLM Supportés
 
 AutoLogic supporte **5 providers LLM** avec configuration dynamique et séparation des rôles :
+- **Strategic (Root)** : Planification et raisonnement complexe.
+- **Worker (Tactical)** : Exécution rapide des tâches.
+- **Audit (Observer)** : Vérification et critique constructive.
 
 | Provider | Type | Modèle par défaut | Configuration |
 |----------|------|-------------------|---------------|

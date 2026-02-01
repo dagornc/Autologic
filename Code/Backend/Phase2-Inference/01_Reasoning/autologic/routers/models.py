@@ -7,7 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
 import httpx
+import httpx
 import os
+import yaml
+from pathlib import Path
 
 from ..core.model_registry import ModelRegistry
 from ..core.provider_factory import get_provider_factory, ProviderType
@@ -57,6 +60,15 @@ class ProviderConfig(BaseModel):
     timeout: Optional[int] = 60
     worker_timeout: Optional[int] = None
 
+    # Paramètres Audit
+    audit_provider: Optional[str] = None
+    audit_model: Optional[str] = None
+    audit_temperature: Optional[float] = None
+    audit_max_tokens: Optional[int] = None
+    audit_top_p: Optional[float] = None
+    audit_timeout: Optional[int] = None
+    audit_max_retries: Optional[int] = 3
+
 
 class ProviderVerificationRequest(BaseModel):
     """Requête de vérification de connexion."""
@@ -96,15 +108,24 @@ class ProvidersConfigResponse(BaseModel):
     timeout: int
     worker_timeout: Optional[int] = None
 
+    # Paramètres Audit
+    audit_provider: Optional[str] = None
+    audit_model: Optional[str] = None
+    audit_temperature: Optional[float] = None
+    audit_max_tokens: Optional[int] = None
+    audit_top_p: Optional[float] = None
+    audit_timeout: Optional[int] = None
+    audit_max_retries: Optional[int] = 3
+
 
 class ResilienceConfigRequest(BaseModel):
     """Requête de configuration de résilience."""
 
     provider: str
-    rate_limit: Optional[float] = 5.0
-    retry_enabled: Optional[bool] = False
+    rate_limit: Optional[float] = 15.0
+    retry_enabled: Optional[bool] = True
     max_retries: Optional[int] = 3
-    fallback_enabled: Optional[bool] = False
+    fallback_enabled: Optional[bool] = True
 
 
 class ResilienceConfigResponse(BaseModel):
@@ -164,7 +185,60 @@ async def get_providers_config() -> ProvidersConfigResponse:
         worker_top_p=config.get("worker_top_p"),
         timeout=config.get("timeout", 60),
         worker_timeout=config.get("worker_timeout"),
+        audit_provider=factory._config.get("audit_provider"),
+        audit_model=factory._config.get("audit_model"),
+        audit_temperature=config.get("audit_temperature"),
+        audit_max_tokens=config.get("audit_max_tokens"),
+        audit_top_p=config.get("audit_top_p"),
+        audit_timeout=config.get("audit_timeout"),
+        audit_max_retries=config.get("audit_max_retries", 3),
     )
+
+
+
+def _persist_config(updates: Dict[str, Any], section: str = "llm") -> None:
+    """
+    Persiste les mises à jour de configuration dans le fichier global.yaml.
+    """
+    # Chemin relatif au projet : Code/Backend/Phase2-Inference/01_Reasoning/autologic/routers/models.py
+    # parents[0]=routers, [1]=autologic, [2]=01_Reasoning, [3]=Phase2-Inference, [4]=Backend, [5]=Code, [6]=AutoLogic
+    project_root = Path(__file__).parents[6]
+    config_path = project_root / "Config" / "global.yaml"
+
+    try:
+        # Lecture
+        full_config = {}
+        if config_path.exists():
+            with open(config_path, "r", encoding="utf-8") as f:
+                full_config = yaml.safe_load(f) or {}
+
+        # Assurance que la section existe
+        if section not in full_config:
+            full_config[section] = {}
+
+        # Mise à jour (merge superficiel pour la section llm)
+        # On ne remplace pas tout le dictionnaire, on met à jour les clés fournies
+        for k, v in updates.items():
+            if v is None:
+                # Optionnel: supprimer la clé si None ? Ou juste mettre null ?
+                # Pour l'instant on laisse None/Null dans le yaml si explicitement passé
+                # Mais pour worker_*, on veut souvent les supprimer si désactivés.
+                # La logique actuelle de models.py pop() les clés de la mémoire.
+                # On va dire que si v est None, on le retire du yaml aussi pour la propreté.
+                full_config[section].pop(k, None)
+            else:
+                full_config[section][k] = v
+
+        # Écriture
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(full_config, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+        logger.info(f"Configuration persistée dans {config_path}")
+
+    except Exception as e:
+        logger.error(f"Erreur persistence config: {e}")
+        # On ne bloque pas l'API si le fichier est verrouillé, mais on loggue l'erreur
+        #raise HTTPException(status_code=500, detail=f"Erreur sauvegarde config: {e}")
 
 
 @router.post("/providers/config")
@@ -195,6 +269,13 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
         except ValueError:
             pass  # On laisse passer pour ne pas bloquer, ou on pourrait lever une erreur
 
+    # Validation optionnelle du audit provider
+    if config.audit_provider:
+        try:
+            ProviderType(config.audit_provider.lower())
+        except ValueError:
+            pass
+
     # Mettre à jour en mémoire
     factory._config["active_provider"] = config.provider.lower()
     factory._config["active_model"] = config.model
@@ -209,6 +290,16 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
         factory._config["worker_model"] = config.worker_model
     else:
         factory._config.pop("worker_model", None)
+
+    if config.audit_provider:
+        factory._config["audit_provider"] = config.audit_provider.lower()
+    else:
+        factory._config.pop("audit_provider", None)
+
+    if config.audit_model:
+        factory._config["audit_model"] = config.audit_model
+    else:
+        factory._config.pop("audit_model", None)
 
     if config.temperature is not None:
         factory._config["temperature"] = config.temperature
@@ -233,6 +324,22 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
     else:
         factory._config.pop("worker_top_p", None)
 
+    # Paramètres Audit
+    if config.audit_temperature is not None:
+        factory._config["audit_temperature"] = config.audit_temperature
+    else:
+        factory._config.pop("audit_temperature", None)
+
+    if config.audit_max_tokens is not None:
+        factory._config["audit_max_tokens"] = config.audit_max_tokens
+    else:
+        factory._config.pop("audit_max_tokens", None)
+
+    if config.audit_top_p is not None:
+        factory._config["audit_top_p"] = config.audit_top_p
+    else:
+        factory._config.pop("audit_top_p", None)
+
     if config.timeout is not None:
         factory._config["timeout"] = config.timeout
 
@@ -241,11 +348,99 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
     else:
         factory._config.pop("worker_timeout", None)
 
+    if config.audit_timeout is not None:
+        factory._config["audit_timeout"] = config.audit_timeout
+    else:
+        factory._config.pop("audit_timeout", None)
+
+    if config.audit_max_retries is not None:
+        factory._config["audit_max_retries"] = config.audit_max_retries
+    else:
+        factory._config.pop("audit_max_retries", None)
+
     logger.info(
         f"Config mise à jour: Root={config.provider}/{config.model}, Worker={config.worker_provider}/{config.worker_model}"
     )
 
-    return {"status": "success", "message": "Configuration mise à jour"}
+    # Préparation des données pour persistence
+    updates = {
+        "active_provider": config.provider.lower(),
+        "active_model": config.model,
+        "temperature": config.temperature,
+        "max_tokens": config.max_tokens,
+        "top_p": config.top_p,
+        "timeout": config.timeout,
+    }
+
+    if config.audit_provider:
+        updates["audit_provider"] = config.audit_provider.lower()
+    else:
+        updates["audit_provider"] = None
+
+    if config.audit_model:
+        updates["audit_model"] = config.audit_model
+    else:
+        updates["audit_model"] = None
+
+    if config.audit_temperature is not None:
+        updates["audit_temperature"] = config.audit_temperature
+    else:
+        updates["audit_temperature"] = None
+
+    if config.audit_max_tokens is not None:
+        updates["audit_max_tokens"] = config.audit_max_tokens
+    else:
+        updates["audit_max_tokens"] = None
+
+    if config.audit_top_p is not None:
+        updates["audit_top_p"] = config.audit_top_p
+    else:
+        updates["audit_top_p"] = None
+
+    if config.audit_timeout is not None:
+        updates["audit_timeout"] = config.audit_timeout
+    else:
+        updates["audit_timeout"] = None
+
+    if config.audit_max_retries is not None:
+        updates["audit_max_retries"] = config.audit_max_retries
+    else:
+        updates["audit_max_retries"] = None
+
+    if config.worker_provider:
+        updates["worker_provider"] = config.worker_provider.lower()
+    else:
+        updates["worker_provider"] = None
+
+    if config.worker_model:
+        updates["worker_model"] = config.worker_model
+    else:
+        updates["worker_model"] = None
+
+    if config.worker_temperature is not None:
+        updates["worker_temperature"] = config.worker_temperature
+    else:
+        updates["worker_temperature"] = None
+
+    if config.worker_max_tokens is not None:
+        updates["worker_max_tokens"] = config.worker_max_tokens
+    else:
+        updates["worker_max_tokens"] = None
+
+    if config.worker_top_p is not None:
+        updates["worker_top_p"] = config.worker_top_p
+    else:
+        updates["worker_top_p"] = None
+
+    if config.worker_timeout is not None:
+        updates["worker_timeout"] = config.worker_timeout
+    else:
+        updates["worker_timeout"] = None
+
+    # Sauvegarde asynchrone (en fait synchrone dans le thread mais rapide)
+    _persist_config(updates)
+
+    return {"status": "success", "message": "Configuration mise à jour et sauvegardée"}
 
 
 @router.get("/providers/{provider}/resilience", response_model=ResilienceConfigResponse)
@@ -270,17 +465,74 @@ async def update_resilience_config(config: ResilienceConfigRequest) -> Dict[str,
     Met à jour la configuration de résilience.
     """
     resilience_config = ResilienceConfig(
-        rate_limit=config.rate_limit or 5.0,
-        retry_enabled=config.retry_enabled or False,
+        rate_limit=config.rate_limit or 15.0,
+        retry_enabled=config.retry_enabled or True,
         max_retries=config.max_retries or 3,
-        fallback_enabled=config.fallback_enabled or False,
+        fallback_enabled=config.fallback_enabled or True,
     )
 
     set_resilience_config(config.provider.lower(), resilience_config)
 
     logger.info(f"Resilience config updated for {config.provider}")
 
-    return {"status": "success", "message": "Résilience mise à jour"}
+    # Persistence de la config resilience (section llm.resilience)
+    # Note: Dans global.yaml actuel, resilience est sous `llm`. 
+    # Mais ici on update pour UN provider spécifique. 
+    # Le YAML global a une section `resilience` qui semble être globale/défaut ?
+    # models.py `update_resilience_config` appelle `set_resilience_config(provider, ...)`
+    # Cela update la map en mémoire.
+    # Si on veut persister, on doit savoir si on persiste une config globale ou par provider.
+    # Le Config global.yaml a `resilience:` sous `llm` qui semble être le default.
+    # Et potentiellement des overrides dans `providers: name: resilience:` ? 
+    # Regardons global.yaml... Il n'y a pas de resilience per provider dans le yaml actuel.
+    # 
+    # HYPOTHESE: L'utilisateur veut sauvegarder la configuration "Resilience" globale qui apparait dans les settings.
+    # Si l'UI envoie `provider="active_provider"` ou global, on sauvegarde dans `llm.resilience`.
+    # Si l'UI permet de configurer par provider, il faudrait adapter le YAML.
+    # Pour l'instant, `set_resilience_config` update une map en mémoire.
+    # On va supposer qu'on veut mettre à jour la DEFAUT globale si le provider match ou si c'est générique.
+    # 
+    # MAIS: L'endpoint prend `ResilienceConfigRequest` qui a un champ `provider`.
+    # Si on edit la resilience de "openrouter", est-ce qu'on veut écrire ça dans le global default ?
+    # Probablement que oui si c'est le provider principal.
+    # 
+    # Simplification: On met à jour la section `resilience` globale du YAML avec ces valeurs.
+    # Cela affectera les defaults pour tous les futurs providers, ce qui semble cohérent avec "Settings -> Resilience".
+    
+    resilience_updates = {
+        "rate_limit": resilience_config.rate_limit,
+        "retry_enabled": resilience_config.retry_enabled,
+        "max_retries": resilience_config.max_retries,
+        "fallback_enabled": resilience_config.fallback_enabled,
+        # retry_base_delay n'est pas dans la request, on garde le default ou on ne touche pas
+    }
+    
+    # On doit lire la config existante pour ne pas écraser retry_base_delay s'il n'est pas updaté
+    # Mais _persist_config fait un merge au niveau `llm`. Pour `resilience`, c'est un sous-dict.
+    # On va utiliser une update imbriquée un peu trickye ou simplifier.
+    # On va lire le YAML actuel dans _persist_config, donc on peut passer un dict partiel.
+    # Mais _persist_config remplace `llm[key] = val`. Si val est un dict `resilience`, ça écrase tout `resilience`.
+    # Il faut que `_persist_config` supporte le merge profond ou qu'on lui passe tout l'objet resilience.
+    
+    # Lecture préalable pour récupérer l'existant (un peu lourd mais sûr)
+    project_root = Path(__file__).parents[6]
+    config_path = project_root / "Config" / "global.yaml"
+    current_resilience = {}
+    try:
+        if config_path.exists():
+            with open(config_path, "r", encoding="utf-8") as f:
+                full = yaml.safe_load(f) or {}
+                current_resilience = full.get("llm", {}).get("resilience", {})
+    except Exception:
+        pass
+
+    # Update memory dict
+    current_resilience.update(resilience_updates)
+    
+    # Persist
+    _persist_config({"resilience": current_resilience})
+
+    return {"status": "success", "message": "Résilience mise à jour et sauvegardée"}
 
 
 @router.get("/providers/status")

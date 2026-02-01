@@ -2,7 +2,7 @@
  * Hook personnalisé pour la gestion du raisonnement AutoLogic
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AutoLogicResult, LLMConfig, LoadingStage } from '../types';
 import { reasoningApi, ApiError } from '../services/api';
 
@@ -38,6 +38,8 @@ interface UseAutoLogicReturn {
     loadingStage: LoadingStage;
     /** Soumet la tâche pour résolution */
     submitTask: (config?: LLMConfig) => Promise<void>;
+    /** Arrête la tâche en cours */
+    stopTask: () => void;
     /** Réinitialise l'état */
     reset: () => void;
 }
@@ -51,6 +53,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
     const [result, setResult] = useState<AutoLogicResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loadingStage, setLoadingStage] = useState<LoadingStage>('');
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Animation des stages de chargement
     useEffect(() => {
@@ -75,12 +78,22 @@ export function useAutoLogic(): UseAutoLogicReturn {
     const submitTask = useCallback(async (config?: LLMConfig) => {
         if (!task.trim()) return;
 
+        // Abort previous task if still running
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+
         setIsLoading(true);
         setError(null);
         setResult(null);
 
         try {
-            const data = await reasoningApi.solveFull(task, config);
+            // Create new controller for this request
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            const data = await reasoningApi.solveFull(task, config, controller.signal);
             setResult(data);
 
             // Save to history in background
@@ -90,7 +103,11 @@ export function useAutoLogic(): UseAutoLogicReturn {
         } catch (err) {
             if (err instanceof Error) {
                 if (err.name === 'AbortError') {
-                    setError('Request timed out. The reasoning engine is taking too long to respond.');
+                    // Only set error if it wasn't a intentional user stop (which sets its own error)
+                    // If we are here, it means it's likely a timeout from api.ts
+                    if (isLoading) {
+                        setError('Request timed out. The reasoning engine is taking too long to respond.');
+                    }
                 } else if (err instanceof ApiError) {
                     setError(err.message);
                 } else {
@@ -100,9 +117,23 @@ export function useAutoLogic(): UseAutoLogicReturn {
                 setError('An unknown error occurred.');
             }
         } finally {
-            setIsLoading(false);
+            // Only clear loading if this was the current request
+            if (abortControllerRef.current?.signal.aborted === false || abortControllerRef.current === null) {
+                setIsLoading(false);
+            }
+            abortControllerRef.current = null;
         }
-    }, [task]);
+    }, [task, isLoading]);
+
+    const stopTask = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            setIsLoading(false);
+            setError('Task stopped by user.');
+            setLoadingStage('');
+        }
+    }, []);
 
     const reset = useCallback(() => {
         setTask('');
@@ -119,6 +150,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
         error,
         loadingStage,
         submitTask,
+        stopTask,
         reset,
     };
 }

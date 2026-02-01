@@ -1,104 +1,128 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  --shadow-glass-panel: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-  --shadow-glass-button-hover: 0 0 20px rgba(255, 255, 255, 0.05);
+  /* Agent Semantic Colors */
+  --color-strategic: var(--primary);
+  --color-tactical: oklch(60% 0.18 150);
+  /* Emerald/Teal */
+  --color-audit: oklch(60% 0.22 300);
+  /* Fuchsia/Magenta */
+
+  --animate-blob: blob 10s infinite;
 }
 
+/* Oklch Base Layer */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    /* Light Mode: Frosted Pearl Base */
+    --background: oklch(98% 0.01 200);
+    --foreground: oklch(20% 0.02 260);
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(20% 0.02 260);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(20% 0.02 260);
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: oklch(50% 0.25 260);
+    /* Deep Indigo */
+    --primary-foreground: oklch(98% 0.01 200);
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: oklch(95% 0.02 200);
+    --secondary-foreground: oklch(20% 0.02 260);
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: oklch(95% 0.02 200);
+    --muted-foreground: oklch(55% 0 0);
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: oklch(95% 0.02 200);
+    --accent-foreground: oklch(20% 0.02 260);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: oklch(60% 0.25 20);
+    --destructive-foreground: oklch(98% 0.01 200);
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: oklch(90% 0.02 200);
+    --input: oklch(90% 0.02 200);
+    --ring: oklch(50% 0.25 260);
 
     --radius: 0.75rem;
-    /* Increased radius for modern look */
+
+    /* Liquid Gradient Colors (Light) - Pastel Vibe */
+    --color-liquid-1: oklch(85% 0.1 200);
+    /* Cyan */
+    --color-liquid-2: oklch(85% 0.1 340);
+    /* Pink */
+    --color-liquid-3: oklch(85% 0.1 140);
+    /* Green*/
+    --color-liquid-4: oklch(85% 0.1 280);
+    /* Purple */
   }
 
   .dark {
-    /* Deeper, more bluish dark mode for premium feel */
-    --background: 230 25% 6%;
-    /* #0b0d12 */
-    --foreground: 210 40% 98%;
+    /* Dark Mode: Abyssal Blue Base */
+    --background: oklch(18% 0.02 260);
+    --foreground: oklch(98% 0.01 200);
 
-    --card: 230 25% 8%;
-    /* #0e1116 */
-    --card-foreground: 210 40% 98%;
+    --card: oklch(20% 0.03 260);
+    --card-foreground: oklch(98% 0.01 200);
 
-    --popover: 230 25% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: oklch(20% 0.03 260);
+    --popover-foreground: oklch(98% 0.01 200);
 
-    --primary: 250 100% 65%;
-    /* Vibrant Indigo/Violet */
-    --primary-foreground: 210 40% 98%;
+    --primary: oklch(70% 0.15 260);
+    /* Brighter Indigo for dark mode */
+    --primary-foreground: oklch(20% 0.02 260);
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: oklch(25% 0.04 260);
+    --secondary-foreground: oklch(98% 0.01 200);
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: oklch(25% 0.04 260);
+    --muted-foreground: oklch(70% 0.02 260);
 
-    --accent: 250 60% 25%;
-    --accent-foreground: 210 40% 98%;
+    --accent: oklch(25% 0.04 260);
+    --accent-foreground: oklch(98% 0.01 200);
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: oklch(50% 0.2 20);
+    --destructive-foreground: oklch(98% 0.01 200);
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 250 100% 65%;
+    --border: oklch(30% 0.05 260);
+    --input: oklch(30% 0.05 260);
+    --ring: oklch(70% 0.15 260);
+
+    /* Liquid Gradient Colors (Dark) - Neon/Cyber Vibe */
+    --color-liquid-1: oklch(40% 0.25 200);
+    /* Deep Cyan */
+    --color-liquid-2: oklch(40% 0.25 340);
+    /* Deep Pink */
+    --color-liquid-3: oklch(40% 0.25 260);
+    /* Deep Indigo */
+    --color-liquid-4: oklch(40% 0.25 280);
+    /* Deep Purple */
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -108,7 +132,7 @@
     font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   }
 
-  /* Custom Scrollbar */
+  /* Custom Scrollbar - Minimalist */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -119,71 +143,48 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+    background-color: oklch(60% 0 0 / 0.2);
+    border-radius: 999px;
+  }
+}
+
+/* Animations */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(25px, -40px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-15px, 20px) scale(0.95);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
   }
 }
 
 /* Glassmorphism & Liquid Effects */
 @layer components {
 
-  /* Basic Glass */
-  .glass {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg;
+  .glass-panel-next {
+    @apply bg-white/40 dark:bg-black/40 backdrop-blur-[20px] saturate-150 border border-white/20 dark:border-white/10 shadow-xl;
   }
 
-  /* Stronger Panel Glass */
-  .glass-panel {
-    @apply bg-white/60 dark:bg-black/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-glass-panel;
+  /* Input with floating feel */
+  .input-liquid {
+    @apply bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 backdrop-blur-md rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent placeholder:text-muted-foreground transition-all duration-300 hover:bg-white/30 dark:hover:bg-black/30;
   }
 
-  /* Interactive Glass Button */
-  .glass-button {
-    @apply relative overflow-hidden bg-white/40 dark:bg-white/5 backdrop-blur-md border border-black/5 dark:border-white/10 hover:bg-white/60 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 hover:shadow-glass-button-hover active:scale-95 transition-all duration-300 rounded-xl cursor-pointer;
+  /* Button with glow and glass */
+  .btn-liquid {
+    @apply relative overflow-hidden bg-primary/90 hover:bg-primary text-primary-foreground backdrop-blur-md shadow-lg hover:shadow-primary/25 transition-all duration-300 rounded-xl font-medium active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
   }
 
-  /* Text Gradient */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400;
-  }
-
-  /* Liquid Background Animation */
-  .liquid-bg {
-    position: absolute;
-    filter: blur(80px);
-    z-index: -1;
-    opacity: 0.6;
-    animation: flow 10s ease-in-out infinite alternate;
-  }
-
-  /* Input Field */
-  .input-premium {
-    @apply bg-white/40 dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 placeholder-zinc-500 dark:placeholder-zinc-500 text-zinc-900 dark:text-zinc-200 transition-all duration-300;
-  }
-}
-
-/* Animations */
-@keyframes flow {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate(20px, -20px) scale(1.1);
-  }
-
-  100% {
-    transform: translate(-10px, 10px) scale(0.9);
-  }
-}
-
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
+  .btn-ghost-liquid {
+    @apply relative overflow-hidden bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 text-foreground backdrop-blur-sm border border-transparent hover:border-white/20 transition-all duration-300 rounded-xl active:scale-95;
   }
 }

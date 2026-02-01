@@ -56,6 +56,9 @@ Le système utilise un **Provider Factory** pour instancier dynamiquement les mo
 classDiagram
     class LLMProviderFactory {
         +create_llm(provider, model, **kwargs) BaseLLM
+        +create_llm(provider, model, **kwargs) BaseLLM
+        +create_worker_llm(**kwargs) BaseLLM
+        +create_audit_llm(**kwargs) BaseLLM
         +get_supported_providers() List
     }
 
@@ -89,7 +92,18 @@ Chaque appel LLM est protégé par une couche de résilience configurable :
 
 1. **Rate Limiter** : Contrôle le débit de requêtes (ex: 5 req/s).
 2. **Retry Mechanism** : Réessaie automatiquement sur erreurs temporaires (429, 5xx) avec backoff exponentiel.
+2. **Retry Mechanism** : Réessaie automatiquement sur erreurs temporaires (429, 5xx) avec backoff exponentiel.
 3. **Fallback** : Bascule automatiquement vers un modèle de secours si le principal échoue après X tentatives.
+
+### Cycle de Raisonnement (5 Phases)
+
+Le cycle inclut désormais une phase d'audit pour garantir la qualité :
+
+1.  **SELECT** (Root) : Sélection des modules.
+2.  **ADAPT** (Root) : Adaptation contextuelle.
+3.  **STRUCTURE** (Root) : Planification.
+4.  **EXECUTE** (Worker) : Exécution tactique.
+5.  **AUDIT** (Audit) : Vérification de la solution par rapport aux critères. Si échec, boucle de feedback.
 
 ### Routers FastAPI
 
@@ -102,11 +116,13 @@ graph LR
     API --> R3["/, /health"]
     
     R1 --> E1[POST /reason/full]
+    R1 --> E5[GET /reason/modules]
     R2 --> E2[GET /api/models]
     R2 --> E3[GET /api/status]
     R2 --> E4[POST /api/verify]
     
     E1 --> Engine[Processing Engine]
+    Engine --> Audit[Audit Loop]
     E2 --> Registry[ModelRegistry]
     E3 --> Registry
 ```
@@ -120,7 +136,7 @@ graph LR
 | `/reason/modules` | GET | Liste des 39 modules |
 | **Configuration** | | |
 | `/api/models` | GET | Providers et modèles disponibles |
-| `/api/providers/config` | GET/PUT | Configuration active (provider, model) |
+| `/api/providers/config` | GET/PUT | Configuration active (Root, Worker, Audit) |
 | `/api/providers/status` | GET | Vérifie la disponibilité des providers |
 | `/api/providers/verify` | POST | Teste une connexion API Key spécifique |
 | **Résilience** | | |
@@ -148,9 +164,9 @@ graph LR
 User Interface structurée autour du composant `AutoLogicInterface` :
 
 - **SettingsDrawer** : Panneau latéral pour la configuration dynamique.
-    - Sélection Provider/Modèle
+    - Sélection Provider/Modèle (Root, Worker, Audit)
     - Gestion API Keys (stockage sécurisé local)
-    - Paramètres Résilience
+    - Paramètres Résilience (activables par agent)
 - **TaskInput** : Zone de saisie avec suggestion de tâches.
 - **PlanDisplay** : Affichage progressif des étapes du plan.
 - **SolutionDisplay** : Rendu Markdown de la réponse finale.
@@ -183,6 +199,6 @@ llm:
 3. **Backend** met à jour le `ModelRegistry` en mémoire.
 4. **User** lance une tâche.
 5. **Backend** (`reasoning.py`) demande un LLM au `ProviderFactory`.
-6. **Factory** crée un LLM configuré + Wrapper Résilience.
-7. **Engine** exécute le cycle Self-Discover avec ce LLM.
+6. **Factory** crée un LLM configuré + Wrapper Résilience (Root, Worker, Audit).
+7. **Engine** exécute le cycle Self-Discover est les boucles de feedback.
 8. **Result** est retourné au Frontend.
