@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { SettingsConfig, ModelData } from '../types/settings';
+import type { SettingsConfig, ModelData } from '../types/settings';
 import { encryptKey, decryptKey } from '../utils/security';
 import { api } from '../services/api';
 

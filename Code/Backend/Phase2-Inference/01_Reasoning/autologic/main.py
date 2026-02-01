@@ -43,9 +43,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Démarrage de l'application AutoLogic")
 
     try:
-        # Initialisation du LLM
-        root_llm = OpenRouterLLM(model_name="meta-llama/llama-3.3-70b-instruct:free")
-        worker_llm = OpenRouterLLM(model_name="meta-llama/llama-3.3-70b-instruct:free")
+        # Initialisation du LLM via Factory
+        from .core.provider_factory import get_provider_factory
+        
+        factory = get_provider_factory()
+        
+        # Création des instances via la factory qui gère la config et la résilience
+        root_llm = factory.create_llm()
+        worker_llm = factory.create_worker_llm()
 
         # Initialisation du moteur
         engine = AutoLogicEngine(root_model=root_llm, worker_model=worker_llm)

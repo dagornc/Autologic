@@ -21,7 +21,7 @@
 
 ## 📋 Vue d'ensemble
 
-**AutoLogic** est un système d'agent IA avancé implémentant le **Self-Discovery Reasoning Framework**. Plutôt que d'utiliser une approche de prompt unique, AutoLogic décompose automatiquement les problèmes complexes en utilisant une bibliothèque de **39 modules de raisonnement** spécialisés.
+**AutoLogic** est un système d'agent IA avancé implémentant le **Self-Discovery Reasoning Framework**. Plutôt que d'utiliser une approche de prompt unique, AutoLogic décompose automatiquement les problèmes complexes en utilisant une bibliothèque de **106 modules de raisonnement** spécialisés.
 
 ### ✨ Caractéristiques Principales
 
@@ -30,7 +30,7 @@
 | 🧠 **Self-Discovery** | Cycle complet en 8 phases : ANALYSE → SELECT → ADAPT → STRUCTURE → VERIFY → EXECUTE → CRITIC → SYNTHESIS |
 | 🕵️ **Double Control** | Validation intermédiaire par **H2 Critic** et validation finale par **Audit Layer** |
 | 🔄 **Triple Agent** | Architecture trimodale : **Strategic** (Plan), **Worker** (Execute), **Audit** (Review) |
-| 📚 **39 Modules** | Bibliothèque complète de modules de raisonnement (décomposition, analogie, vérification...) |
+| 📚 **106 Modules** | Bibliothèque complète de modules de raisonnement (décomposition, analogie, vérification...) |
 | 🔌 **Multi-Provider** | Support OpenRouter, OpenAI, Ollama, vLLM, HuggingFace |
 | 🛡️ **Résilience** | Rate limiting (5 req/s), retry avec backoff exponentiel, fallback automatique |
 | 🎨 **UI Glassmorphism** | Interface moderne avec effets de verre et animations fluides |
@@ -209,7 +209,7 @@ CORS_ORIGINS=http://localhost:5173
 | `GET` | `/` | Health check basique |
 | `GET` | `/health` | Health check détaillé avec version |
 | `POST` | `/reason/full` | Exécute le cycle Self-Discover complet |
-| `GET` | `/reason/modules` | Liste les 39 modules de raisonnement |
+| `GET` | `/reason/modules` | Liste les 106 modules de raisonnement |
 
 ### Endpoints Configuration
 
@@ -302,15 +302,26 @@ AutoLogic utilise une bibliothèque structurée de modules :
 
 ### Catégories
 
-| Catégorie | Modules | Exemples |
-|-----------|---------|----------|
-| **Analyse** | 8 | Critical Thinking, Root Cause Analysis |
-| **Décomposition** | 6 | Task Decomposition, Chunking |
-| **Créativité** | 5 | Brainstorming, Lateral Thinking |
-| **Vérification** | 5 | Fact Checking, Consistency Check |
-| **Synthèse** | 5 | Summarization, Integration |
-| **Planification** | 5 | Goal Setting, Resource Allocation |
-| **Autres** | 5 | Analogical Reasoning, Pattern Recognition |
+| Catégorie | Qté | Modules |
+|-----------|-----|---------|
+| **Décomposition du problème** | 4 | Décomposer le problème, Identifier les contraintes, Identifier les inputs et outputs, Clarifier les objectifs |
+| **Pensée critique** | 6 | Identifier les hypothèses, Évaluer les risques, Analyser les biais, Évaluer les conséquences, Simplifier le problème, Évaluer de manière critique |
+| **Pensée créative** | 5 | Brainstorming, Penser hors des sentiers battus, Utiliser la pensée systémique, Analyser les risques et opportunités, Utiliser la pensée réflexive |
+| **Pensée analytique** | 5 | Analyser cause-effet, Utiliser la pensée inductive, Utiliser la pensée déductive, Prioriser les éléments, Identifier les données pertinentes |
+| **Pensée systémique** | 4 | Identifier les parties prenantes, Analyser les dépendances, Identifier les effets de second ordre, Utiliser la pensée holistique |
+| **Prise de décision** | 6 | Définir les critères de décision, Peser les alternatives, Considérer les compromis, Décider sous incertitude, Planifier l'implémentation, Prévoir les obstacles |
+| **Collaboration** | 3 | Rechercher des perspectives multiples, Faciliter le consensus, Communiquer clairement |
+| **Vérification** | 4 | Tester la solution, Vérifier la cohérence, Itérer et améliorer, Documenter le raisonnement |
+| **Exécution** | 2 | Penser étape par étape, Surveiller les progrès |
+| **Raisonnement modal et intensionnel** | 7 | Modal Necessity Reasoning, Counterfactual Conditional Analysis, Intensional Context Reasoning, Deontic Reasoning, Epistemic Uncertainty Reasoning, Temporal Logic Reasoning, Alethic Modality Assessment |
+| **Raisonnement abductif et génératif** | 7 | Abductive Hypothesis Generation, Analogical Transfer Reasoning, Case-Based Reasoning, Generative Pattern Induction, Prototype-Based Classification, Exemplar-Based Reasoning, Schema Induction and Application |
+| **Raisonnement multi-niveau et compositionnalité** | 8 | Compositional Semantic Decomposition, Hierarchical Abstraction Reasoning, Marr's Three Levels Analysis, Part-Whole Mereological Reasoning, Spatial-Topological Reasoning, Scale-Invariant Pattern Recognition, Multi-Level Causal Reasoning, Emergent Property Identification |
+| **Raisonnement bayésien et probabiliste** | 7 | Bayesian Evidence Integration, Probabilistic Causal Network Analysis, Explain-Away Reasoning, Multi-Hypothesis Cascaded Inference, Uncertainty Propagation Analysis, Prior Knowledge Elicitation, Maximum Likelihood Reasoning |
+| **Métacognition et contrôle exécutif** | 8 | Self-Monitoring and Evaluation, Strategic Planning and Selection, Cognitive Load Management, Attention Allocation and Focus, Error Detection and Correction, Reasoning Invariant Validation, Reflective Abstraction, Dual Process Integration |
+| **Raisonnement symbolique et formel** | 8 | First-Order Logic Deduction, Constraint Satisfaction Reasoning, Theorem Proving and Verification, Rule-Based Inference Chaining, Subproblem Decomposition with Memoization, Quantifier Elimination and Simplification, Vector-Symbolic Reasoning, Graph-Based Symbolic Inference |
+| **Raisonnement domaine-spécifique** | 7 | Physics-Based Causal Modeling, Mathematical Pattern Recognition, Algorithmic Complexity Analysis, Domain-Specific Heuristic Activation, Legal Precedent-Based Reasoning, Medical Diagnostic Reasoning, Engineering Trade-off Analysis |
+| **Raisonnement visuel et multimodal** | 7 | Visual-Spatial Transformation, Diagrammatic Reasoning, Relational Visual Reasoning, Symbolic-Visual Integration, Multimodal Evidence Fusion, Pattern Completion and Extrapolation, Topological Invariance Detection |
+| **Raisonnement itératif et réflexif** | 8 | Bloom-Reconstruct-Decide Cycle, Iterative Refinement with Feedback, Rumination and Deep Processing, Progressive Commitment Strategy, Backtracking and Revision, Consistency Maintenance, Solution Diversity Generation, Meta-Reasoning on Process Quality |
 
 ---
 

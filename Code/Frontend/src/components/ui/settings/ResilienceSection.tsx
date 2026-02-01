@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Activity, RotateCcw, Zap } from 'lucide-react';
-import { ResilienceSettings } from '../../../types/settings';
+import type { ResilienceSettings } from '../../../types/settings';
 import { SettingsToggle } from './SettingsToggle';
 import { SettingsSlider } from './SettingsSlider';
 

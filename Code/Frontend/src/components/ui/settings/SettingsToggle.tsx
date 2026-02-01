@@ -1,5 +1,6 @@
 import React from 'react';
-import { LucideIcon, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ToggleProps {

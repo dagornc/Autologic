@@ -33,6 +33,11 @@ export interface SettingsConfig {
     auditTopP?: number;
     auditTimeout?: number;
     auditMaxRetries: number;
+
+    // Resilience
+    rateLimit: number;
+    retryEnabled: boolean;
+    fallbackEnabled: boolean;
 }
 
 export interface ResilienceSettings {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { ProviderStatus } from '../../../types/settings';
+import type { ProviderStatus } from '../../../types/settings';
 
 interface ConnectionIndicatorProps {
     status: ProviderStatus;

@@ -22,7 +22,7 @@
       "id": "clarifier_les_objectifs",
       "name": "Clarifier les objectifs",
       "description": "Quel est l'objectif exact que je cherche Ã  atteindre ? Comment mesurer le succÃ¨s ?",
-      "category": "DÃ©composition du problÃ¨me"
+      "category": "Décomposition du problème"
     },
     {
       "id": "identifier_les_hypotheses",
@@ -32,9 +32,9 @@
     },
     {
       "id": "avaluer_les_risques",
-      "name": "Ã‰valuer les risques",
+      "name": "Évaluer les risques",
       "description": "Quels sont les risques potentiels et comment puis-je les mitiger ?",
-      "category": "PensÃ©e critique"
+      "category": "Pensée critique"
     },
     {
       "id": "analyser_les_biais",
@@ -44,9 +44,9 @@
     },
     {
       "id": "avaluer_les_consaquences",
-      "name": "Ã‰valuer les consÃ©quences",
+      "name": "Évaluer les conséquences",
       "description": "Quelles sont les consÃ©quences Ã  court et long terme de chaque solution ?",
-      "category": "PensÃ©e critique"
+      "category": "Pensée critique"
     },
     {
       "id": "simplifier_le_probleme",
@@ -56,9 +56,9 @@
     },
     {
       "id": "avaluer_de_mania_re_critique",
-      "name": "Ã‰valuer de maniÃ¨re critique",
-      "description": "Comment puis-je Ã©valuer critiquement la validitÃ© et la fiabilitÃ© des informations ?",
-      "category": "PensÃ©e critique"
+      "name": "Évaluer de manière critique",
+      "description": "Comment puis-je évaluer critiquement la validité et la fiabilité des informations ?",
+      "category": "Pensée critique"
     },
     {
       "id": "brainstorming",
@@ -94,13 +94,13 @@
       "id": "analyser_cause_effet",
       "name": "Analyser cause-effet",
       "description": "Quelles sont les relations de cause Ã  effet dans ce problÃ¨me ?",
-      "category": "PensÃ©e analytique"
+      "category": "Pensée analytique"
     },
     {
       "id": "utiliser_la_pensae_inductive",
-      "name": "Utiliser la pensÃ©e inductive",
+      "name": "Utiliser la pensée inductive",
       "description": "Puis-je identifier des patterns Ã  partir d'exemples spÃ©cifiques ?",
-      "category": "PensÃ©e analytique"
+      "category": "Pensée analytique"
     },
     {
       "id": "utiliser_la_pensee_deductive",
@@ -110,9 +110,9 @@
     },
     {
       "id": "prioriser_les_alaments",
-      "name": "Prioriser les Ã©lÃ©ments",
+      "name": "Prioriser les éléments",
       "description": "Quels sont les Ã©lÃ©ments les plus importants Ã  traiter en premier ?",
-      "category": "PensÃ©e analytique"
+      "category": "Pensée analytique"
     },
     {
       "id": "identifier_les_donnees_pertinentes",
@@ -237,31 +237,31 @@
     {
       "id": "modal_necessity_reasoning",
       "name": "Modal Necessity Reasoning",
-      "description": "Puis-je identifier ce qui est logiquement nÃ©cessaire, ce qui est possible, et ce qui est impossible dans ce problÃ¨me ? Quelles sont les contraintes modales ?",
+      "description": "Puis-je identifier ce qui est logiquement nécessaire, ce qui est possible, et ce qui est impossible dans ce problème ? Quelles sont les contraintes modales ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
       "id": "counterfactual_conditional_analysis",
       "name": "Counterfactual Conditional Analysis",
-      "description": "Que se serait-il passÃ© si les conditions initiales avaient Ã©tÃ© diffÃ©rentes ? Comment explorer les scÃ©narios contrefactuels pour mieux comprendre les mÃ©canismes causaux ?",
+      "description": "Que se serait-il passé si les conditions initiales avaient été différentes ? Comment explorer les scénarios contrefactuels pour mieux comprendre les mécanismes causaux ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
       "id": "intensional_context_reasoning",
       "name": "Intensional Context Reasoning",
-      "description": "Comment le sens et la vÃ©ritÃ© changent-ils selon les contextes intensionnels (croyance, connaissance, nÃ©cessitÃ©) ? Dois-je raisonner de dicto ou de re ?",
+      "description": "Comment le sens et la vérité changent-ils selon les contextes intensionnels (croyance, connaissance, nécessité) ? Dois-je raisonner de dicto ou de re ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
       "id": "deontic_reasoning",
       "name": "Deontic Reasoning",
-      "description": "Quelles sont les obligations, permissions et interdictions dans ce contexte ? Comment raisonner sur ce qui doit Ãªtre fait versus ce qui peut Ãªtre fait ?",
+      "description": "Quelles sont les obligations, permissions et interdictions dans ce contexte ? Comment raisonner sur ce qui doit être fait versus ce qui peut être fait ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
       "id": "epistemic_uncertainty_reasoning",
       "name": "Epistemic Uncertainty Reasoning",
-      "description": "Que sais-je avec certitude ? Que crois-je probablement ? Que suis-je incertain de savoir ? Comment gÃ©rer les diffÃ©rents niveaux de certitude Ã©pistÃ©mique ?",
+      "description": "Que sais-je avec certitude ? Que crois-je probablement ? Que suis-je incertain de savoir ? Comment gérer les différents niveaux de certitude épistémique ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
@@ -273,199 +273,199 @@
     {
       "id": "alethic_modality_assessment",
       "name": "Alethic Modality Assessment",
-      "description": "Quelle est la nature de la vÃ©ritÃ© dans ce problÃ¨me ? S'agit-il de vÃ©ritÃ© nÃ©cessaire, contingente, ou impossible ?",
+      "description": "Quelle est la nature de la vérité dans ce problème ? S'agit-il de vérité nécessaire, contingente, ou impossible ?",
       "category": "Raisonnement modal et intensionnel"
     },
     {
       "id": "abductive_hypothesis_generation",
       "name": "Abductive Hypothesis Generation",
-      "description": "Quelle est la meilleure explication pour les observations disponibles ? Comment gÃ©nÃ©rer des hypothÃ¨ses plausibles qui expliquent les faits ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Quelle est la meilleure explication pour les observations disponibles ? Comment générer des hypothèses plausibles qui expliquent les faits ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "analogical_transfer_reasoning",
       "name": "Analogical Transfer Reasoning",
-      "description": "Existe-t-il un problÃ¨me structurellement similaire dans un autre domaine dont la solution peut Ãªtre transfÃ©rÃ©e par analogie ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Existe-t-il un problème structurellement similaire dans un autre domaine dont la solution peut être transférée par analogie ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "case_based_reasoning",
       "name": "Case-Based Reasoning",
-      "description": "Puis-je rÃ©cupÃ©rer et adapter des cas similaires rÃ©solus prÃ©cÃ©demment pour rÃ©soudre ce nouveau problÃ¨me ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Puis-je récupérer et adapter des cas similaires résolus précédemment pour résoudre ce nouveau problème ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "generative_pattern_induction",
       "name": "Generative Pattern Induction",
       "description": "Puis-je induire une rÃ¨gle gÃ©nÃ©rale ou un pattern Ã  partir d'exemples spÃ©cifiques observÃ©s ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "prototype_based_classification",
       "name": "Prototype-Based Classification",
-      "description": "Puis-je raisonner en identifiant le prototype le plus reprÃ©sentatif de cette catÃ©gorie et en mesurant la similaritÃ© ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Puis-je raisonner en identifiant le prototype le plus représentatif de cette catégorie et en mesurant la similarité ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "exemplar_based_reasoning",
       "name": "Exemplar-Based Reasoning",
-      "description": "PlutÃ´t qu'un prototype abstrait, puis-je raisonner en me basant sur la collection de tous les exemplaires concrets mÃ©morisÃ©s ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Plutôt qu'un prototype abstrait, puis-je raisonner en me basant sur la collection de tous les exemplaires concrets mémorisés ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "schema_induction_and_application",
       "name": "Schema Induction and Application",
-      "description": "Puis-je identifier ou construire un schÃ©ma mental (structure de connaissance) qui organise l'information de ce problÃ¨me ?",
-      "category": "Raisonnement abductif et gÃ©nÃ©ratif"
+      "description": "Puis-je identifier ou construire un schéma mental (structure de connaissance) qui organise l'information de ce problème ?",
+      "category": "Raisonnement abductif et génératif"
     },
     {
       "id": "compositional_semantic_decomposition",
       "name": "Compositional Semantic Decomposition",
-      "description": "Comment dÃ©composer ce problÃ¨me en composants sÃ©mantiques atomiques qui peuvent Ãªtre recomposÃ©s pour former la solution ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "description": "Comment décomposer ce problème en composants sémantiques atomiques qui peuvent être recomposés pour former la solution ?",
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "hierarchical_abstraction_reasoning",
       "name": "Hierarchical Abstraction Reasoning",
-      "description": "Comment organiser le raisonnement en niveaux hiÃ©rarchiques d'abstraction, du plus concret au plus abstrait ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "description": "Comment organiser le raisonnement en niveaux hiérarchiques d'abstraction, du plus concret au plus abstrait ?",
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "marrs_three_levels_analysis",
       "name": "Marr's Three Levels Analysis",
-      "description": "Puis-je analyser ce problÃ¨me aux trois niveaux de Marr : computationnel (pourquoi ?), algorithmique (comment ?) et implÃ©mentation (avec quoi) ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "description": "Puis-je analyser ce problème aux trois niveaux de Marr : computationnel (pourquoi ?), algorithmique (comment ?) et implémentation (avec quoi) ?",
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "part_whole_mereological_reasoning",
       "name": "Part-Whole Mereological Reasoning",
-      "description": "Comment raisonner sur les relations entre les parties et le tout ? Quelles propriÃ©tÃ©s Ã©mergent du tout qui ne sont pas dans les parties ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "description": "Comment raisonner sur les relations entre les parties et le tout ? Quelles propriétés émergent du tout qui ne sont pas dans les parties ?",
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "spatial_topological_reasoning",
       "name": "Spatial-Topological Reasoning",
-      "description": "Quelles sont les relations spatiales (contenu, adjacent, sÃ©parÃ©, connectÃ©) et topologiques pertinentes pour ce problÃ¨me ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "description": "Quelles sont les relations spatiales (contenu, adjacent, séparé, connecté) et topologiques pertinentes pour ce problème ?",
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "scale_invariant_pattern_recognition",
       "name": "Scale-Invariant Pattern Recognition",
       "description": "Le problÃ¨me prÃ©sente-t-il des patterns qui se rÃ©pÃ¨tent Ã  diffÃ©rentes Ã©chelles (fractales, auto-similaritÃ©) ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "multi_level_causal_reasoning",
       "name": "Multi-Level Causal Reasoning",
       "description": "Comment les causes opÃ¨rent-elles Ã  diffÃ©rents niveaux (micro, mÃ©so, macro) et comment ces niveaux interagissent-ils ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "emergent_property_identification",
       "name": "Emergent Property Identification",
       "description": "Quelles propriÃ©tÃ©s Ã©mergent du systÃ¨me complet qui ne peuvent pas Ãªtre prÃ©dites Ã  partir des composants individuels ?",
-      "category": "Raisonnement multi-niveau et compositionnalitÃ©"
+      "category": "Raisonnement multi-niveau et compositionnalité"
     },
     {
       "id": "bayesian_evidence_integration",
       "name": "Bayesian Evidence Integration",
       "description": "Comment intÃ©grer de nouvelles preuves pour mettre Ã  jour mes croyances selon le thÃ©orÃ¨me de Bayes ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "probabilistic_causal_network_analysis",
       "name": "Probabilistic Causal Network Analysis",
-      "description": "Puis-je construire un rÃ©seau causal probabiliste pour modÃ©liser les dÃ©pendances et influences entre variables ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "description": "Puis-je construire un réseau causal probabiliste pour modéliser les dépendances et influences entre variables ?",
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "explain_away_reasoning",
       "name": "Explain-Away Reasoning",
-      "description": "Comment une hypothÃ¨se peut-elle rÃ©duire la probabilitÃ© d'une autre hypothÃ¨se concurrente qui explique les mÃªmes observations ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "description": "Comment une hypothèse peut-elle réduire la probabilité d'une autre hypothèse concurrente qui explique les mêmes observations ?",
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "multi_hypothesis_cascaded_inference",
       "name": "Multi-Hypothesis Cascaded Inference",
-      "description": "Comment raisonner avec plusieurs hypothÃ¨ses en cascade oÃ¹ chaque niveau dÃ©pend du prÃ©cÃ©dent ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "description": "Comment raisonner avec plusieurs hypothèses en cascade où chaque niveau dépend du précédent ?",
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "uncertainty_propagation_analysis",
       "name": "Uncertainty Propagation Analysis",
       "description": "Comment l'incertitude se propage-t-elle Ã  travers les Ã©tapes de mon raisonnement ? Comment la quantifier et la minimiser ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "prior_knowledge_elicitation",
       "name": "Prior Knowledge Elicitation",
-      "description": "Quelles connaissances a priori puis-je activer pour informer mon raisonnement bayÃ©sien avant d'observer des donnÃ©es ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "description": "Quelles connaissances a priori puis-je activer pour informer mon raisonnement bayésien avant d'observer des données ?",
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "maximum_likelihood_reasoning",
       "name": "Maximum Likelihood Reasoning",
-      "description": "Quelle explication maximise la vraisemblance des observations donnÃ©es mon modÃ¨le ?",
-      "category": "Raisonnement bayÃ©sien et probabiliste"
+      "description": "Quelle explication maximise la vraisemblance des observations données mon modèle ?",
+      "category": "Raisonnement bayésien et probabiliste"
     },
     {
       "id": "self_monitoring_and_evaluation",
       "name": "Self-Monitoring and Evaluation",
-      "description": "Comment puis-je continuellement surveiller et Ã©valuer la qualitÃ© de mon propre raisonnement en cours ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Comment puis-je continuellement surveiller et évaluer la qualité de mon propre raisonnement en cours ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "strategic_planning_and_selection",
       "name": "Strategic Planning and Selection",
-      "description": "Quelle stratÃ©gie de rÃ©solution dois-je sÃ©lectionner parmi les alternatives disponibles ? Comment planifier l'approche ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Quelle stratégie de résolution dois-je sélectionner parmi les alternatives disponibles ? Comment planifier l'approche ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "cognitive_load_management",
       "name": "Cognitive Load Management",
-      "description": "Comment optimiser la charge cognitive en dÃ©composant le problÃ¨me en chunks gÃ©rables et en utilisant la mÃ©moire de travail efficacement ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Comment optimiser la charge cognitive en décomposant le problème en chunks gérables et en utilisant la mémoire de travail efficacement ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "attention_allocation_and_focus",
       "name": "Attention Allocation and Focus",
-      "description": "Sur quels Ã©lÃ©ments dois-je concentrer mon attention sÃ©lective pour progresser efficacement ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Sur quels éléments dois-je concentrer mon attention sélective pour progresser efficacement ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "error_detection_and_correction",
       "name": "Error Detection and Correction",
-      "description": "Comment identifier les erreurs dans mon raisonnement et les corriger systÃ©matiquement ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Comment identifier les erreurs dans mon raisonnement et les corriger systématiquement ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "reasoning_invariant_validation",
       "name": "Reasoning Invariant Validation",
-      "description": "Mon raisonnement respecte-t-il les invariants fondamentaux comme la cohÃ©rence logique et la non-contradiction ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Mon raisonnement respecte-t-il les invariants fondamentaux comme la cohérence logique et la non-contradiction ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "reflective_abstraction",
       "name": "Reflective Abstraction",
-      "description": "Puis-je rÃ©flÃ©chir sur mon propre processus de raisonnement pour en extraire des principes abstraits rÃ©utilisables ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Puis-je réfléchir sur mon propre processus de raisonnement pour en extraire des principes abstraits réutilisables ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "dual_process_integration",
       "name": "Dual Process Integration",
-      "description": "Comment intÃ©grer le systÃ¨me 1 (intuitif, rapide) et le systÃ¨me 2 (analytique, lent) pour optimiser le raisonnement ?",
-      "category": "MÃ©tacognition et contrÃ´le exÃ©cutif"
+      "description": "Comment intégrer le système 1 (intuitif, rapide) et le système 2 (analytique, lent) pour optimiser le raisonnement ?",
+      "category": "Métacognition et contrôle exécutif"
     },
     {
       "id": "first_order_logic_deduction",
       "name": "First-Order Logic Deduction",
-      "description": "Puis-je formaliser le problÃ¨me en logique du premier ordre et appliquer des rÃ¨gles de dÃ©duction formelles ?",
+      "description": "Puis-je formaliser le problème en logique du premier ordre et appliquer des règles de déduction formelles ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "constraint_satisfaction_reasoning",
       "name": "Constraint Satisfaction Reasoning",
-      "description": "Puis-je modÃ©liser le problÃ¨me comme un CSP (Constraint Satisfaction Problem) et utiliser la propagation de contraintes ?",
+      "description": "Puis-je modéliser le problème comme un CSP (Constraint Satisfaction Problem) et utiliser la propagation de contraintes ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
@@ -477,164 +477,164 @@
     {
       "id": "rule_based_inference_chaining",
       "name": "Rule-Based Inference Chaining",
-      "description": "Comment appliquer des rÃ¨gles d'infÃ©rence en chaÃ®nage avant (forward) ou arriÃ¨re (backward) pour dÃ©river des conclusions ?",
+      "description": "Comment appliquer des règles d'inférence en chaînage avant (forward) ou arrière (backward) pour dériver des conclusions ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "subproblem_decomposition_with_memoization",
       "name": "Subproblem Decomposition with Memoization",
-      "description": "Comment dÃ©composer le problÃ¨me en sous-problÃ¨mes structurellement Ã©quivalents et mÃ©moriser leurs solutions pour rÃ©utilisation ?",
+      "description": "Comment décomposer le problème en sous-problèmes structurellement équivalents et mémoriser leurs solutions pour réutilisation ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "quantifier_elimination_and_simplification",
       "name": "Quantifier Elimination and Simplification",
-      "description": "Puis-je Ã©liminer les quantificateurs logiques pour simplifier le problÃ¨me tout en prÃ©servant l'Ã©quivalence ?",
+      "description": "Puis-je éliminer les quantificateurs logiques pour simplifier le problème tout en préservant l'équivalence ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "vector_symbolic_reasoning",
       "name": "Vector-Symbolic Reasoning",
-      "description": "Puis-je encoder des symboles et relations dans des vecteurs de haute dimension pour combiner raisonnement symbolique et numÃ©rique ?",
+      "description": "Puis-je encoder des symboles et relations dans des vecteurs de haute dimension pour combiner raisonnement symbolique et numérique ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "graph_based_symbolic_inference",
       "name": "Graph-Based Symbolic Inference",
-      "description": "Comment reprÃ©senter le problÃ¨me sous forme de graphe et utiliser des algorithmes de graphes pour le raisonnement ?",
+      "description": "Comment représenter le problème sous forme de graphe et utiliser des algorithmes de graphes pour le raisonnement ?",
       "category": "Raisonnement symbolique et formel"
     },
     {
       "id": "physics_based_causal_modeling",
       "name": "Physics-Based Causal Modeling",
-      "description": "Puis-je appliquer des principes physiques (conservation, Ã©quilibre, dynamique) pour modÃ©liser causalement le problÃ¨me ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Puis-je appliquer des principes physiques (conservation, équilibre, dynamique) pour modéliser causalement le problème ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "mathematical_pattern_recognition",
       "name": "Mathematical Pattern Recognition",
-      "description": "Puis-je identifier des structures mathÃ©matiques (symÃ©tries, rÃ©currences, sÃ©ries) dans le problÃ¨me ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Puis-je identifier des structures mathématiques (symétries, récurrences, séries) dans le problème ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "algorithmic_complexity_analysis",
       "name": "Algorithmic Complexity Analysis",
-      "description": "Quelle est la complexitÃ© algorithmique de chaque approche de solution (temps, espace) ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Quelle est la complexité algorithmique de chaque approche de solution (temps, espace) ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "domain_specific_heuristic_activation",
       "name": "Domain-Specific Heuristic Activation",
-      "description": "Quelles heuristiques expertes spÃ©cifiques au domaine puis-je activer (mÃ©dical, juridique, ingÃ©nierie) ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Quelles heuristiques expertes spécifiques au domaine puis-je activer (médical, juridique, ingénierie) ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "legal_precedent_based_reasoning",
       "name": "Legal Precedent-Based Reasoning",
-      "description": "Comment utiliser des prÃ©cÃ©dents juridiques et le raisonnement par cas pour analyser ce problÃ¨me ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Comment utiliser des précédents juridiques et le raisonnement par cas pour analyser ce problème ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "medical_diagnostic_reasoning",
       "name": "Medical Diagnostic Reasoning",
-      "description": "Puis-je appliquer un raisonnement diagnostique diffÃ©rentiel pour identifier les causes les plus probables ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Puis-je appliquer un raisonnement diagnostique différentiel pour identifier les causes les plus probables ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "engineering_trade_off_analysis",
       "name": "Engineering Trade-off Analysis",
-      "description": "Comment identifier et optimiser les compromis entre performances conflictuelles (coÃ»t/qualitÃ©, vitesse/prÃ©cision) ?",
-      "category": "Raisonnement domaine-spÃ©cifique"
+      "description": "Comment identifier et optimiser les compromis entre performances conflictuelles (coût/qualité, vitesse/précision) ?",
+      "category": "Raisonnement domaine-spécifique"
     },
     {
       "id": "visual_spatial_transformation",
       "name": "Visual-Spatial Transformation",
-      "description": "Comment visualiser le problÃ¨me dans l'espace et appliquer des transformations mentales (rotation, translation, scaling) ?",
+      "description": "Comment visualiser le problème dans l'espace et appliquer des transformations mentales (rotation, translation, scaling) ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "diagrammatic_reasoning",
       "name": "Diagrammatic Reasoning",
-      "description": "Puis-je construire ou utiliser des diagrammes pour reprÃ©senter et raisonner sur le problÃ¨me ?",
+      "description": "Puis-je construire ou utiliser des diagrammes pour représenter et raisonner sur le problème ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "relational_visual_reasoning",
       "name": "Relational Visual Reasoning",
-      "description": "Quelles sont les relations visuelles (inclusion, proximitÃ©, similaritÃ©) entre les Ã©lÃ©ments du problÃ¨me ?",
+      "description": "Quelles sont les relations visuelles (inclusion, proximité, similarité) entre les éléments du problème ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "symbolic_visual_integration",
       "name": "Symbolic-Visual Integration",
-      "description": "Comment intÃ©grer les reprÃ©sentations symboliques et visuelles pour enrichir le raisonnement ?",
+      "description": "Comment intégrer les représentations symboliques et visuelles pour enrichir le raisonnement ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "multimodal_evidence_fusion",
       "name": "Multimodal Evidence Fusion",
-      "description": "Comment fusionner les preuves provenant de modalitÃ©s diffÃ©rentes (texte, image, son, donnÃ©es) ?",
+      "description": "Comment fusionner les preuves provenant de modalités différentes (texte, image, son, données) ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "pattern_completion_and_extrapolation",
       "name": "Pattern Completion and Extrapolation",
-      "description": "Puis-je complÃ©ter un pattern visuel incomplet ou extrapoler sa continuation ?",
+      "description": "Puis-je compléter un pattern visuel incomplet ou extrapoler sa continuation ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "topological_invariance_detection",
       "name": "Topological Invariance Detection",
-      "description": "Quelles propriÃ©tÃ©s topologiques restent invariantes sous transformations (connexitÃ©, genre, nombre de trous) ?",
+      "description": "Quelles propriétés topologiques restent invariantes sous transformations (connexité, genre, nombre de trous) ?",
       "category": "Raisonnement visuel et multimodal"
     },
     {
       "id": "bloom_reconstruct_decide_cycle",
       "name": "Bloom-Reconstruct-Decide Cycle",
-      "description": "Puis-je alterner entre phases de gÃ©nÃ©ration d'options (bloom), reconstruction (reconstruct) et dÃ©cision (decide) ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Puis-je alterner entre phases de génération d'options (bloom), reconstruction (reconstruct) et décision (decide) ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "iterative_refinement_with_feedback",
       "name": "Iterative Refinement with Feedback",
-      "description": "Comment amÃ©liorer itÃ©rativement ma solution en intÃ©grant des boucles de rÃ©troaction aprÃ¨s chaque Ã©tape ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Comment améliorer itérativement ma solution en intégrant des boucles de rétroaction après chaque étape ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "rumination_and_deep_processing",
       "name": "Rumination and Deep Processing",
-      "description": "Dois-je ruminer profondÃ©ment sur des aspects difficiles du problÃ¨me avant de progresser ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Dois-je ruminer profondément sur des aspects difficiles du problème avant de progresser ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "progressive_commitment_strategy",
       "name": "Progressive Commitment Strategy",
-      "description": "Comment procÃ©der par engagements progressifs plutÃ´t que par dÃ©cisions binaires immÃ©diates ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Comment procéder par engagements progressifs plutôt que par décisions binaires immédiates ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "backtracking_and_revision",
       "name": "Backtracking and Revision",
-      "description": "Comment revenir en arriÃ¨re efficacement lorsqu'une voie de raisonnement se rÃ©vÃ¨le infructueuse ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Comment revenir en arrière efficacement lorsqu'une voie de raisonnement se révèle infructueuse ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "consistency_maintenance",
       "name": "Consistency Maintenance",
-      "description": "Comment maintenir la cohÃ©rence entre toutes mes conclusions partielles au fil du raisonnement ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Comment maintenir la cohérence entre toutes mes conclusions partielles au fil du raisonnement ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "solution_diversity_generation",
       "name": "Solution Diversity Generation",
-      "description": "Puis-je gÃ©nÃ©rer dÃ©libÃ©rÃ©ment plusieurs solutions diversifiÃ©es plutÃ´t qu'une seule optimale ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Puis-je générer délibérément plusieurs solutions diversifiées plutôt qu'une seule optimale ?",
+      "category": "Raisonnement itératif et réflexif"
     },
     {
       "id": "meta_reasoning_on_process_quality",
       "name": "Meta-Reasoning on Process Quality",
-      "description": "Comment Ã©valuer la qualitÃ© de mon processus de raisonnement lui-mÃªme plutÃ´t que seulement son rÃ©sultat ?",
-      "category": "Raisonnement itÃ©ratif et rÃ©flexif"
+      "description": "Comment évaluer la qualité de mon processus de raisonnement lui-même plutôt que seulement son résultat ?",
+      "category": "Raisonnement itératif et réflexif"
     }
   ]
 }

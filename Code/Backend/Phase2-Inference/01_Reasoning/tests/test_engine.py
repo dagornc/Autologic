@@ -10,15 +10,23 @@ from autologic.core.models import ReasoningModule, AdaptedModule, ReasoningPlan,
 
 class MockLLM(BaseLLM):
     """LLM mocké pour les tests."""
+
+    @property
+    def model_name(self) -> str:
+        return "mock-model"
+
+    @property
+    def provider_name(self) -> str:
+        return "mock-provider"
     
     async def call(self, prompt: str, **kwargs) -> str:
         """Retourne des réponses mockées selon le contenu du prompt."""
         if "BIBLIOTHÈQUE DE MODULES" in prompt:
-            return '{"selected_modules": ["critical_thinking", "step_by_step"]}'
+            return '{"selected_modules": ["decomposer_le_probleme", "brainstorming"]}'
         if "MODULES SÉLECTIONNÉS" in prompt:
-            return '{"adapted_modules": [{"id": "critical_thinking", "adapted_description": "desc", "specific_actions": ["act1"]}, {"id": "step_by_step", "adapted_description": "desc", "specific_actions": ["act2"]}]}'
+            return '{"adapted_modules": [{"id": "decomposer_le_probleme", "adapted_description": "desc", "specific_actions": ["act1"]}, {"id": "brainstorming", "adapted_description": "desc", "specific_actions": ["act2"]}]}'
         if "MODULES ADAPTÉS" in prompt:
-            return '{"reasoning_plan": {"steps": [{"step_number": 1, "module_id": "critical_thinking", "module_name": "CT", "action": "think", "expected_output": "thought"}], "estimated_complexity": "low"}}'
+            return '{"reasoning_plan": {"steps": [{"step_number": 1, "module_id": "decomposer_le_probleme", "module_name": "Decomposer", "action": "think", "expected_output": "thought"}], "estimated_complexity": "low"}}'
         return "Executed"
 
 
@@ -93,8 +101,8 @@ class TestAutoLogicEngine:
     @pytest.mark.asyncio
     async def test_module_loading(self, engine: AutoLogicEngine) -> None:
         """Test du chargement des modules."""
-        assert len(engine.reasoning_modules) == 39
-        assert engine.reasoning_modules[0].name == "Critical Thinking"
+        assert len(engine.reasoning_modules) == 106
+        assert engine.reasoning_modules[0].name == "Décomposer le problème"
     
     @pytest.mark.asyncio
     async def test_select_modules(self, engine: AutoLogicEngine) -> None:
@@ -110,6 +118,7 @@ class TestAutoLogicEngine:
         
         assert "error" not in result
         assert result["task"] == task
+        assert "Executed" in result["final_output"]
         assert "Executed" in result["final_output"]
         assert len(result["plan"]["steps"]) == 1
 

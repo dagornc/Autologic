@@ -1,5 +1,6 @@
 import React from 'react';
-import { LucideIcon, Minus, Plus } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface NumberInputProps {
     value?: number;

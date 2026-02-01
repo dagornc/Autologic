@@ -209,3 +209,29 @@ export const promptsApi = {
         if (!response.ok) throw new ApiError('Failed to delete prompt', response.status);
     }
 };
+
+/**
+ * Objet API unifié pour faciliter les imports
+ */
+export const api = {
+    ...reasoningApi,
+    ...modelsApi,
+    ...healthApi,
+    ...promptsApi,
+
+    /**
+     * Teste la connexion au provider (Simulation via getModels pour l'instant)
+     * TODO: Implémenter un vrai endpoint de test backend
+     */
+    async testConnection(): Promise<{ success: boolean; error?: string }> {
+        try {
+            // Un simple ping aux modèles pour vérifier que le backend répond
+            // Si on voulait tester la clé, il faudrait un endpoint qui l'accepte
+            await modelsApi.getModels();
+            return { success: true };
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            return { success: false, error: msg };
+        }
+    }
+};
