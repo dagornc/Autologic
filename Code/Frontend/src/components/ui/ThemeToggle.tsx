@@ -1,42 +1,46 @@
 import React from 'react';
-import { Moon, Sun, Laptop } from 'lucide-react';
-import { ThemeProviderContext } from '../../contexts/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 
-export function ThemeToggle() {
-    const { theme, setTheme } = React.useContext(ThemeProviderContext);
+export const ThemeToggle: React.FC = () => {
+    const { theme, setTheme } = useTheme();
+
+    const cycleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark');
+    };
+
+    const isDark = theme === 'dark';
 
     return (
-        <div className="flex items-center p-1 rounded-xl bg-black/20 border border-white/5 backdrop-blur-sm">
-            <button
-                onClick={() => setTheme('light')}
-                className={`flex-1 p-2 rounded-lg transition-all ${theme === 'light'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                title="Light Mode"
-            >
-                <Sun className="w-4 h-4 mx-auto" />
-            </button>
-            <button
-                onClick={() => setTheme('system')}
-                className={`flex-1 p-2 rounded-lg transition-all ${theme === 'system'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                title="System Mode"
-            >
-                <Laptop className="w-4 h-4 mx-auto" />
-            </button>
-            <button
-                onClick={() => setTheme('dark')}
-                className={`flex-1 p-2 rounded-lg transition-all ${theme === 'dark'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                    }`}
-                title="Dark Mode"
-            >
-                <Moon className="w-4 h-4 mx-auto" />
-            </button>
-        </div>
+        <button
+            onClick={cycleTheme}
+            className="relative p-3 rounded-xl overflow-hidden group btn-ghost-liquid"
+            aria-label="Toggle theme"
+        >
+            {/* Liquid Background Effect for Toggle */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+            <div className="relative z-10">
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        key={theme}
+                        initial={{ y: -20, opacity: 0, rotate: -90 }}
+                        animate={{ y: 0, opacity: 1, rotate: 0 }}
+                        exit={{ y: 20, opacity: 0, rotate: 90 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                        {isDark ? (
+                            <Moon className="w-5 h-5 text-indigo-300 drop-shadow-[0_0_8px_rgba(165,180,252,0.5)]" />
+                        ) : (
+                            <Sun className="w-5 h-5 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            {/* Glow effect */}
+            <div className="absolute inset-0 ring-1 ring-white/10 rounded-xl group-hover:ring-white/30 transition-all duration-300" />
+        </button>
     );
-}
+};

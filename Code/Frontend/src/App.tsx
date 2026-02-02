@@ -1,8 +1,9 @@
-import AutoLogicInterface from './components/AutoLogicInterface'
+import { AutoLogicLiquidInterface } from './components/AutoLogicLiquidInterface'
+// import AutoLogicInterface from './components/AutoLogicInterface'
 
 function App() {
   return (
-    <AutoLogicInterface />
+    <AutoLogicLiquidInterface />
   )
 }
 

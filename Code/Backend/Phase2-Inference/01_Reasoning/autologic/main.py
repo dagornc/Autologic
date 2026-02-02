@@ -15,7 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from .core.engine import AutoLogicEngine
-from .core.llm_provider import OpenRouterLLM
 from .routers import reasoning_router, models_router, history_router, prompts_router
 from .routers.reasoning import set_engine
 from .utils.logging_config import setup_logging, get_logger
@@ -139,7 +138,7 @@ def get_readme() -> dict[str, str]:
 
 def start() -> None:
     """Fonction helper pour lancer uvicorn."""
-    uvicorn.run("autologic.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("autologic.main:app", host="0.0.0.0", port=8000, reload=True, loop="asyncio")
 
 
 if __name__ == "__main__":

@@ -54,25 +54,25 @@ const Sidebar: React.FC<SidebarProps> = ({
             initial={{ width: 80 }}
             animate={{ width: isExpanded ? 240 : 80 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed left-4 top-4 bottom-4 z-50 rounded-2xl glass-panel flex flex-col overflow-hidden"
+            className="fixed left-6 top-6 bottom-6 z-50 rounded-[28px] bg-white/[0.03] backdrop-blur-3xl flex flex-col overflow-hidden border border-white/10 shadow-modal"
         >
-            {/* Liquid Background subtle effect inside the sidebar */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+            {/* Noise Texture Layer */}
+            <div className="absolute inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
             {/* Content Container */}
-            <div className="relative z-10 flex flex-col h-full py-6 px-3">
+            <div className="relative z-10 flex flex-col h-full py-8 px-4">
 
                 {/* Logo / Brand */}
-                <div className="mb-8 px-1">
+                <div className="mb-10 px-1">
                     <motion.div
-                        className="flex items-center gap-3 p-2 rounded-xl group cursor-pointer"
+                        className="flex items-center gap-3 p-2 rounded-2xl group cursor-pointer"
                         whileHover={{ scale: 1.02 }}
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative w-10 h-10 flex-shrink-0">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur shadow-lg shadow-indigo-500/40" />
-                            <div className="relative w-full h-full bg-white dark:bg-black rounded-xl border border-black/5 dark:border-white/20 flex items-center justify-center">
-                                <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-white transition-colors" />
+                        <div className="relative w-11 h-11 flex-shrink-0">
+                            <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan to-neon-magenta rounded-2xl blur-[8px] opacity-40 group-hover:opacity-70 transition-opacity" />
+                            <div className="relative w-full h-full bg-background rounded-2xl border border-white/20 flex items-center justify-center shadow-lg">
+                                <Sparkles className="w-5 h-5 text-neon-cyan group-hover:scale-110 transition-transform" />
                             </div>
                         </div>
 
@@ -84,8 +84,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     exit={{ opacity: 0, x: -10 }}
                                     className="flex flex-col overflow-hidden"
                                 >
-                                    <span className="text-lg font-bold text-foreground tracking-wide">AutoLogic</span>
-                                    <span className="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">Agentic AI</span>
+                                    <span className="text-[18px] font-bold text-white tracking-tight">AutoLogic</span>
+                                    <span className="text-[10px] text-neon-cyan font-bold uppercase tracking-widest">v3.0 Stable</span>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 {/* Main Navigation */}
-                <nav className="flex-1 space-y-2">
+                <nav className="flex-1 space-y-3">
                     {navItems.map((item) => (
                         <NavButton
                             key={item.id}
@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </nav>
 
                 {/* Bottom Section */}
-                <div className="space-y-2 pt-4 border-t border-black/5 dark:border-white/5">
+                <div className="space-y-3 pt-6 border-t border-white/5">
                     {bottomItems.map((item) => (
                         <NavButton
                             key={item.id}
@@ -117,29 +117,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                         />
                     ))}
 
-                    {/* Theme Toggle */}
+                    {/* Theme Toggle placeholder (ThemeToggle handles its own glass) */}
                     {isExpanded && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="px-1"
-                        >
+                        <div className="px-1 py-1">
                             <ThemeToggle />
-                        </motion.div>
+                        </div>
                     )}
 
                     {/* Toggle Button */}
                     <motion.button
                         onClick={onToggle}
-                        className="w-full p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all group flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:text-foreground dark:hover:text-white mt-2"
+                        className="w-full p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all group flex items-center justify-center text-white/60 hover:text-white"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
                         {isExpanded ? (
                             <div className="flex items-center gap-2">
                                 <ChevronLeft className="w-5 h-5" />
-                                <span className="text-sm font-medium">Collapse</span>
+                                <span className="text-[13px] font-semibold">Collapse</span>
                             </div>
                         ) : (
                             <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
@@ -173,10 +168,10 @@ const NavButton: React.FC<NavButtonProps> = ({
         <motion.button
             onClick={onClick}
             className={`
-                relative w-full p-3 rounded-xl flex items-center gap-4 transition-all duration-300 group
+                relative w-full p-3.5 rounded-2xl flex items-center gap-4 transition-all duration-300 group
                 ${isActive
-                    ? 'text-indigo-500 font-semibold dark:text-white bg-indigo-50/50 dark:bg-white/10'
-                    : 'text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-white hover:bg-indigo-50/30 dark:hover:bg-white/5'
+                    ? 'text-white'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'
                 }
             `}
             whileHover={{ x: 4 }}
@@ -186,14 +181,23 @@ const NavButton: React.FC<NavButtonProps> = ({
             {isActive && (
                 <motion.div
                     layoutId="activeNav"
-                    className="absolute inset-0 bg-indigo-600/20 border border-indigo-500/30 rounded-xl"
+                    className="absolute inset-0 bg-white/10 border border-white/10 rounded-2xl shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+            )}
+
+            {/* Active Indicator Line */}
+            {isActive && (
+                <motion.div
+                    layoutId="activeSideLine"
+                    className="absolute left-[-2px] top-1/2 -translate-y-1/2 w-[4px] h-[20px] bg-neon-cyan rounded-full shadow-[0_0_8px_rgba(0,240,255,0.8)]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
             )}
 
             {/* Icon */}
-            <div className={`relative z-10 flex items-center justify-center w-6 h-6`}>
-                <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-400' : 'group-hover:text-indigo-300'}`} />
+            <div className="relative z-10 flex items-center justify-center w-6 h-6">
+                <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-neon-cyan' : 'group-hover:text-neon-cyan/70'}`} />
             </div>
 
             {/* Label */}
@@ -204,14 +208,12 @@ const NavButton: React.FC<NavButtonProps> = ({
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         transition={{ delay: 0.1 }}
-                        className="relative z-10 text-sm font-medium whitespace-nowrap"
+                        className="relative z-10 text-[14px] font-medium whitespace-nowrap"
                     >
                         {item.label}
                     </motion.span>
                 )}
             </AnimatePresence>
-
-            {/* Active Side Indicator (optional, removed for cleaner look, relying on background glow) */}
         </motion.button>
     );
 };

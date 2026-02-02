@@ -25,166 +25,217 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* Agent Semantic Colors */
-  --color-strategic: var(--primary);
-  --color-tactical: oklch(60% 0.18 150);
-  /* Emerald/Teal */
-  --color-audit: oklch(60% 0.22 300);
-  /* Fuchsia/Magenta */
+  /* --- Liquid Glass Token System v1.0 --- */
 
-  --animate-blob: blob 10s infinite;
+  /* Semantic Palettes */
+  --color-liquid-ice: #e0f2fe;
+  /* Polar Day Base */
+  --color-liquid-night: #020617;
+  /* Aurora Night Base */
+
+  --color-neon-orange: #ff9f43;
+  --color-neon-magenta: #ff006e;
+
+  /* Glass Colors */
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-glass-highlight: var(--glass-highlight);
+
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+  /* Shadows */
+  --shadow-glass-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  --shadow-glass-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  --shadow-glass-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  --shadow-neon-cyan: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.2);
+  --shadow-neon-magenta: 0 0 10px rgba(255, 0, 110, 0.5), 0 0 20px rgba(255, 0, 110, 0.2);
+
+  /* Animations */
+  --animate-aurora: aurora 20s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-liquid-pulse: liquid-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Oklch Base Layer */
-@layer base {
-  :root {
-    /* Light Mode: Frosted Pearl Base */
-    --background: oklch(98% 0.01 200);
-    --foreground: oklch(20% 0.02 260);
-
-    --card: oklch(100% 0 0);
-    --card-foreground: oklch(20% 0.02 260);
-
-    --popover: oklch(100% 0 0);
-    --popover-foreground: oklch(20% 0.02 260);
-
-    --primary: oklch(50% 0.25 260);
-    /* Deep Indigo */
-    --primary-foreground: oklch(98% 0.01 200);
-
-    --secondary: oklch(95% 0.02 200);
-    --secondary-foreground: oklch(20% 0.02 260);
-
-    --muted: oklch(95% 0.02 200);
-    --muted-foreground: oklch(55% 0 0);
-
-    --accent: oklch(95% 0.02 200);
-    --accent-foreground: oklch(20% 0.02 260);
-
-    --destructive: oklch(60% 0.25 20);
-    --destructive-foreground: oklch(98% 0.01 200);
-
-    --border: oklch(90% 0.02 200);
-    --input: oklch(90% 0.02 200);
-    --ring: oklch(50% 0.25 260);
-
-    --radius: 0.75rem;
-
-    /* Liquid Gradient Colors (Light) - Pastel Vibe */
-    --color-liquid-1: oklch(85% 0.1 200);
-    /* Cyan */
-    --color-liquid-2: oklch(85% 0.1 340);
-    /* Pink */
-    --color-liquid-3: oklch(85% 0.1 140);
-    /* Green*/
-    --color-liquid-4: oklch(85% 0.1 280);
-    /* Purple */
-  }
-
-  .dark {
-    /* Dark Mode: Abyssal Blue Base */
-    --background: oklch(18% 0.02 260);
-    --foreground: oklch(98% 0.01 200);
-
-    --card: oklch(20% 0.03 260);
-    --card-foreground: oklch(98% 0.01 200);
-
-    --popover: oklch(20% 0.03 260);
-    --popover-foreground: oklch(98% 0.01 200);
-
-    --primary: oklch(70% 0.15 260);
-    /* Brighter Indigo for dark mode */
-    --primary-foreground: oklch(20% 0.02 260);
-
-    --secondary: oklch(25% 0.04 260);
-    --secondary-foreground: oklch(98% 0.01 200);
-
-    --muted: oklch(25% 0.04 260);
-    --muted-foreground: oklch(70% 0.02 260);
-
-    --accent: oklch(25% 0.04 260);
-    --accent-foreground: oklch(98% 0.01 200);
-
-    --destructive: oklch(50% 0.2 20);
-    --destructive-foreground: oklch(98% 0.01 200);
-
-    --border: oklch(30% 0.05 260);
-    --input: oklch(30% 0.05 260);
-    --ring: oklch(70% 0.15 260);
-
-    /* Liquid Gradient Colors (Dark) - Neon/Cyber Vibe */
-    --color-liquid-1: oklch(40% 0.25 200);
-    /* Deep Cyan */
-    --color-liquid-2: oklch(40% 0.25 340);
-    /* Deep Pink */
-    --color-liquid-3: oklch(40% 0.25 260);
-    /* Deep Indigo */
-    --color-liquid-4: oklch(40% 0.25 280);
-    /* Deep Purple */
-  }
-
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground tracking-tight;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
-  }
-
-  /* Custom Scrollbar - Minimalist */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: oklch(60% 0 0 / 0.2);
-    border-radius: 999px;
-  }
-}
-
-/* Animations */
-@keyframes blob {
+/* --- Animations --- */
+@keyframes aurora {
   0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-
-  33% {
-    transform: translate(25px, -40px) scale(1.1);
-  }
-
-  66% {
-    transform: translate(-15px, 20px) scale(0.95);
+    background-position: 50% 50%, 50% 50%;
   }
 
   100% {
-    transform: translate(0px, 0px) scale(1);
+    background-position: 350% 50%, 350% 50%;
   }
 }
 
-/* Glassmorphism & Liquid Effects */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes liquid-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@layer base {
+  :root {
+    /* --- Mode: "Aurore Liquide" (Default/Dark) --- */
+    --background: oklch(3% 0.01 270);
+    /* #050508 - Un peu plus profond */
+    --foreground: oklch(95% 0.01 270);
+    /* Plus blanc, moins gris */
+
+    --card: oklch(10% 0.02 270 / 0.7);
+    --card-foreground: oklch(98% 0.005 270);
+
+    --popover: oklch(5% 0.01 270);
+    --popover-foreground: oklch(98% 0.005 270);
+
+    --primary: oklch(75% 0.18 195);
+    --primary-foreground: oklch(0% 0 0);
+
+    --secondary: oklch(20% 0.02 270);
+    --secondary-foreground: oklch(98% 0.005 270);
+
+    --muted: oklch(20% 0.02 270);
+    --muted-foreground: oklch(80% 0.01 270);
+    /* Plus clair pour le texte secondaire en mode sombre */
+
+    --accent: oklch(70% 0.20 330);
+    --accent-foreground: oklch(98% 0.005 270);
+
+    --destructive: oklch(65% 0.24 25);
+    --destructive-foreground: oklch(98% 0.005 0);
+
+    --border: oklch(20% 0.02 270);
+    --input: oklch(20% 0.02 270);
+    --ring: oklch(75% 0.18 195);
+
+    --radius: 1rem;
+
+    /* System v3.0 Identifiers */
+    --color-general: oklch(90% 0.005 270);
+    /* Silver/Neutral plus clair */
+    --color-strategic: oklch(75% 0.18 195);
+    /* Deep Cyan */
+    --color-strategic-rgb: 0, 240, 255;
+    --color-tactical: oklch(72% 0.19 150);
+    /* Saturated Emerald */
+    --color-tactical-rgb: 16, 185, 129;
+    --color-audit: oklch(80% 0.16 85);
+    /* Golden Amber */
+    --color-audit-rgb: 245, 158, 11;
+
+    /* Glass Stratas (Dark) */
+    --glass-1-bg: oklch(100% 0 0 / 0.03);
+    --glass-1-border: oklch(100% 0 0 / 0.06);
+    --glass-1-blur: 8px;
+
+    --glass-2-bg: oklch(100% 0 0 / 0.08);
+    --glass-2-border: oklch(100% 0 0 / 0.12);
+    --glass-2-blur: 16px;
+
+    --glass-3-bg: oklch(100% 0 0 / 0.15);
+    --glass-3-border: linear-gradient(135deg, oklch(100% 0 0 / 0.3) 0%, oklch(100% 0 0 / 0) 100%);
+    --glass-3-blur: 32px;
+  }
+
+  .light {
+    /* --- Mode: "Jour Polaire" (Light) --- */
+    --background: oklch(98% 0.005 80);
+    /* #f8f8fa - Plus clair */
+    --foreground: oklch(20% 0.02 270);
+    /* Plus foncé (plus noir) */
+
+    --card: oklch(100% 0 0 / 0.85);
+    --card-foreground: oklch(10% 0.02 270);
+
+    --popover: oklch(98% 0.005 80);
+    --popover-foreground: oklch(10% 0.02 270);
+
+    --primary: oklch(45% 0.18 195);
+    /* Plus saturé et profond */
+    --primary-foreground: oklch(100% 0 0);
+
+    --secondary: oklch(94% 0.01 270);
+    --secondary-foreground: oklch(10% 0.02 270);
+
+    --muted: oklch(94% 0.01 270);
+    --muted-foreground: oklch(35% 0.02 270);
+    /* Plus foncé pour le texte secondaire en mode clair */
+
+    --accent: oklch(45% 0.20 330);
+    --accent-foreground: oklch(10% 0.02 270);
+
+    --destructive: oklch(50% 0.20 25);
+    --destructive-foreground: oklch(100% 0 0);
+
+    --border: oklch(0% 0 0 / 0.15);
+    --input: oklch(0% 0 0 / 0.10);
+    --ring: oklch(45% 0.18 195);
+
+    /* System v3.0 Identifiers (Darker for Light Mode) */
+    --color-general: oklch(25% 0.02 270);
+    --color-strategic: oklch(45% 0.18 195);
+    --color-tactical: oklch(40% 0.18 150);
+    --color-audit: oklch(45% 0.16 85);
+
+    /* Glass Stratas (Light - Frozen Paper) */
+    --glass-1-bg: oklch(100% 0 0 / 0.7);
+    --glass-1-border: oklch(0% 0 0 / 0.08);
+    --glass-1-blur: 8px;
+
+    --glass-2-bg: oklch(100% 0 0 / 0.85);
+    --glass-2-border: oklch(0% 0 0 / 0.12);
+    --glass-2-blur: 16px;
+
+    --glass-3-bg: oklch(100% 0 0 / 0.95);
+    --glass-3-border: oklch(0% 0 0 / 0.15);
+    --glass-3-blur: 24px;
+  }
+
+  body {
+    @apply bg-background text-foreground tracking-tight transition-colors duration-700 ease-in-out;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
 @layer components {
+  /* --- Utility Classes for Liquid Glass --- */
 
-  .glass-panel-next {
-    @apply bg-white/40 dark:bg-black/40 backdrop-blur-[20px] saturate-150 border border-white/20 dark:border-white/10 shadow-xl;
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-xl border border-glass-border shadow-glass-sm transition-all duration-300;
+    /* Simulated inner light */
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 0 var(--glass-highlight);
   }
 
-  /* Input with floating feel */
-  .input-liquid {
-    @apply bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 backdrop-blur-md rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent placeholder:text-muted-foreground transition-all duration-300 hover:bg-white/30 dark:hover:bg-black/30;
+  .glass-panel:hover {
+    @apply bg-glass-bg/80 border-glass-highlight;
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
   }
 
-  /* Button with glow and glass */
-  .btn-liquid {
-    @apply relative overflow-hidden bg-primary/90 hover:bg-primary text-primary-foreground backdrop-blur-md shadow-lg hover:shadow-primary/25 transition-all duration-300 rounded-xl font-medium active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-  }
-
-  .btn-ghost-liquid {
-    @apply relative overflow-hidden bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 text-foreground backdrop-blur-sm border border-transparent hover:border-white/20 transition-all duration-300 rounded-xl active:scale-95;
+  .text-glow {
+    text-shadow: 0 0 20px currentColor;
   }
 }

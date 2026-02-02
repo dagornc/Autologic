@@ -232,6 +232,10 @@ class ProviderFactory:
         elif "timeout" in self._config:
             default_kwargs["timeout"] = self._config["timeout"]
 
+        # 5. Free Only (OpenRouter specific but safe to pass)
+        if "free_only" in self._config:
+            default_kwargs["free_only"] = self._config["free_only"]
+
         # Merge defaults into kwargs (so kwargs win)
         # We start with defaults, update with kwargs (except model_name which is handled separately)
         final_kwargs = default_kwargs.copy()
@@ -278,6 +282,22 @@ class ProviderFactory:
 
         # Inject custom resilience key for Worker
         kwargs["resilience_key"] = f"{provider}_worker"
+        
+        # Inject worker-specific resilience settings if available in config
+        if "rate_limit" not in kwargs and self._config.get("worker_rate_limit") is not None:
+            kwargs["rate_limit"] = self._config["worker_rate_limit"]
+
+        if "retry_enabled" not in kwargs and self._config.get("worker_retry_enabled") is not None:
+            kwargs["retry_enabled"] = self._config["worker_retry_enabled"]
+
+        if "fallback_enabled" not in kwargs and self._config.get("worker_fallback_enabled") is not None:
+            kwargs["fallback_enabled"] = self._config["worker_fallback_enabled"]
+
+        if (
+            "free_only" not in kwargs
+            and self._config.get("worker_free_only") is not None
+        ):
+            kwargs["free_only"] = self._config["worker_free_only"]
 
         # Clean kwargs to avoid conflicts
         kwargs.pop("provider", None)
@@ -354,6 +374,22 @@ class ProviderFactory:
 
         # Inject custom resilience key for Audit
         kwargs["resilience_key"] = f"{provider}_audit"
+
+        # Inject audit-specific resilience settings if available in config
+        if "rate_limit" not in kwargs and self._config.get("audit_rate_limit") is not None:
+            kwargs["rate_limit"] = self._config["audit_rate_limit"]
+
+        if "retry_enabled" not in kwargs and self._config.get("audit_retry_enabled") is not None:
+            kwargs["retry_enabled"] = self._config["audit_retry_enabled"]
+
+        if "fallback_enabled" not in kwargs and self._config.get("audit_fallback_enabled") is not None:
+            kwargs["fallback_enabled"] = self._config["audit_fallback_enabled"]
+
+        if (
+            "free_only" not in kwargs
+            and self._config.get("audit_free_only") is not None
+        ):
+            kwargs["free_only"] = self._config["audit_free_only"]
 
         # Clean kwargs to avoid conflicts
         kwargs.pop("provider", None)

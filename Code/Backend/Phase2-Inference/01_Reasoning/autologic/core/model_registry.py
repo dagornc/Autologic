@@ -64,11 +64,14 @@ class ModelRegistry:
                 # Others
                 "nvidia/nemotron-3-nano-30b-a3b:free",
                 "liquid/lfm-2.5-1.2b-instruct:free",
+                # Auto
+                "openrouter/auto",
                 # Paid (Popular)
                 "openai/gpt-4o",
                 "openai/gpt-4o-mini",
                 "anthropic/claude-3.5-sonnet",
                 "google/gemini-2.0-flash-001",
+                "google/gemini-2.0-flash-exp:free",
             ],
             "Ollama": [
                 "codellama",

@@ -4,29 +4,48 @@
 AutoLogic - Self-Discovery Reasoning Framework
 ==============================================
 
-.. image:: https://img.shields.io/badge/Python-3.9+-blue.svg
+.. image:: https://img.shields.io/badge/Python-3.11+-blue.svg
    :target: https://python.org
 .. image:: https://img.shields.io/badge/FastAPI-0.109+-009688.svg
    :target: https://fastapi.tiangolo.com
 .. image:: https://img.shields.io/badge/React-19+-61DAFB.svg
    :target: https://react.dev
-.. image:: https://img.shields.io/badge/Version-0.2.0-green.svg
+.. image:: https://img.shields.io/badge/TailwindCSS-4-38B2AC.svg
+   :target: https://tailwindcss.com
+.. image:: https://img.shields.io/badge/Version-0.3.0-green.svg
 
-**AutoLogic** est un système d'agent IA avancé implémentant le Self-Discovery Reasoning Framework.
-Il utilise une bibliothèque de 39 modules de raisonnement pour résoudre automatiquement des problèmes complexes.
+**AutoLogic** est un moteur d'inférence cognitif avancé implémentant le Self-Discovery Reasoning Framework.
+Il utilise une bibliothèque de **106 modules de raisonnement** pour résoudre automatiquement des problèmes complexes
+via un cycle cognitif en 8 étapes et une architecture à triple agent.
 
 Introduction
 ============
 
-AutoLogic décompose les tâches complexes en 4 phases automatiques :
+AutoLogic n'est pas un simple chatbot. C'est un **moteur de raisonnement autonome** conçu pour simuler 
+un raisonnement humain de haut niveau.
 
-1. **SELECT** - Sélection des modules de raisonnement pertinents parmi 39 disponibles
-2. **ADAPT** - Adaptation des modules au contexte spécifique de la tâche
-3. **STRUCTURE** - Génération d'un plan de raisonnement ordonné
-4. **EXECUTE** - Exécution du plan pour produire la solution finale
+Le système décompose les tâches complexes en **8 phases automatiques** :
+
+1. **ANALYZE** (Phase 0) - Analyse l'intention utilisateur et extrait les contraintes
+2. **SELECT** (Phase 1) - Sélection des modules pertinents parmi les 106 disponibles
+3. **ADAPT** (Phase 2) - Adaptation des modules au contexte spécifique de la tâche
+4. **STRUCTURE** (Phase 3) - Génération d'un plan de raisonnement ordonné
+5. **VERIFY** (Phase 4) - Vérification logique du plan
+6. **EXECUTE** (Phase 5) - Exécution du plan (Worker LLM)
+7. **CRITIC** (Phase 6) - Évaluation critique avec validation H2 et Double-Backtrack
+8. **SYNTHESIS/AUDIT** (Phase 7) - Synthèse finale avec boucle d'audit itérative
 
 Fonctionnalités Clés
 ====================
+
+Architecture Triple Agent
+-------------------------
+
+AutoLogic orchestre dynamiquement **3 agents spécialisés** :
+
+* **Strategic Agent (Root)** - Planification et orchestration haut niveau
+* **Worker Agent** - Exécution des étapes avec accès au contexte RAG
+* **Audit Agent** - Validation et contrôle qualité des résultats
 
 Multi-Provider LLM
 ------------------
@@ -44,15 +63,16 @@ Résilience Intégrée
 
 Le système inclut des mécanismes de résilience avancés :
 
-* **Rate Limiting** - Token bucket configurable (défaut: 5 req/s)
+* **Rate Limiting** - Token bucket configurable (défaut: 15 req/s)
 * **Retry Automatique** - Backoff exponentiel sur erreurs 429/5xx
 * **Fallback Intelligent** - Bascule automatique vers modèle alternatif
+* **Timeout Adaptatif** - Gestion fine des délais par provider
 
 Interface Moderne
 -----------------
 
-* Design **Glassmorphism / Liquid Glass**
-* Thème sombre par défaut
+* Design **Glassmorphism / Liquid Glass** (2025)
+* Thème sombre/clair adaptatif
 * Panneau de configuration avancée
 * Animations fluides (Framer Motion)
 
@@ -112,58 +132,72 @@ Avec paramètres optionnels :
 Architecture
 ============
 
-Backend
--------
+Architecture Backend
+--------------------
 
-Le backend est structuré en modules :
-
-* **autologic/core/** - Moteur principal, providers LLM, résilience
-* **autologic/routers/** - Endpoints FastAPI
-* **autologic/utils/** - Logging, helpers
+Le backend est structuré en modules sous ``autologic/`` :
 
 Modules Core
 ^^^^^^^^^^^^
 
-* ``engine.py`` - Moteur AutoLogicEngine avec cycle Self-Discovery
+* ``engine.py`` - Moteur AutoLogicEngine avec cycle Self-Discovery 8 phases
 * ``llm_provider.py`` - Implémentations des 5 providers LLM
 * ``provider_factory.py`` - Factory pattern pour création dynamique
-* ``model_registry.py`` - Registre centralisé des modèles
-* ``resilience.py`` - Rate limiter, retry, fallback (Universel)
-* ``models.py`` - Modèles Pydantic
-* ``prompts.py`` - Templates de prompts
+* ``model_registry.py`` - Registre centralisé des modèles et configurations
+* ``resilience.py`` - Rate limiter, retry, fallback (architecture universelle)
+* ``models.py`` - Modèles Pydantic (ReasoningModule, AdaptedModule, etc.)
+* ``prompts.py`` - Templates de prompts pour chaque phase
+* ``critic.py`` - Agent Critic pour validation H2
+
+Routers FastAPI
+^^^^^^^^^^^^^^^
+
+* ``reasoning.py`` - Endpoints de raisonnement (``/reason/*``)
+* ``models.py`` - Endpoints de configuration (``/api/*``)
+* ``history.py`` - Gestion de l'historique des sessions
+* ``prompts.py`` - Endpoints pour templates de prompts
 
 Endpoints API - Raisonnement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* ``POST /reason/full`` - Cycle complet Self-Discover
-* ``GET /reason/modules`` - Liste des 39 modules de raisonnement
+* ``POST /reason/full`` - Cycle complet Self-Discover (synchrone)
+* ``POST /reason/full/stream`` - Cycle complet avec progression SSE
+* ``GET /reason/modules`` - Liste des 106 modules de raisonnement
 
 Endpoints API - Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* ``GET /api/models`` - Liste providers et modèles
-* ``GET/PUT /api/providers/config`` - Configuration active
+* ``GET /api/models`` - Liste providers et modèles disponibles
+* ``GET/PUT /api/providers/config`` - Configuration active (Root, Worker, Audit)
 * ``GET /api/providers/status`` - Status des providers
 * ``GET /api/providers/{p}/models`` - Modèles d'un provider
-* ``POST /api/providers/verify`` - Test de connexion
+* ``POST /api/providers/verify`` - Test de connexion API Key
 * ``GET/PUT /api/providers/{p}/resilience`` - Configuration résilience
 
-Frontend
---------
+Endpoints API - Système
+^^^^^^^^^^^^^^^^^^^^^^^
+
+* ``GET /health`` - Status détaillé du service
+* ``GET /`` - Page d'accueil API
+
+Architecture Frontend
+---------------------
 
 Le frontend React utilise :
 
 * **React 19** - Framework UI
 * **Vite 7** - Build tool
-* **TailwindCSS 4** - Styling
+* **TailwindCSS 4** - Styling atomique
 * **Framer Motion** - Animations
+* **TypeScript 5.9** - Typage statique
 
 Composants principaux :
 
 * ``AutoLogicInterface.tsx`` - Layout principal
-* ``SettingsDrawer.tsx`` - Panneau de configuration
+* ``SettingsDialog.tsx`` - Panneau de configuration complet
+* ``FlowVisualization.tsx`` - Visualisation du flux 8 phases
 * ``Sidebar.tsx`` - Navigation latérale
-* ``ThemeProvider.tsx`` - Gestion du thème
+* ``ThemeProvider.tsx`` - Gestion du thème dark/light
 
 Configuration
 =============
@@ -175,28 +209,32 @@ Fichier ``Config/global.yaml``
 
    app:
      name: "AutoLogic"
-     version: "0.2.0"
+     version: "0.3.0"
+     environment: "development"
 
    llm:
      active_provider: "openrouter"
-     active_model: "google/gemini-2.0-flash-exp:free"
-     temperature: 0.7
-     max_tokens: 4096
-     timeout: 180
+     active_model: "google/gemini-2.0-flash-001"
+     temperature: 0.5
+     max_tokens: 2048
+     timeout: 60
      
      resilience:
-       rate_limit: 5.0
+       rate_limit: 15.0
        retry_enabled: true
        max_retries: 3
+       retry_base_delay: 2.0
        fallback_enabled: true
 
      providers:
        openrouter:
          enabled: true
+         base_url: "https://openrouter.ai/api/v1"
        openai:
          enabled: true
        ollama:
          enabled: true
+         auto_detect_models: true
        vllm:
          enabled: false
        huggingface:
@@ -212,18 +250,107 @@ Variables d'Environnement
 * ``LOG_LEVEL`` - Niveau de log (défaut: INFO)
 * ``CORS_ORIGINS`` - Origines CORS autorisées
 
-Modules de Raisonnement
-=======================
+Les 106 Modules de Raisonnement
+===============================
 
-AutoLogic dispose de 39 modules de raisonnement organisés par catégorie :
+AutoLogic dispose de **106 modules cognitifs** organisés en 15 catégories :
 
-* **Analyse (8 modules)** - Critical Thinking, Root Cause Analysis...
-* **Décomposition (6 modules)** - Task Decomposition, Chunking...
-* **Créativité (5 modules)** - Brainstorming, Lateral Thinking...
-* **Vérification (5 modules)** - Fact Checking, Consistency Check...
-* **Synthèse (5 modules)** - Summarization, Integration...
-* **Planification (5 modules)** - Goal Setting, Resource Allocation...
-* **Autres (5 modules)** - Analogical Reasoning, Pattern Recognition...
+Catégories Principales
+----------------------
+
+.. list-table:: Modules de Raisonnement
+   :widths: 20 50 30
+   :header-rows: 1
+
+   * - Catégorie
+     - Description
+     - Exemples
+   * - **Décomposition**
+     - Analyse granulaire du problème
+     - Décomposer, Identifier contraintes, Clarifier objectifs
+   * - **Pensée Critique**
+     - Évaluation de la validité et des risques
+     - Identifier hypothèses, Analyser biais, Évaluer
+   * - **Pensée Créative**
+     - Génération d'approches innovantes
+     - Brainstorming, Pensée latérale, Pensée systémique
+   * - **Pensée Analytique**
+     - Logique et relation cause-effet
+     - Analyse cause-effet, Pensée inductive/déductive
+   * - **Pensée Systémique**
+     - Vision d'ensemble et interconnexions
+     - Parties prenantes, Dépendances, Effets de second ordre
+   * - **Prise de Décision**
+     - Analyse des choix et compromis
+     - Peser alternatives, Compromis, Décision sous incertitude
+   * - **Raisonnement Modal**
+     - Analyse des possibles et nécessités
+     - Nécessité modale, Analyse contrefactuelle, Logique temporelle
+   * - **Raisonnement Abductif**
+     - Inférence de la meilleure explication
+     - Génération d'hypothèses, Transfert analogique, CBR
+   * - **Multi-niveau**
+     - Abstraction et propriétés émergentes
+     - Abstraction hiérarchique, Analyse de Marr, Pensée holistique
+   * - **Bayésien**
+     - Probabilités et mise à jour des croyances
+     - Intégration d'évidences, Réseau causal, Propagation incertitude
+   * - **Métacognition**
+     - Contrôle et optimisation du processus
+     - Self-Monitoring, Gestion charge cognitive, Attention sélective
+   * - **Symbolique**
+     - Logique formelle et théorèmes
+     - Logique 1er ordre, Satisfaction contraintes, Preuve automatique
+   * - **Domaine-Spécifique**
+     - Expertises ciblées
+     - Modélisation physique, Diagnostic médical, Analyse juridique
+   * - **Visuel/Multimodal**
+     - Raisonnement spatial et visuel
+     - Transformation spatiale, Raisonnement diagrammatique
+   * - **Itératif/Réflexif**
+     - Raffinement et boucles de feedback
+     - Raffinement itératif, Ruminage profond, Backtracking
+
+Fichier des modules : ``Code/Backend/Phase2-Inference/01_Reasoning/autologic/data/reasoning_modules_complete.json``
+
+API Reference
+=============
+
+Core Modules
+------------
+
+.. automodule:: autologic.core.engine
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.llm_provider
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.provider_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.resilience
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Router Modules
+--------------
+
+.. automodule:: autologic.routers.reasoning
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.routers.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Tests
 =====
@@ -239,6 +366,37 @@ Tests
    # Avec couverture
    pytest Test/ --cov=autologic --cov-report=html
 
+Scripts Utilitaires
+===================
+
+Le dossier ``Cmd/`` contient des scripts standalone :
+
+.. list-table:: Scripts disponibles
+   :widths: 20 60 20
+   :header-rows: 1
+
+   * - Script
+     - Description
+     - Usage
+   * - ``start.sh``
+     - Lance tout le système (backend + frontend)
+     - ``./start.sh``
+   * - ``start_backend.sh``
+     - Lance uniquement le backend FastAPI
+     - ``./Cmd/start_backend.sh``
+   * - ``start_frontend.sh``
+     - Lance uniquement le frontend React
+     - ``./Cmd/start_frontend.sh``
+   * - ``run_tests.sh``
+     - Exécute la suite de tests pytest
+     - ``./Cmd/run_tests.sh``
+   * - ``lint.sh``
+     - Vérifie la qualité du code
+     - ``./Cmd/lint.sh``
+   * - ``generate_docs.sh``
+     - Génère cette documentation
+     - ``./Cmd/generate_docs.sh``
+
 Indices et Tables
 =================
 
@@ -248,4 +406,4 @@ Indices et Tables
 
 ---
 
-*Version 0.2.0 - Janvier 2025*
+*Version 0.3.0 - Février 2026*

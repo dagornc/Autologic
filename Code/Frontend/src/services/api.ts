@@ -4,8 +4,38 @@
 
 import type { AutoLogicResult, ModelData, LLMConfig, Prompt, PromptCreate, PromptUpdate, ReasoningPlan } from '../types';
 
-/** URL de base de l'API backend */
-const API_BASE_URL = 'http://127.0.0.1:8000';
+/** Types pour les événements SSE */
+export interface SSEProgressEvent {
+    type: 'progress';
+    stage: string;
+    status: string;
+    message?: string;
+}
+
+export interface SSEResultEvent {
+    type: 'result';
+    payload: AutoLogicResult;
+}
+
+export interface SSEErrorEvent {
+    type: 'error';
+    message: string;
+}
+
+export type SSEEvent = SSEProgressEvent | SSEResultEvent | SSEErrorEvent;
+
+/**
+ * URL de base de l'API backend.
+ *
+ * Priorité de configuration :
+ * 1. Variable d'environnement VITE_API_URL (définie dans .env ou .env.production)
+ * 2. Fallback sur localhost:8000 pour le développement
+ *
+ * Exemples de configuration .env :
+ *   VITE_API_URL=http://127.0.0.1:8000      (développement local)
+ *   VITE_API_URL=https://api.autologic.com  (production)
+ */
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 /** Timeout par défaut pour les requêtes (120 secondes) */
 const DEFAULT_TIMEOUT = 120000;
@@ -87,7 +117,21 @@ export const reasoningApi = {
                         model: config.model,
                         api_key: config.apiKey,
                         timeout: config.timeout,
-                        audit_max_retries: config.auditMaxRetries
+                        audit_max_retries: config.auditMaxRetries,
+                        retry_enabled: config.retryEnabled,
+                        fallback_enabled: config.fallbackEnabled,
+                        rate_limit: config.rateLimit,
+                        retry_base_delay: config.retryBaseDelay,
+
+                        // Worker Resilience
+                        workerRateLimit: config.workerRateLimit,
+                        workerRetryEnabled: config.workerRetryEnabled,
+                        workerFallbackEnabled: config.workerFallbackEnabled,
+
+                        // Audit Resilience
+                        auditRateLimit: config.auditRateLimit,
+                        auditRetryEnabled: config.auditRetryEnabled,
+                        auditFallbackEnabled: config.auditFallbackEnabled
                     } : {},
                 }),
             },
@@ -105,6 +149,87 @@ export const reasoningApi = {
         }
 
         return response.json();
+    },
+
+    /**
+     * Exécute le cycle en streaming (SSE)
+     */
+    async solveStream(
+        task: string,
+        config: LLMConfig | undefined,
+        onEvent: (event: SSEEvent) => void,
+        onError: (error: Error) => void,
+        signal?: AbortSignal
+    ): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/reason/stream`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task,
+                parameters: config ? {
+                    provider: config.provider,
+                    model: config.model,
+                    api_key: config.apiKey,
+                    timeout: config.timeout,
+                    audit_max_retries: config.auditMaxRetries,
+                    retry_enabled: config.retryEnabled,
+                    fallback_enabled: config.fallbackEnabled,
+                    rate_limit: config.rateLimit,
+                    retry_base_delay: config.retryBaseDelay,
+
+                    // Worker Resilience
+                    workerRateLimit: config.workerRateLimit,
+                    workerRetryEnabled: config.workerRetryEnabled,
+                    workerFallbackEnabled: config.workerFallbackEnabled,
+
+                    // Audit Resilience
+                    auditRateLimit: config.auditRateLimit,
+                    auditRetryEnabled: config.auditRetryEnabled,
+                    auditFallbackEnabled: config.auditFallbackEnabled
+                } : {},
+            }),
+            signal
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new ApiError(error.detail || 'Stream failed', response.status);
+        }
+
+        if (!response.body) throw new Error('ReadableStream not supported');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
+
+                const lines = buffer.split('\n\n');
+                buffer = lines.pop() || ''; // Keep the incomplete line in buffer
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            onEvent(data);
+                        } catch (e) {
+                            console.error('SSE Parse Error:', e);
+                        }
+                    }
+                }
+            }
+        } catch (err: unknown) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            if (error.name !== 'AbortError') {
+                onError(error);
+            }
+        }
     },
 
     /**
@@ -148,6 +273,26 @@ export const modelsApi = {
 
         if (!response.ok) {
             throw new ApiError('Failed to fetch models', response.status);
+        }
+
+        return response.json();
+    },
+
+    /**
+     * Récupère les modèles dynamiques pour un provider spécifique
+     */
+    async getProviderModels(provider: string, apiKey?: string): Promise<{ models: string[], models_detailed?: { id: string, is_free: boolean }[] }> {
+        const headers: Record<string, string> = {};
+        if (apiKey) {
+            headers['X-Api-Key'] = apiKey;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/providers/${provider}/models?free_only=false`, {
+            headers
+        });
+
+        if (!response.ok) {
+            throw new ApiError(`Failed to fetch models for ${provider}`, response.status);
         }
 
         return response.json();

@@ -1,9 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BrainCircuit, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 
 export type SystemStatus = 'idle' | 'loading' | 'error';
-
 
 interface HeaderProps {
     status?: SystemStatus;
@@ -15,56 +14,79 @@ export const Header: React.FC<HeaderProps> = ({ status = 'idle' }) => {
         switch (s) {
             case 'loading':
                 return {
-                    text: 'Reasoning...',
-                    icon: Loader2,
-                    colorClass: 'text-blue-600 dark:text-blue-400',
-                    bgDot: 'bg-blue-500 shadow-[0_0_10px_#3b82f6]',
+                    text: 'Reasoning',
+                    icon: RefreshCw,
+                    color: 'text-neon-cyan',
+                    bgDot: 'bg-neon-cyan',
+                    shadow: 'shadow-[0_0_12px_rgba(0,240,255,0.8)]',
                     animateIcon: true
                 };
             case 'error':
                 return {
-                    text: 'System Error',
+                    text: 'System Alert',
                     icon: AlertCircle,
-                    colorClass: 'text-red-600 dark:text-red-400',
-                    bgDot: 'bg-red-500 shadow-[0_0_10px_#ef4444]',
+                    color: 'text-neon-magenta',
+                    bgDot: 'bg-neon-magenta',
+                    shadow: 'shadow-[0_0_12px_rgba(255,0,110,0.8)]',
                     animateIcon: false
                 };
             case 'idle':
             default:
                 return {
-                    text: 'System Ready',
-                    icon: BrainCircuit,
-                    colorClass: 'text-indigo-600 dark:text-indigo-400',
-                    bgDot: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
+                    text: 'Stable',
+                    icon: Sparkles,
+                    color: 'text-neon-emerald',
+                    bgDot: 'bg-neon-emerald',
+                    shadow: 'shadow-[0_0_12px_rgba(16,185,129,0.8)]',
                     animateIcon: false
                 };
         }
     };
 
     const config = getStatusConfig(status);
-    const StatusIcon = config.icon;
 
     return (
         <motion.header
-            initial={{ y: -50, opacity: 0 }}
+            initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="flex flex-col md:flex-row items-center justify-between gap-6"
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="flex flex-col md:flex-row items-center justify-between gap-6 pb-2 border-b border-border"
         >
-            <div className="text-center md:text-left space-y-2">
-                <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 dark:border-white/10 border-slate-200 shadow-[0_0_30px_rgba(79,70,229,0.15)] hover:bg-white/10 transition-colors">
-                    <StatusIcon className={`w-6 h-6 ${config.colorClass} ${config.animateIcon ? 'animate-spin' : ''}`} />
-                    <span className={`text-sm font-medium tracking-wider uppercase transition-colors duration-300 ${config.colorClass}`}>
-                        {config.text}
+            <div className="text-center md:text-left space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className="relative flex items-center justify-center">
+                        <div className={`w-2 h-2 rounded-full ${config.bgDot} ${config.shadow} animate-pulse-neon`} />
+                    </div>
+                    <span className={`text-[11px] font-bold tracking-[0.2em] uppercase font-mono ${config.color}`}>
+                        System {config.text}
                     </span>
-                    <span className={`w-2 h-2 rounded-full transition-all duration-300 ${config.bgDot}`} />
+                    <div className="h-4 w-px bg-border mx-1" />
+                    <div className="px-2 py-0.5 rounded-md bg-secondary/50 border border-border">
+                        <span className="text-[10px] font-bold text-muted-foreground tracking-wider">v3.0.4 - STABLE</span>
+                    </div>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-900 via-indigo-700 to-indigo-500 dark:from-white dark:via-indigo-100 dark:to-indigo-400 drop-shadow-sm mt-4">
-                    AutoLogic Framework
-                </h1>
+
+                <div className="space-y-1">
+                    <h1 className="text-[42px] leading-tight font-extrabold tracking-tight text-foreground drop-shadow-2xl">
+                        AutoLogic <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-neon-magenta">Framework</span>
+                    </h1>
+                    <p className="text-[14px] text-muted-foreground font-medium tracking-wide">
+                        Advanced Reasoning Architecture & Cross-Agent Coordination
+                    </p>
+                </div>
             </div>
 
-
+            <div className="hidden md:flex items-center gap-4">
+                {status === 'loading' && (
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                        className="p-3 rounded-full bg-neon-cyan/5 border border-neon-cyan/20"
+                    >
+                        <RefreshCw className="w-5 h-5 text-neon-cyan" />
+                    </motion.div>
+                )}
+            </div>
         </motion.header>
     );
 };

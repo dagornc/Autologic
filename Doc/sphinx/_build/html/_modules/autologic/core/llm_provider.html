@@ -1,0 +1,978 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autologic.core.llm_provider &mdash; AutoLogic Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=6ad53a97"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            AutoLogic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">AutoLogic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">autologic.core.llm_provider</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de autologic.core.llm_provider</h1><div class="highlight"><pre>
+<span></span><span class="c1"># autologic/core/llm_provider.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Implémentations des providers LLM pour AutoLogic.</span>
+
+<span class="sd">Ce module contient les classes concrètes pour chaque provider LLM supporté:</span>
+<span class="sd">- OpenRouterLLM</span>
+<span class="sd">- OpenAILLM</span>
+<span class="sd">- OllamaLLM</span>
+<span class="sd">- VLlmLLM</span>
+<span class="sd">- HuggingFaceLLM</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecretStr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.resilience</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ResilienceConfig</span><span class="p">,</span>
+    <span class="n">get_resilience_config</span><span class="p">,</span>
+    <span class="n">get_resilient_caller</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Import de BaseLLM depuis engine.py pour éviter duplication</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseLLM</span>
+
+<span class="c1"># Les providers héritent de BaseLLM importé depuis engine.py</span>
+
+
+<div class="viewcode-block" id="OpenRouterLLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenRouterLLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenRouterLLM</span><span class="p">(</span><span class="n">BaseLLM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implémentation pour OpenRouter via LangChain ChatOpenAI.</span>
+
+<span class="sd">    OpenRouter agrège plusieurs providers (OpenAI, Anthropic, Google, etc.)</span>
+<span class="sd">    sous une API unifiée.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OpenRouterLLM.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenRouterLLM.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://openrouter.ai/api/v1&quot;</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">120.0</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">resilience_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le provider OpenRouter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: ID du modèle (ex: &quot;google/gemini-2.0-flash-001&quot;)</span>
+<span class="sd">            api_key: Clé API. Si None, lit OPENROUTER_API_KEY.</span>
+<span class="sd">            base_url: URL de base de l&#39;API</span>
+<span class="sd">            timeout: Timeout en secondes</span>
+<span class="sd">            max_retries: Nombre de retries</span>
+<span class="sd">            resilience_key: Clé spécifique pour la configuration de résilience (ex: &quot;openrouter_worker&quot;)</span>
+<span class="sd">            rate_limit: Limite de requêtes par seconde (optionnel)</span>
+<span class="sd">            retry_enabled: Activer les retries (optionnel)</span>
+<span class="sd">            fallback_enabled: Activer le fallback (optionnel)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENROUTER_API_KEY&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span> <span class="o">=</span> <span class="n">resilience_key</span> <span class="ow">or</span> <span class="s2">&quot;openrouter&quot;</span>
+        
+        <span class="c1"># Store resilience override if provided</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_override</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">]):</span>
+            <span class="c1"># We need to import ResilienceConfig here or assume it&#39;s available</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.resilience</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResilienceConfig</span><span class="p">,</span> <span class="n">get_resilience_config</span>
+            <span class="c1"># Get default config to merge with</span>
+            <span class="n">default</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resilience Override for </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_override</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Clé API OpenRouter requise. &quot;</span>
+                <span class="s2">&quot;Définir OPENROUTER_API_KEY ou passer api_key.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">SecretStr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">),</span>
+            <span class="n">base_url</span><span class="o">=</span><span class="n">base_url</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="n">max_retries</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;OpenRouterLLM initialisé: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> (key=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;openrouter&quot;</span>
+
+    <span class="c1"># Cache des modèles gratuits pour le fallback</span>
+    <span class="n">_free_models_cache</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="OpenRouterLLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenRouterLLM.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Exécute un appel à OpenRouter avec résilience.</span>
+
+<span class="sd">        Applique:</span>
+<span class="sd">        - Rate limiting (configurable, 5 req/s par défaut)</span>
+<span class="sd">        - Retry automatique sur 429/5xx si activé</span>
+<span class="sd">        - Fallback vers un autre modèle gratuit si activé</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resilient_caller</span> <span class="o">=</span> <span class="n">get_resilient_caller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_make_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Appel interne.&quot;&quot;&quot;</span>
+            <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_format&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;json_object&quot;</span><span class="p">:</span>
+                <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_object&quot;</span><span class="p">}</span>
+
+            <span class="n">base_url</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="p">,</span> <span class="s2">&quot;base_url&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;OpenRouter Call - Model: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">, BaseURL: </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Retry on 400 with response_format issue is a provider quirk, kept here</span>
+                <span class="k">if</span> <span class="s2">&quot;400&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;response_format&quot;</span> <span class="ow">in</span> <span class="n">model_kwargs</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Retrying without response_format due to error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">del</span> <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_fallback_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Appel de fallback avec un autre modèle gratuit.&quot;&quot;&quot;</span>
+            <span class="n">fallback_model</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fallback_model</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fallback_model</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Aucun modèle de fallback disponible&quot;</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OpenRouter Fallback: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">fallback_model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Créer un nouveau client avec le modèle de fallback</span>
+            <span class="n">fallback_client</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="n">fallback_model</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="n">SecretStr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">base_url</span><span class="o">=</span><span class="s2">&quot;https://openrouter.ai/api/v1&quot;</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
+                <span class="n">max_retries</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_format&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;json_object&quot;</span><span class="p">:</span>
+                <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_object&quot;</span><span class="p">}</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fallback_client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;400&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;response_format&quot;</span> <span class="ow">in</span> <span class="n">model_kwargs</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span>
+                    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fallback_client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            <span class="n">fallback_func</span> <span class="o">=</span> <span class="n">_fallback_call</span> <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span> <span class="k">else</span> <span class="kc">None</span>
+            
+            <span class="c1"># Use instance override if available, or compute from kwargs call-time</span>
+            <span class="n">resilience_override</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_resilience_override&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">resilience_override</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;rate_limit&quot;</span><span class="p">]):</span>
+                <span class="n">resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                    <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                    <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                    <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                    <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                    <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># If override exists, update fallback behavior based on it</span>
+            <span class="k">if</span> <span class="n">resilience_override</span><span class="p">:</span>
+                <span class="n">fallback_func</span> <span class="o">=</span> <span class="n">_fallback_call</span> <span class="k">if</span> <span class="n">resilience_override</span><span class="o">.</span><span class="n">fallback_enabled</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="k">return</span> <span class="k">await</span> <span class="n">resilient_caller</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+                <span class="n">_make_call</span><span class="p">,</span>
+                <span class="n">fallback_func</span><span class="o">=</span><span class="n">fallback_func</span><span class="p">,</span>
+                <span class="n">resilience_override</span><span class="o">=</span><span class="n">resilience_override</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur OpenRouter (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_get_fallback_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Récupère un modèle gratuit alternatif pour le fallback.&quot;&quot;&quot;</span>
+        <span class="c1"># Rafraîchir le cache si vide</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">OpenRouterLLM</span><span class="o">.</span><span class="n">_free_models_cache</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">detailed</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_models_detailed</span><span class="p">(</span>
+                    <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">,</span> <span class="n">free_only</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+                <span class="n">OpenRouterLLM</span><span class="o">.</span><span class="n">_free_models_cache</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">detailed</span> <span class="k">if</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+                <span class="p">]</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Impossible de récupérer les modèles de fallback: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Filtrer le modèle actuel et en choisir un au hasard</span>
+        <span class="n">available</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">OpenRouterLLM</span><span class="o">.</span><span class="n">_free_models_cache</span> <span class="k">if</span> <span class="n">m</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OpenRouterLLM.list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenRouterLLM.list_models">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère la liste des modèles disponibles sur OpenRouter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">detailed</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">cls</span><span class="o">.</span><span class="n">list_models_detailed</span><span class="p">(</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="n">raise_error</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">detailed</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="OpenRouterLLM.list_models_detailed">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenRouterLLM.list_models_detailed">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models_detailed</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">free_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère la liste des modèles disponibles sur OpenRouter avec détails.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            api_key: Clé API optionnelle</span>
+<span class="sd">            raise_error: Si True, lève une exception en cas d&#39;erreur</span>
+<span class="sd">            free_only: Si True, retourne uniquement les modèles gratuits</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Liste de dicts avec id et is_free</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENROUTER_API_KEY&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Clé API OpenRouter manquante&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;HTTP-Referer&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:5173&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;X-Title&quot;</span><span class="p">:</span> <span class="s2">&quot;AutoLogic&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;https://openrouter.ai/api/v1/models&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                        <span class="c1"># Un modèle est gratuit si prompt et completion sont à 0</span>
+                        <span class="n">pricing</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pricing&quot;</span><span class="p">,</span> <span class="p">{})</span>
+                        <span class="n">prompt_price</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+                        <span class="n">completion_price</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;completion&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+                        <span class="n">is_free</span> <span class="o">=</span> <span class="n">prompt_price</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">completion_price</span> <span class="o">==</span> <span class="mi">0</span>
+
+                        <span class="k">if</span> <span class="n">free_only</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_free</span><span class="p">:</span>
+                            <span class="k">continue</span>
+
+                        <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="s2">&quot;is_free&quot;</span><span class="p">:</span> <span class="n">is_free</span><span class="p">})</span>
+
+                    <span class="c1"># Trier par id</span>
+                    <span class="n">models</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OpenRouter models fetched: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">models</span><span class="p">)</span><span class="si">}</span><span class="s2"> models&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">models</span>
+                <span class="k">elif</span> <span class="n">raise_error</span><span class="p">:</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch OpenRouter models: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="OpenAILLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenAILLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OpenAILLM</span><span class="p">(</span><span class="n">BaseLLM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implémentation pour OpenAI directement via LangChain.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OpenAILLM.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenAILLM.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://api.openai.com/v1&quot;</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">resilience_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le provider OpenAI.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: Nom du modèle (ex: &quot;gpt-4-turbo&quot;)</span>
+<span class="sd">            api_key: Clé API. Si None, lit OPENAI_API_KEY.</span>
+<span class="sd">            base_url: URL de base de l&#39;API</span>
+<span class="sd">            timeout: Timeout en secondes</span>
+<span class="sd">            max_retries: Nombre de retries</span>
+<span class="sd">            resilience_key: Clé spécifique pour la configuration de résilience (ex: &quot;openai_worker&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span> <span class="o">=</span> <span class="n">resilience_key</span> <span class="ow">or</span> <span class="s2">&quot;openai&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Clé API OpenAI requise. &quot;</span> <span class="s2">&quot;Définir OPENAI_API_KEY ou passer api_key.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">SecretStr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">),</span>
+            <span class="n">base_url</span><span class="o">=</span><span class="n">base_url</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="n">max_retries</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OpenAILLM initialisé: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;openai&quot;</span>
+
+<div class="viewcode-block" id="OpenAILLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenAILLM.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exécute un appel à OpenAI avec rate limiting.&quot;&quot;&quot;</span>
+        <span class="n">resilient_caller</span> <span class="o">=</span> <span class="n">get_resilient_caller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_make_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;response_format&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;json_object&quot;</span><span class="p">:</span>
+                <span class="n">model_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_object&quot;</span><span class="p">}</span>
+
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract resilience overrides from kwargs</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            <span class="n">resilience_override</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;rate_limit&quot;</span><span class="p">]):</span>
+                <span class="n">resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                    <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                    <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                    <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                    <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                    <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Pas de fallback spécifique pour OpenAI pour l&#39;instant</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">resilient_caller</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+                <span class="n">_make_call</span><span class="p">,</span>
+                <span class="n">resilience_override</span><span class="o">=</span><span class="n">resilience_override</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur OpenAI (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="OpenAILLM.list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OpenAILLM.list_models">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère la liste des modèles disponibles sur OpenAI.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Clé API OpenAI manquante&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;https://api.openai.com/v1/models&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="c1"># OpenAI returns { data: [ { id: &quot;...&quot; }, ... ] }</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="k">if</span> <span class="s2">&quot;gpt&quot;</span> <span class="ow">in</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;o1&quot;</span> <span class="ow">in</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;o3&quot;</span> <span class="ow">in</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
+                    <span class="p">]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OpenAI models fetched: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">models</span><span class="p">)</span><span class="si">}</span><span class="s2"> models&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">raise_error</span><span class="p">:</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch OpenAI models: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="OllamaLLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OllamaLLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OllamaLLM</span><span class="p">(</span><span class="n">BaseLLM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implémentation pour Ollama (serveur LLM local).</span>
+
+<span class="sd">    Ollama expose une API compatible OpenAI sur le port 11434 par défaut.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="OllamaLLM.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OllamaLLM.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">120.0</span><span class="p">,</span>
+        <span class="n">resilience_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le provider Ollama.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: Nom du modèle local (ex: &quot;llama3&quot;)</span>
+<span class="sd">            host: URL du serveur Ollama. Si None, lit OLLAMA_HOST.</span>
+<span class="sd">            api_key: Clé API optionnelle (pour services compatibles type Venice)</span>
+<span class="sd">            timeout: Timeout en secondes (plus long pour modèles locaux)</span>
+<span class="sd">            resilience_key: Clé spécifique pour la configuration de résilience</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OLLAMA_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="s2">&quot;ollama&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span> <span class="o">=</span> <span class="n">resilience_key</span> <span class="ow">or</span> <span class="s2">&quot;ollama&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+        <span class="c1"># Ollama expose une API compatible OpenAI</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">SecretStr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">),</span>
+            <span class="n">base_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">/v1&quot;</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;OllamaLLM initialisé: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;ollama&quot;</span>
+
+<div class="viewcode-block" id="OllamaLLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OllamaLLM.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exécute un appel à Ollama avec rate limiting.&quot;&quot;&quot;</span>
+        <span class="n">resilient_caller</span> <span class="o">=</span> <span class="n">get_resilient_caller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_make_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract resilience overrides from kwargs</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            <span class="n">resilience_override</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;rate_limit&quot;</span><span class="p">]):</span>
+                <span class="n">resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                    <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                    <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                    <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                    <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                    <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="k">await</span> <span class="n">resilient_caller</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+                <span class="n">_make_call</span><span class="p">,</span>
+                <span class="n">resilience_override</span><span class="o">=</span><span class="n">resilience_override</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur Ollama (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="OllamaLLM.list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.OllamaLLM.list_models">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère la liste des modèles disponibles sur le serveur Ollama.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            host: URL du serveur Ollama</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Liste des noms de modèles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ollama_host</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OLLAMA_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ollama_host</span><span class="si">}</span><span class="s2">/api/tags&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;models&quot;</span><span class="p">,</span> <span class="p">[])]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ollama models détectés: </span><span class="si">{</span><span class="n">models</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">models</span>
+                <span class="k">elif</span> <span class="n">raise_error</span><span class="p">:</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Impossible de lister les modèles Ollama: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="VLlmLLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.VLlmLLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VLlmLLM</span><span class="p">(</span><span class="n">BaseLLM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implémentation pour vLLM (serveur LLM haute performance).</span>
+
+<span class="sd">    vLLM expose une API compatible OpenAI.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VLlmLLM.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.VLlmLLM.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">120.0</span><span class="p">,</span>
+        <span class="n">resilience_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le provider vLLM.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: Nom du modèle servi par vLLM</span>
+<span class="sd">            host: URL du serveur vLLM. Si None, lit VLLM_HOST.</span>
+<span class="sd">            api_key: Clé API si configurée. Si None, lit VLLM_API_KEY.</span>
+<span class="sd">            timeout: Timeout en secondes</span>
+<span class="sd">            resilience_key: Clé spécifique pour la configuration de résilience</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_host</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:8000&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;token-vllm&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span> <span class="o">=</span> <span class="n">resilience_key</span> <span class="ow">or</span> <span class="s2">&quot;vllm&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">SecretStr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">base_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">/v1&quot;</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;VLlmLLM initialisé: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_host</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;vllm&quot;</span>
+
+<div class="viewcode-block" id="VLlmLLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.VLlmLLM.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exécute un appel à vLLM avec rate limiting.&quot;&quot;&quot;</span>
+        <span class="n">resilient_caller</span> <span class="o">=</span> <span class="n">get_resilient_caller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_make_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract resilience overrides from kwargs</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            <span class="n">resilience_override</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;rate_limit&quot;</span><span class="p">]):</span>
+                <span class="n">resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                    <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                    <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                    <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                    <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                    <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="k">await</span> <span class="n">resilient_caller</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+                <span class="n">_make_call</span><span class="p">,</span>
+                <span class="n">resilience_override</span><span class="o">=</span><span class="n">resilience_override</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur vLLM (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="VLlmLLM.list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.VLlmLLM.list_models">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère la liste des modèles servis par vLLM.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            host: URL du serveur vLLM</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Liste des noms de modèles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vllm_host</span> <span class="o">=</span> <span class="n">host</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:8000&quot;</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;token-vllm&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">vllm_host</span><span class="si">}</span><span class="s2">/v1/models&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">[])]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vLLM models détectés: </span><span class="si">{</span><span class="n">models</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">models</span>
+                <span class="k">elif</span> <span class="n">raise_error</span><span class="p">:</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Impossible de lister les modèles vLLM: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="HuggingFaceLLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.HuggingFaceLLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HuggingFaceLLM</span><span class="p">(</span><span class="n">BaseLLM</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implémentation pour HuggingFace Inference API.</span>
+
+<span class="sd">    Utilise l&#39;API d&#39;inférence serverless de HuggingFace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="HuggingFaceLLM.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.HuggingFaceLLM.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://api-inference.huggingface.co/models&quot;</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span>
+        <span class="n">resilience_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le provider HuggingFace.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            model_name: ID du modèle HF (ex: &quot;meta-llama/Meta-Llama-3-70B-Instruct&quot;)</span>
+<span class="sd">            api_key: Clé API. Si None, lit HUGGINGFACE_API_KEY.</span>
+<span class="sd">            base_url: URL de base de l&#39;API</span>
+<span class="sd">            timeout: Timeout en secondes</span>
+<span class="sd">            resilience_key: Clé spécifique pour la configuration de résilience</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span> <span class="o">=</span> <span class="n">base_url</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span> <span class="o">=</span> <span class="n">resilience_key</span> <span class="ow">or</span> <span class="s2">&quot;huggingface&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Clé API HuggingFace requise. &quot;</span>
+                <span class="s2">&quot;Définir HUGGINGFACE_API_KEY ou passer api_key.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HuggingFaceLLM initialisé: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provider_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;huggingface&quot;</span>
+
+<div class="viewcode-block" id="HuggingFaceLLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.HuggingFaceLLM.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Exécute un appel à l&#39;API HuggingFace Inference avec rate limiting.&quot;&quot;&quot;</span>
+        <span class="n">resilient_caller</span> <span class="o">=</span> <span class="n">get_resilient_caller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_make_call</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+
+                <span class="c1"># Format pour les modèles de chat</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;inputs&quot;</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span>
+                    <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">,</span> <span class="mi">4096</span><span class="p">),</span>
+                        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">),</span>
+                        <span class="s2">&quot;return_full_text&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">}</span>
+
+                <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;generated_text&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;HuggingFace API error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract resilience overrides from kwargs</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resilience_key</span><span class="p">)</span>
+            <span class="n">resilience_override</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="s2">&quot;rate_limit&quot;</span><span class="p">]):</span>
+                <span class="n">resilience_override</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+                    <span class="n">rate_limit</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">),</span>
+                    <span class="n">retry_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">),</span>
+                    <span class="n">max_retries</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">),</span>
+                    <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">),</span>
+                    <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="k">await</span> <span class="n">resilient_caller</span><span class="o">.</span><span class="n">call</span><span class="p">(</span>
+                <span class="n">_make_call</span><span class="p">,</span>
+                <span class="n">resilience_override</span><span class="o">=</span><span class="n">resilience_override</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur HuggingFace (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_name</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="HuggingFaceLLM.list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.core.llm_provider.HuggingFaceLLM.list_models">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Récupère les modèles populaires sur HuggingFace.</span>
+
+<span class="sd">        Note: Liste les modèles &#39;text-generation&#39; les plus téléchargés.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
+        <span class="c1"># Note: HF API allows public access without key for listing, but higher rate limits with key.</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">key</span><span class="p">:</span>
+                    <span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                <span class="c1"># Fetch top 50 text-generation models sorted by downloads</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://huggingface.co/api/models&quot;</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="s2">&quot;text-generation&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;sort&quot;</span><span class="p">:</span> <span class="s2">&quot;downloads&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;-1&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="s2">&quot;100&quot;</span><span class="p">,</span>
+                <span class="p">}</span>
+
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                    <span class="c1"># Filter for models that are likely to be interesting (e.g., skip some weird ones)</span>
+                    <span class="c1"># We accept all text-generation models here.</span>
+                    <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HuggingFace models fetched: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">models</span><span class="p">)</span><span class="si">}</span><span class="s2"> models&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">raise_error</span><span class="p">:</span>
+                    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">raise_error</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch HuggingFace models: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2025-2026, AutoLogic Team.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

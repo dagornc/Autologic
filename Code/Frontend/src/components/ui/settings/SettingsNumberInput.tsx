@@ -47,7 +47,7 @@ export const SettingsNumberInput: React.FC<NumberInputProps> = ({
     };
 
     return (
-        <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+        <div className="space-y-3 p-4 rounded-xl glass-panel-next hover:bg-[var(--glass-shimmer)] transition-colors border-glass">
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                     <Icon className="w-4 h-4 text-purple-400" />
@@ -59,7 +59,7 @@ export const SettingsNumberInput: React.FC<NumberInputProps> = ({
                 <button
                     onClick={handleDecrement}
                     disabled={min !== undefined && safeValue <= min}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg btn-ghost-liquid disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Minus className="w-4 h-4" />
                 </button>
@@ -69,7 +69,7 @@ export const SettingsNumberInput: React.FC<NumberInputProps> = ({
                         type="number"
                         value={safeValue}
                         onChange={handleChange}
-                        className="w-full bg-black/20 border border-white/10 rounded-lg py-2 px-3 text-center font-mono text-sm focus:outline-none focus:border-purple-500/50 transition-colors"
+                        className="w-full input-liquid text-center font-mono text-sm"
                     />
                     {unit && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40">
@@ -81,7 +81,7 @@ export const SettingsNumberInput: React.FC<NumberInputProps> = ({
                 <button
                     onClick={handleIncrement}
                     disabled={max !== undefined && safeValue >= max}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 rounded-lg btn-ghost-liquid disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Plus className="w-4 h-4" />
                 </button>

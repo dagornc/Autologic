@@ -1,0 +1,1060 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autologic.routers.models &mdash; AutoLogic Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=6ad53a97"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            AutoLogic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">AutoLogic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">autologic.routers.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de autologic.routers.models</h1><div class="highlight"><pre>
+<span></span><span class="c1"># autologic/routers/models.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Routes FastAPI pour les endpoints de gestion des modèles et providers.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.model_registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelRegistry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.provider_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider_factory</span><span class="p">,</span> <span class="n">ProviderType</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..core.resilience</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_resilience_config</span><span class="p">,</span>
+    <span class="n">set_resilience_config</span><span class="p">,</span>
+    <span class="n">ResilienceConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/api&quot;</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">])</span>
+
+<span class="c1"># Instance partagée du registre</span>
+<span class="n">_registry_instance</span><span class="p">:</span> <span class="n">ModelRegistry</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="get_registry">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.get_registry">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_registry</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ModelRegistry</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Récupère l&#39;instance du registre de modèles.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_registry_instance</span>
+    <span class="k">if</span> <span class="n">_registry_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_registry_instance</span> <span class="o">=</span> <span class="n">ModelRegistry</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_registry_instance</span></div>
+
+
+
+<span class="c1"># ============================================</span>
+<span class="c1"># Pydantic Models</span>
+<span class="c1"># ============================================</span>
+
+
+<div class="viewcode-block" id="ProviderConfig">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ProviderConfig">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProviderConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration d&#39;un provider.&quot;&quot;&quot;</span>
+
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">worker_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Paramètres Root</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.7</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4096</span>
+    <span class="n">top_p</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="c1"># Paramètres Worker</span>
+    <span class="n">worker_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_top_p</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">60</span>
+    <span class="n">worker_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">free_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">worker_free_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Paramètres Audit</span>
+    <span class="n">audit_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_top_p</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_max_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">audit_free_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Root</span>
+    <span class="n">rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.0</span>
+    <span class="n">retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Resilience - Worker</span>
+    <span class="n">worker_rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Audit</span>
+    <span class="n">audit_rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ProviderVerificationRequest">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ProviderVerificationRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProviderVerificationRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Requête de vérification de connexion.&quot;&quot;&quot;</span>
+
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ProviderStatus">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ProviderStatus">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProviderStatus</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Status d&#39;un provider.&quot;&quot;&quot;</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">available</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ProvidersConfigResponse">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ProvidersConfigResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProvidersConfigResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Réponse de configuration des providers.&quot;&quot;&quot;</span>
+
+    <span class="n">active_provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">active_model</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">worker_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Paramètres Root</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">top_p</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="c1"># Paramètres Worker</span>
+    <span class="n">worker_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_top_p</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">worker_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">free_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">worker_free_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Paramètres Audit</span>
+    <span class="n">audit_provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_top_p</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_max_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">audit_free_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Root</span>
+    <span class="n">rate_limit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">15.0</span>
+    <span class="n">retry_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">fallback_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Resilience - Worker</span>
+    <span class="n">worker_rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">worker_fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Audit</span>
+    <span class="n">audit_rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">audit_fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ResilienceConfigRequest">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ResilienceConfigRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResilienceConfigRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Requête de configuration de résilience.&quot;&quot;&quot;</span>
+
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">rate_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.0</span>
+    <span class="n">retry_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">max_retries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">fallback_enabled</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+
+<div class="viewcode-block" id="ResilienceConfigResponse">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.ResilienceConfigResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResilienceConfigResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Réponse de configuration de résilience.&quot;&quot;&quot;</span>
+
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">rate_limit</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">retry_enabled</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">retry_base_delay</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">fallback_enabled</span><span class="p">:</span> <span class="nb">bool</span></div>
+
+
+
+<span class="c1"># ============================================</span>
+<span class="c1"># Endpoints existants</span>
+<span class="c1"># ============================================</span>
+
+
+<div class="viewcode-block" id="list_models">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.list_models">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/models&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_models</span><span class="p">(</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">ModelRegistry</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_registry</span><span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retourne la liste des providers et modèles disponibles.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Liste des providers avec leurs modèles respectifs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Récupération de la liste des modèles&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;providers&quot;</span><span class="p">:</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_providers</span><span class="p">(),</span> <span class="s2">&quot;models&quot;</span><span class="p">:</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_all_models</span><span class="p">()}</span></div>
+
+
+
+<span class="c1"># ============================================</span>
+<span class="c1"># Nouveaux endpoints - Configuration Providers</span>
+<span class="c1"># ============================================</span>
+
+
+<div class="viewcode-block" id="get_providers_config">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.get_providers_config">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/providers/config&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">ProvidersConfigResponse</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_providers_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ProvidersConfigResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Récupère la configuration active des providers.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Configuration active (provider, model, paramètres)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">_config</span>
+
+    <span class="k">return</span> <span class="n">ProvidersConfigResponse</span><span class="p">(</span>
+        <span class="n">active_provider</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">get_active_provider</span><span class="p">(),</span>
+        <span class="n">active_model</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">get_active_model</span><span class="p">(),</span>
+        <span class="n">worker_provider</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">get_worker_provider</span><span class="p">(),</span>
+        <span class="n">worker_model</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">get_worker_model</span><span class="p">(),</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">),</span>
+        <span class="n">max_tokens</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">,</span> <span class="mi">4096</span><span class="p">),</span>
+        <span class="n">top_p</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;top_p&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+        <span class="n">worker_temperature</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_temperature&quot;</span><span class="p">),</span>
+        <span class="n">worker_max_tokens</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_max_tokens&quot;</span><span class="p">),</span>
+        <span class="n">worker_top_p</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_top_p&quot;</span><span class="p">),</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timeout&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span>
+        <span class="n">worker_timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_timeout&quot;</span><span class="p">),</span>
+        <span class="n">audit_provider</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_provider&quot;</span><span class="p">),</span>
+        <span class="n">audit_model</span><span class="o">=</span><span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_model&quot;</span><span class="p">),</span>
+        <span class="n">audit_temperature</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_temperature&quot;</span><span class="p">),</span>
+        <span class="n">audit_max_tokens</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_max_tokens&quot;</span><span class="p">),</span>
+        <span class="n">audit_top_p</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_top_p&quot;</span><span class="p">),</span>
+        <span class="n">audit_timeout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">),</span>
+        <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+        
+        <span class="c1"># Resilience - Root</span>
+        <span class="n">rate_limit</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">),</span>
+        <span class="n">retry_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+
+        <span class="c1"># Resilience - Worker</span>
+        <span class="n">worker_rate_limit</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_rate_limit&quot;</span><span class="p">),</span>
+        <span class="n">worker_retry_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_retry_enabled&quot;</span><span class="p">),</span>
+        <span class="n">worker_fallback_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;worker_fallback_enabled&quot;</span><span class="p">),</span>
+
+        <span class="c1"># Resilience - Audit</span>
+        <span class="n">audit_rate_limit</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_rate_limit&quot;</span><span class="p">),</span>
+        <span class="n">audit_retry_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_retry_enabled&quot;</span><span class="p">),</span>
+        <span class="n">audit_fallback_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_fallback_enabled&quot;</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_persist_config</span><span class="p">(</span><span class="n">updates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">section</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;llm&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Persiste les mises à jour de configuration dans le fichier global.yaml.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Chemin relatif au projet : Code/Backend/Phase2-Inference/01_Reasoning/autologic/routers/models.py</span>
+    <span class="c1"># parents[0]=routers, [1]=autologic, [2]=01_Reasoning, [3]=Phase2-Inference, [4]=Backend, [5]=Code, [6]=AutoLogic</span>
+    <span class="n">project_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">project_root</span> <span class="o">/</span> <span class="s2">&quot;Config&quot;</span> <span class="o">/</span> <span class="s2">&quot;global.yaml&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Lecture</span>
+        <span class="n">full_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">full_config</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="c1"># Assurance que la section existe</span>
+        <span class="k">if</span> <span class="n">section</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">full_config</span><span class="p">:</span>
+            <span class="n">full_config</span><span class="p">[</span><span class="n">section</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Mise à jour (merge superficiel pour la section llm)</span>
+        <span class="c1"># On ne remplace pas tout le dictionnaire, on met à jour les clés fournies</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">updates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Optionnel: supprimer la clé si None ? Ou juste mettre null ?</span>
+                <span class="c1"># Pour l&#39;instant on laisse None/Null dans le yaml si explicitement passé</span>
+                <span class="c1"># Mais pour worker_*, on veut souvent les supprimer si désactivés.</span>
+                <span class="c1"># La logique actuelle de models.py pop() les clés de la mémoire.</span>
+                <span class="c1"># On va dire que si v est None, on le retire du yaml aussi pour la propreté.</span>
+                <span class="n">full_config</span><span class="p">[</span><span class="n">section</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">full_config</span><span class="p">[</span><span class="n">section</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="c1"># Écriture</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
+                <span class="n">full_config</span><span class="p">,</span>
+                <span class="n">f</span><span class="p">,</span>
+                <span class="n">default_flow_style</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">allow_unicode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration persistée dans </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur persistence config: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># On ne bloque pas l&#39;API si le fichier est verrouillé, mais on loggue l&#39;erreur</span>
+        <span class="c1"># raise HTTPException(status_code=500, detail=f&quot;Erreur sauvegarde config: {e}&quot;)</span>
+
+
+<div class="viewcode-block" id="update_providers_config">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.update_providers_config">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/providers/config&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_providers_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">ProviderConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Met à jour la configuration active (en mémoire).</span>
+
+<span class="sd">    Note: Pour persister, modifier Config/global.yaml</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: Nouvelle configuration</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Message de confirmation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
+
+    <span class="c1"># Valider le provider principal</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ProviderType</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Provider &#39;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">&#39; non supporté&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Validation optionnelle du worker provider</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ProviderType</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># On laisse passer pour ne pas bloquer, ou on pourrait lever une erreur</span>
+
+    <span class="c1"># Validation optionnelle du audit provider</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ProviderType</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="c1"># Mettre à jour en mémoire</span>
+    <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;active_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;active_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Si non fourni ou None, on supprime pour revenir au fallback sur le Root</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_provider&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_model</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_model</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_model&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_provider&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_model</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_model</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_model&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">temperature</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">top_p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">top_p</span>
+
+    <span class="c1"># Paramètres Worker</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_temperature</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_temperature&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_max_tokens</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_max_tokens&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_top_p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_top_p</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_top_p&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Paramètres Audit</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_temperature</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_temperature&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_tokens</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_max_tokens&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_top_p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_top_p</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_top_p&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_timeout</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_timeout&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_timeout</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_retries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_retries</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">free_only</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_free_only</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_free_only&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_free_only</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_free_only&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Resilience - Root</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span>
+
+    <span class="c1"># Resilience - Worker</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_rate_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_rate_limit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_rate_limit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_retry_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_retry_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_retry_enabled&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_fallback_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;worker_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_fallback_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;worker_fallback_enabled&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Resilience - Audit</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_rate_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_rate_limit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_rate_limit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_retry_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_retry_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_retry_enabled&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_fallback_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;audit_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_fallback_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;audit_fallback_enabled&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Config mise à jour: Root=</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2">, Worker=</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">worker_model</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Préparation des données pour persistence</span>
+    <span class="n">updates</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;active_provider&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+        <span class="s2">&quot;active_model&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">model</span><span class="p">,</span>
+        <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">,</span>
+        <span class="s2">&quot;top_p&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">top_p</span><span class="p">,</span>
+        <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_model</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_model</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_temperature</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_tokens</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_top_p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_top_p</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_timeout</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_retries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_max_retries</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_provider</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_provider&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_model</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_model</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_temperature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_temperature</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_temperature&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_max_tokens</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_max_tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_top_p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_top_p</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_top_p&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_timeout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_timeout</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_timeout&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">free_only</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_free_only</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_free_only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_free_only</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_free_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Root</span>
+    <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span>
+    <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span>
+    <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span>
+
+    <span class="c1"># Resilience - Worker</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_rate_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_rate_limit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_retry_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_retry_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_fallback_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">worker_fallback_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;worker_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Resilience - Audit</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_rate_limit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_rate_limit</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_rate_limit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_retry_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_retry_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_retry_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_fallback_enabled</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">audit_fallback_enabled</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">updates</span><span class="p">[</span><span class="s2">&quot;audit_fallback_enabled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Sauvegarde asynchrone (en fait synchrone dans le thread mais rapide)</span>
+    <span class="n">_persist_config</span><span class="p">(</span><span class="n">updates</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Configuration mise à jour et sauvegardée&quot;</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="get_provider_resilience_config">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.get_provider_resilience_config">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/providers/</span><span class="si">{provider}</span><span class="s2">/resilience&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">ResilienceConfigResponse</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_provider_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResilienceConfigResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Récupère la configuration de résilience pour un provider.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">ResilienceConfigResponse</span><span class="p">(</span>
+        <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+        <span class="n">rate_limit</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">,</span>
+        <span class="n">retry_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">,</span>
+        <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">,</span>
+        <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="update_resilience_config">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.update_resilience_config">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/providers/resilience&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_resilience_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">ResilienceConfigRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Met à jour la configuration de résilience.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">resilience_config</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">(</span>
+        <span class="n">rate_limit</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span> <span class="ow">or</span> <span class="mf">15.0</span><span class="p">,</span>
+        <span class="n">retry_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_retries</span> <span class="ow">or</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span> <span class="ow">or</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">set_resilience_config</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">resilience_config</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resilience config updated for </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Persistence de la config resilience (section llm.resilience)</span>
+    <span class="c1"># Note: Dans global.yaml actuel, resilience est sous `llm`.</span>
+    <span class="c1"># Mais ici on update pour UN provider spécifique.</span>
+    <span class="c1"># Le YAML global a une section `resilience` qui semble être globale/défaut ?</span>
+    <span class="c1"># models.py `update_resilience_config` appelle `set_resilience_config(provider, ...)`</span>
+    <span class="c1"># Cela update la map en mémoire.</span>
+    <span class="c1"># Si on veut persister, on doit savoir si on persiste une config globale ou par provider.</span>
+    <span class="c1"># Le Config global.yaml a `resilience:` sous `llm` qui semble être le default.</span>
+    <span class="c1"># Et potentiellement des overrides dans `providers: name: resilience:` ?</span>
+    <span class="c1"># Regardons global.yaml... Il n&#39;y a pas de resilience per provider dans le yaml actuel.</span>
+    <span class="c1">#</span>
+    <span class="c1"># HYPOTHESE: L&#39;utilisateur veut sauvegarder la configuration &quot;Resilience&quot; globale qui apparait dans les settings.</span>
+    <span class="c1"># Si l&#39;UI envoie `provider=&quot;active_provider&quot;` ou global, on sauvegarde dans `llm.resilience`.</span>
+    <span class="c1"># Si l&#39;UI permet de configurer par provider, il faudrait adapter le YAML.</span>
+    <span class="c1"># Pour l&#39;instant, `set_resilience_config` update une map en mémoire.</span>
+    <span class="c1"># On va supposer qu&#39;on veut mettre à jour la DEFAUT globale si le provider match ou si c&#39;est générique.</span>
+    <span class="c1">#</span>
+    <span class="c1"># MAIS: L&#39;endpoint prend `ResilienceConfigRequest` qui a un champ `provider`.</span>
+    <span class="c1"># Si on edit la resilience de &quot;openrouter&quot;, est-ce qu&#39;on veut écrire ça dans le global default ?</span>
+    <span class="c1"># Probablement que oui si c&#39;est le provider principal.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Simplification: On met à jour la section `resilience` globale du YAML avec ces valeurs.</span>
+    <span class="c1"># Cela affectera les defaults pour tous les futurs providers, ce qui semble cohérent avec &quot;Settings -&gt; Resilience&quot;.</span>
+
+    <span class="n">resilience_updates</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="n">resilience_config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">,</span>
+        <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="n">resilience_config</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">,</span>
+        <span class="s2">&quot;max_retries&quot;</span><span class="p">:</span> <span class="n">resilience_config</span><span class="o">.</span><span class="n">max_retries</span><span class="p">,</span>
+        <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="n">resilience_config</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">,</span>
+        <span class="c1"># retry_base_delay n&#39;est pas dans la request, on garde le default ou on ne touche pas</span>
+    <span class="p">}</span>
+
+    <span class="c1"># On doit lire la config existante pour ne pas écraser retry_base_delay s&#39;il n&#39;est pas updaté</span>
+    <span class="c1"># Mais _persist_config fait un merge au niveau `llm`. Pour `resilience`, c&#39;est un sous-dict.</span>
+    <span class="c1"># On va utiliser une update imbriquée un peu trickye ou simplifier.</span>
+    <span class="c1"># On va lire le YAML actuel dans _persist_config, donc on peut passer un dict partiel.</span>
+    <span class="c1"># Mais _persist_config remplace `llm[key] = val`. Si val est un dict `resilience`, ça écrase tout `resilience`.</span>
+    <span class="c1"># Il faut que `_persist_config` supporte le merge profond ou qu&#39;on lui passe tout l&#39;objet resilience.</span>
+
+    <span class="c1"># Lecture préalable pour récupérer l&#39;existant (un peu lourd mais sûr)</span>
+    <span class="n">project_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">project_root</span> <span class="o">/</span> <span class="s2">&quot;Config&quot;</span> <span class="o">/</span> <span class="s2">&quot;global.yaml&quot;</span>
+    <span class="n">current_resilience</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">full</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+                <span class="n">current_resilience</span> <span class="o">=</span> <span class="n">full</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;llm&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;resilience&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="c1"># Update memory dict</span>
+    <span class="n">current_resilience</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">resilience_updates</span><span class="p">)</span>
+
+    <span class="c1"># Persist</span>
+    <span class="n">_persist_config</span><span class="p">({</span><span class="s2">&quot;resilience&quot;</span><span class="p">:</span> <span class="n">current_resilience</span><span class="p">})</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Résilience mise à jour et sauvegardée&quot;</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="get_providers_status">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.get_providers_status">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/providers/status&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_providers_status</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ProviderStatus</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Vérifie le status de disponibilité de chaque provider.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Liste des providers avec leur status</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
+    <span class="n">statuses</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ProviderStatus</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">provider_type</span> <span class="ow">in</span> <span class="n">ProviderType</span><span class="p">:</span>
+        <span class="n">provider_name</span> <span class="o">=</span> <span class="n">provider_type</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">provider_config</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">get_provider_config</span><span class="p">(</span><span class="n">provider_name</span><span class="p">)</span>
+        <span class="n">enabled</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">is_provider_enabled</span><span class="p">(</span><span class="n">provider_name</span><span class="p">)</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">get_models_for_provider</span><span class="p">(</span><span class="n">provider_name</span><span class="p">)</span>
+
+        <span class="c1"># Vérifier la disponibilité réelle</span>
+        <span class="n">available</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">enabled</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">available</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_check_provider_availability</span><span class="p">(</span>
+                    <span class="n">provider_name</span><span class="p">,</span> <span class="n">provider_config</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+        <span class="n">statuses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ProviderStatus</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">provider_name</span><span class="p">,</span>
+                <span class="n">enabled</span><span class="o">=</span><span class="n">enabled</span><span class="p">,</span>
+                <span class="n">available</span><span class="o">=</span><span class="n">available</span><span class="p">,</span>
+                <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
+                <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;providers&quot;</span><span class="p">:</span> <span class="n">statuses</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="get_provider_models">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.get_provider_models">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/providers/</span><span class="si">{provider}</span><span class="s2">/models&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_provider_models</span><span class="p">(</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">x_api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Header</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">&quot;X-Api-Key&quot;</span><span class="p">),</span>
+    <span class="n">free_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Récupère les modèles disponibles pour un provider spécifique.</span>
+
+<span class="sd">    Pour Ollama et vLLM, tente une détection automatique.</span>
+<span class="sd">    Pour les providers cloud (OpenRouter, HuggingFace, etc.), utilise la clé API fournie.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        provider: Nom du provider</span>
+<span class="sd">        x_api_key: Clé API optionnelle (header X-Api-Key)</span>
+<span class="sd">        free_only: Si True, retourne uniquement les modèles gratuits (OpenRouter uniquement)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Liste des modèles (pour OpenRouter, inclut is_free)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
+
+    <span class="c1"># Valider le provider</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">provider_type</span> <span class="o">=</span> <span class="n">ProviderType</span><span class="p">(</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Provider &#39;</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">&#39; non supporté&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Pour OpenRouter, utiliser list_models_detailed pour avoir l&#39;info free</span>
+    <span class="n">provider_class</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">_providers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">provider_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider_class</span> <span class="ow">and</span> <span class="n">provider_type</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;openrouter&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">provider_class</span><span class="p">,</span> <span class="s2">&quot;list_models_detailed&quot;</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">detailed_models</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider_class</span><span class="o">.</span><span class="n">list_models_detailed</span><span class="p">(</span>
+                    <span class="n">api_key</span><span class="o">=</span><span class="n">x_api_key</span><span class="p">,</span> <span class="n">free_only</span><span class="o">=</span><span class="n">free_only</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">detailed_models</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">{</span>
+                        <span class="s2">&quot;models&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">detailed_models</span><span class="p">],</span>
+                        <span class="s2">&quot;models_detailed&quot;</span><span class="p">:</span> <span class="n">detailed_models</span><span class="p">,</span>
+                    <span class="p">}</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dynamic fetch failed for </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Try dynamic fetching for other providers</span>
+    <span class="k">if</span> <span class="n">provider_class</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">provider_class</span><span class="p">,</span> <span class="s2">&quot;list_models&quot;</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dynamic_models</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider_class</span><span class="o">.</span><span class="n">list_models</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">x_api_key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dynamic_models</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;models&quot;</span><span class="p">:</span> <span class="n">dynamic_models</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dynamic fetch failed for </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Sinon retourner la liste configurée (fallback)</span>
+    <span class="n">models</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">get_models_for_provider</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;models&quot;</span><span class="p">:</span> <span class="n">models</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="verify_provider_connection">
+<a class="viewcode-back" href="../../../index.html#autologic.routers.models.verify_provider_connection">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/providers/verify&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">verify_provider_connection</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">ProviderVerificationRequest</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Vérifie la connexion à un provider avec les credentials fournis.</span>
+
+<span class="sd">    Tente de lister les modèles en mode strict (lève une erreur si échec).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Vérification connexion pour </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
+
+    <span class="c1"># Valider le provider</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">provider_type</span> <span class="o">=</span> <span class="n">ProviderType</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Provider &#39;</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">&#39; non supporté&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">provider_class</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">_providers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">provider_type</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">provider_class</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">provider_class</span><span class="p">,</span> <span class="s2">&quot;list_models&quot;</span><span class="p">):</span>
+        <span class="c1"># Fallback pour les providers sans list_models (ne devrait pas arriver avec les providers actuels)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Provider </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2"> supporté (pas de vérification stricte dispo)&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Tentative de listing strict</span>
+        <span class="k">await</span> <span class="n">provider_class</span><span class="o">.</span><span class="n">list_models</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span> <span class="n">raise_error</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Connexion réussie à </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Échec vérification </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Échec de connexion : </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ============================================</span>
+<span class="c1"># Helpers - Vérification disponibilité</span>
+<span class="c1"># ============================================</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_check_provider_availability</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Vérifie si un provider est accessible.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;ollama&quot;</span><span class="p">:</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OLLAMA_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/tags&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;vllm&quot;</span><span class="p">:</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:8000&quot;</span><span class="p">)</span>
+        <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;token-vllm&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+                <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">/v1/models&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;openrouter&quot;</span><span class="p">:</span>
+        <span class="n">or_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENROUTER_API_KEY&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">or_key</span> <span class="ow">and</span> <span class="n">or_key</span> <span class="o">!=</span> <span class="s2">&quot;your_openrouter_key_here&quot;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;openai&quot;</span><span class="p">:</span>
+        <span class="n">oa_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">oa_key</span> <span class="ow">and</span> <span class="n">oa_key</span> <span class="o">!=</span> <span class="s2">&quot;your_openai_key_here&quot;</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;huggingface&quot;</span><span class="p">:</span>
+        <span class="n">hf_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HUGGINGFACE_API_KEY&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hf_key</span> <span class="ow">and</span> <span class="n">hf_key</span> <span class="o">!=</span> <span class="s2">&quot;your_huggingface_key_here&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">False</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_detect_ollama_models</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Détecte automatiquement les modèles Ollama disponibles.&quot;&quot;&quot;</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OLLAMA_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:11434&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">/api/tags&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;models&quot;</span><span class="p">,</span> <span class="p">[])]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Impossible de détecter modèles Ollama: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[]</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_detect_vllm_models</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Détecte automatiquement les modèles vLLM servis.&quot;&quot;&quot;</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:8000&quot;</span><span class="p">)</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;VLLM_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;token-vllm&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+            <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">api_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">/v1/models&quot;</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">[])]</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Impossible de détecter modèles vLLM: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2025-2026, AutoLogic Team.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

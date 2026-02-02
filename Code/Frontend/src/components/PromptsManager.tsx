@@ -117,7 +117,7 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
                     <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
                         Prompt Library
                     </h2>
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-300">
                         Manage and reuse your reasoning strategies
                     </p>
                 </div>
@@ -216,7 +216,7 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
                                 placeholder="Search prompts..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-zinc-400"
+                                className="w-full bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-300 dark:text-white"
                             />
                         </div>
 
@@ -263,14 +263,14 @@ export const PromptsManager: React.FC<PromptsManagerProps> = ({ onSelect }) => {
                                         </div>
                                     </div>
 
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-3 mb-4 font-mono bg-black/5 dark:bg-white/5 p-2 rounded-lg border border-black/5 dark:border-transparent">
+                                    <p className="text-sm text-foreground/80 dark:text-zinc-100 line-clamp-3 mb-4 font-mono bg-background/50 dark:bg-white/10 p-2 rounded-lg border border-border dark:border-transparent">
                                         {prompt.content}
                                     </p>
 
                                     <div className="flex items-center justify-between mt-auto">
                                         <div className="flex flex-wrap gap-2">
                                             {prompt.tags.map(tag => (
-                                                <span key={tag} className="text-[10px] uppercase font-medium tracking-wider px-2 py-1 bg-indigo-500/10 text-indigo-500 rounded-md">
+                                                <span key={tag} className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-md">
                                                     {tag}
                                                 </span>
                                             ))}

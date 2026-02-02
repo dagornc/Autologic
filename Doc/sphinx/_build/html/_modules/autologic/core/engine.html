@@ -1,0 +1,814 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autologic.core.engine &mdash; AutoLogic Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=6ad53a97"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            AutoLogic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">AutoLogic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">autologic.core.engine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de autologic.core.engine</h1><div class="highlight"><pre>
+<span></span><span class="c1"># autologic/core/engine.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Moteur principal AutoLogic implémentant le cycle Self-Discovery.</span>
+<span class="sd">Refactorisé pour utiliser les modules séparés.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Awaitable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReasoningModule</span><span class="p">,</span> <span class="n">AdaptedModule</span><span class="p">,</span> <span class="n">ReasoningPlan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.prompts</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptTemplates</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.critic</span><span class="w"> </span><span class="kn">import</span> <span class="n">CriticAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseLLM">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.BaseLLM">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseLLM</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface abstraite pour providers LLM.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BaseLLM.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.BaseLLM.call">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Exécute un appel au LLM.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prompt: Le prompt à envoyer au LLM</span>
+<span class="sd">            **kwargs: Arguments additionnels (response_format, etc.)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            La réponse du LLM en string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retourne le nom du modèle.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="AutoLogicEngine">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AutoLogicEngine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Moteur principal AutoLogic implémentant le cycle Self-Discovery.</span>
+
+<span class="sd">    Le cycle comprend 4 phases:</span>
+<span class="sd">    1. SELECT: Sélection des modules pertinents</span>
+<span class="sd">    2. ADAPT: Adaptation des modules au contexte</span>
+<span class="sd">    3. STRUCTURE: Création du plan de raisonnement</span>
+<span class="sd">    4. EXECUTE: Exécution du plan avec validation Critique (H2)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AutoLogicEngine.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">root_model</span><span class="p">:</span> <span class="n">BaseLLM</span><span class="p">,</span>
+        <span class="n">worker_model</span><span class="p">:</span> <span class="n">BaseLLM</span><span class="p">,</span>
+        <span class="n">audit_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">progress_callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le moteur AutoLogic.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            root_model: LLM puissant pour planification (GPT-4, Gemini Pro)</span>
+<span class="sd">            worker_model: LLM rapide pour exécution (GPT-4o-mini, Llama 3)</span>
+<span class="sd">            audit_model: LLM dédié à l&#39;audit (optionnel, fallback sur root_model)</span>
+<span class="sd">            progress_callback: Fonction async pour émettre des événements de progression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span> <span class="o">=</span> <span class="n">root_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker_llm</span> <span class="o">=</span> <span class="n">worker_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">audit_llm</span> <span class="o">=</span> <span class="n">audit_model</span> <span class="ow">or</span> <span class="n">root_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_modules</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structured_plan</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ReasoningPlan</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span> <span class="o">=</span> <span class="n">progress_callback</span>
+
+        <span class="c1"># Initialisation de l&#39;Agent Critique (utilise le modèle puissant)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">critic_agent</span> <span class="o">=</span> <span class="n">CriticAgent</span><span class="p">(</span><span class="n">root_model</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;AutoLogicEngine initialisé avec </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_emit_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper pour émettre un événement de progression.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;stage&quot;</span><span class="p">:</span> <span class="n">stage</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+                <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">,</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_modules</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ReasoningModule</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Charge la bibliothèque complète des modules.&quot;&quot;&quot;</span>
+        <span class="n">current_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">data_path</span> <span class="o">=</span> <span class="n">current_dir</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;data&quot;</span> <span class="o">/</span> <span class="s2">&quot;reasoning_modules_complete.json&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+            <span class="n">modules</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">ReasoningModule</span><span class="p">(</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
+                    <span class="n">description</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+                    <span class="n">category</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">],</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;modules&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Chargé </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">modules</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules depuis </span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">modules</span>
+
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fichier de modules non trouvé: </span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur de parsing JSON: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clean_json_response</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Nettoie une réponse JSON potentiellement entourée de markdown.&quot;&quot;&quot;</span>
+        <span class="c1"># Suppression du markdown</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">clean</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
+            <span class="c1"># Trouver la première occurrence de &#39;{&#39;</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
+            <span class="c1"># Trouver la dernière occurrence de &#39;}&#39;</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">start_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">end_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">clean</span><span class="p">[</span><span class="n">start_idx</span> <span class="p">:</span> <span class="n">end_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">clean</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;```json&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># Tentative d&#39;extraction par délimiteurs si encore malformé</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">clean</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">clean</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">):</span>
+            <span class="n">start_idx</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
+            <span class="n">end_idx</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">start_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">end_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">clean</span><span class="p">[</span><span class="n">start_idx</span> <span class="p">:</span> <span class="n">end_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">clean</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_call_and_parse_json</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">llm</span><span class="p">:</span> <span class="n">BaseLLM</span><span class="p">,</span>
+        <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">response_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper method to call LLM and parse JSON with retries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response_format</span> <span class="o">=</span> <span class="n">response_format</span> <span class="ow">or</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_object&quot;</span><span class="p">}</span>
+        <span class="n">last_error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">retries</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">response_format</span><span class="o">=</span><span class="n">response_format</span><span class="p">)</span>
+                <span class="n">clean_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clean_json_response</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">clean_response</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">last_error</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2">: JSON parsing failed (attempt </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">retries</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s2">Raw Response preview: </span><span class="si">{</span><span class="n">response</span><span class="p">[:</span><span class="mi">500</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># Optional: You could append a &quot;Please fix JSON&quot; instruction to the prompt here for next retry</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Catch other potential errors (like network/provider issues handled by ResilientCaller,</span>
+                <span class="c1"># but good to be safe if they bubble up as something else or if we want to log context)</span>
+                <span class="n">last_error</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2">: LLM call failed (attempt </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">retries</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2">: Failed to parse JSON after </span><span class="si">{</span><span class="n">retries</span><span class="si">}</span><span class="s2"> attempts&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">last_error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">last_error</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2">: Unknown error during JSON parsing&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AutoLogicEngine.analyze_task">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.analyze_task">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_task</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;PHASE 0: ANALYSE INITIALE&quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 0: Analyse de la tâche&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Analyzing intent and constraints...&quot;</span><span class="p">)</span>
+        
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">analyze_prompt</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;analyze_task&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Analysis complete&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Fallback simple</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Detailed analysis skipped&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;analysis&quot;</span><span class="p">:</span> <span class="s2">&quot;Standard analysis&quot;</span><span class="p">,</span> <span class="s2">&quot;constraints&quot;</span><span class="p">:</span> <span class="p">[]}</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.select_modules">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.select_modules">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">select_modules</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ReasoningModule</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 1: SÉLECTION</span>
+<span class="sd">        Sélectionne les modules pertinents via root_llm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 1: Sélection des modules&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Selecting best reasoning modules...&quot;</span><span class="p">)</span>
+
+        <span class="n">modules_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">selection_prompt</span><span class="p">(</span><span class="n">modules_json</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">selected_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span>
+                <span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;select_modules&quot;</span>
+            <span class="p">)</span>
+            <span class="n">selected_ids</span> <span class="o">=</span> <span class="n">selected_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected_modules&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+            <span class="n">selected</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">selected_ids</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sélectionné </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules: </span><span class="si">{</span><span class="n">selected_ids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">selected</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur sélection modules après retries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to select modules&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.adapt_modules">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.adapt_modules">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">adapt_modules</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">selected</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ReasoningModule</span><span class="p">],</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">AdaptedModule</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 2: ADAPTATION</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 2: Adaptation des modules&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Adapting modules to context...&quot;</span><span class="p">)</span>
+
+        <span class="n">selected_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">selected</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">adaptation_prompt</span><span class="p">(</span><span class="n">selected_json</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">adapted_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;adapt_modules&quot;</span><span class="p">)</span>
+
+            <span class="n">adapted_modules</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AdaptedModule</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">adapted_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;adapted_modules&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">base_module</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">base_module</span><span class="p">:</span>
+                    <span class="n">adapted_modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">AdaptedModule</span><span class="p">(</span>
+                            <span class="n">base</span><span class="o">=</span><span class="n">base_module</span><span class="p">,</span>
+                            <span class="n">adapted_description</span><span class="o">=</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;adapted_description&quot;</span><span class="p">],</span>
+                            <span class="n">specific_actions</span><span class="o">=</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;specific_actions&quot;</span><span class="p">],</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adapté </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">adapted_modules</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Modules adapted&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">adapted_modules</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur adaptation modules après retries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to adapt modules&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.structure_reasoning">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.structure_reasoning">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">structure_reasoning</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">adapted</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AdaptedModule</span><span class="p">],</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReasoningPlan</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 3: STRUCTURATION</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 3: Structuration du plan&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Building execution plan...&quot;</span><span class="p">)</span>
+
+        <span class="n">adapted_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">adapted</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">structuration_prompt</span><span class="p">(</span><span class="n">adapted_json</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plan_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span>
+                <span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;structure_reasoning&quot;</span>
+            <span class="p">)</span>
+            <span class="n">plan_info</span> <span class="o">=</span> <span class="n">plan_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning_plan&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+            <span class="n">plan</span> <span class="o">=</span> <span class="n">ReasoningPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">plan_info</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plan créé avec </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> étapes&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Plan created with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> steps&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">plan</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur structuration plan après retries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to structure plan&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ReasoningPlan</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="p">[],</span> <span class="n">complexity</span><span class="o">=</span><span class="s2">&quot;unknown&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.verify_plan">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.verify_plan">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">verify_plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">plan</span><span class="p">:</span> <span class="n">ReasoningPlan</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;PHASE 4: VÉRIFICATION DU PLAN&quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 4: Vérification du plan&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Verifying plan validity...&quot;</span><span class="p">)</span>
+        
+        <span class="n">plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">verify_plan_prompt</span><span class="p">(</span><span class="n">plan_json</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;verify_plan&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Plan verified&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Validation skipped&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;is_valid&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;feedback&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.restructure_plan">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.restructure_plan">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">restructure_plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">old_plan</span><span class="p">:</span> <span class="n">ReasoningPlan</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">feedback</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReasoningPlan</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 3b: RE-STRUCTURATION (Double-Backtrack)</span>
+<span class="sd">        Régénère un plan basé sur le feedback critique.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 3b: Restructuration du plan (Correction)&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Refining plan based on feedback...&quot;</span><span class="p">)</span>
+
+        <span class="n">old_plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">old_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">restructure_prompt</span><span class="p">(</span><span class="n">old_plan_json</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">feedback</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plan_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;restructure_plan&quot;</span><span class="p">)</span>
+            <span class="n">plan_info</span> <span class="o">=</span> <span class="n">plan_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning_plan&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">new_plan</span> <span class="o">=</span> <span class="n">ReasoningPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">plan_info</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plan restructuré avec </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">new_plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> étapes&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">new_plan</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Echec restructuration plan: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">old_plan</span>  <span class="c1"># Fallback sur l&#39;ancien si échec</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.execute_with_plan">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.execute_with_plan">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_with_plan</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="n">ReasoningPlan</span><span class="p">,</span>
+        <span class="n">worker_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">previous_feedback</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 5: EXÉCUTION</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">llm</span> <span class="o">=</span> <span class="n">worker_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">worker_llm</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 5: Exécution du plan&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Executing reasoning steps...&quot;</span><span class="p">)</span>
+
+        <span class="n">plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">execution_prompt</span><span class="p">(</span>
+            <span class="n">plan_json</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">previous_feedback</span><span class="o">=</span><span class="n">previous_feedback</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Execution finished&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.synthesize_output">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.synthesize_output">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">synthesize_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">raw_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">analysis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">audit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 7 &amp; 7.5: SYNTHÈSE &amp; AUDIT ITÉRATIF</span>
+<span class="sd">        Affine la réponse finale avec une boucle d&#39;audit time-boxed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Phase 7: Synthèse (Strategic Model)</span>
+        <span class="n">synthesis_llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
+        <span class="n">audit_llm</span> <span class="o">=</span> <span class="n">audit_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">audit_llm</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 7: Synthèse finale de la réponse&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesizing final output...&quot;</span><span class="p">)</span>
+        
+        <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">synthesis_prompt</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">raw_output</span><span class="p">,</span> <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">)</span>
+        <span class="n">current_output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
+
+        <span class="c1"># Si pas de contraintes, on retourne direct</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">analysis</span> <span class="ow">and</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;constraints&quot;</span><span class="p">)):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesis complete&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">current_output</span>
+
+        <span class="c1"># Phase 7.5: Boucle d&#39;Audit (Universelle) - Utilise le modèle d&#39;Audit dédié</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Phase 7.5: Audit Universel (Timeout Global: </span><span class="si">{</span><span class="n">audit_timeout</span><span class="si">}</span><span class="s2">s, Max Retries: </span><span class="si">{</span><span class="n">audit_max_retries</span><span class="si">}</span><span class="s2">, Model: </span><span class="si">{</span><span class="n">audit_llm</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Auditing response against constraints...&quot;</span><span class="p">)</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_iterations</span> <span class="o">=</span> <span class="n">audit_max_retries</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Check Timeout (Force Proceed logic - Universal)</span>
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+            <span class="k">if</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="n">audit_timeout</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Audit Global Timeout: Force Proceed après </span><span class="si">{</span><span class="n">elapsed</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                <span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit timeout - finalizing&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">(</span>
+                    <span class="n">current_output</span>
+                    <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">[NOTE: Audit stoppé par timeboxing global - Structure préservée]&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">iteration</span> <span class="o">&gt;=</span> <span class="n">max_iterations</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Audit: Max iterations rounded&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Appel Audit Universel (via Audit LLM)</span>
+            <span class="n">audit_prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">audit_final_prompt</span><span class="p">(</span>
+                <span class="n">task</span><span class="p">,</span> <span class="n">current_output</span><span class="p">,</span> <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span>
+            <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Utilisation du modèle d&#39;audit pour la vérification</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Audit pass </span><span class="si">{</span><span class="n">iteration</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+                
+                <span class="n">audit_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span>
+                    <span class="n">audit_prompt</span><span class="p">,</span> <span class="n">audit_llm</span><span class="p">,</span> <span class="s2">&quot;audit_final&quot;</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">2</span>
+                <span class="p">)</span>
+
+                <span class="n">score</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;structural_sufficiency_score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">is_sufficient</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_sufficient&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="n">change_type</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;required_changes_type&quot;</span><span class="p">,</span> <span class="s2">&quot;MAJOR&quot;</span><span class="p">)</span>
+                <span class="n">missing</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;missing_critical_elements&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Audit #</span><span class="si">{</span><span class="n">iteration</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: Score=</span><span class="si">{</span><span class="n">score</span><span class="si">}</span><span class="s2">, Sufficient=</span><span class="si">{</span><span class="n">is_sufficient</span><span class="si">}</span><span class="s2">, Type=</span><span class="si">{</span><span class="n">change_type</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Critère 1: Suffisance Structurelle (90%)</span>
+                <span class="k">if</span> <span class="n">is_sufficient</span> <span class="ow">or</span> <span class="n">score</span> <span class="o">&gt;=</span> <span class="mi">90</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Audit Validé : Suffisance structurelle atteinte&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># Critère 2: Loi Rendement Décroissant (Minor Changes)</span>
+                <span class="k">if</span> <span class="n">change_type</span> <span class="o">==</span> <span class="s2">&quot;MINOR&quot;</span> <span class="ow">or</span> <span class="n">change_type</span> <span class="o">==</span> <span class="s2">&quot;NONE&quot;</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Audit Validé : Modifications mineures ignorées (Rendement Décroissant)&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># Critère 3: Stagnation (2 passes Max pour ajustements majeurs si pas de progrès clair)</span>
+                <span class="c1"># (Implémenté ici via max_iterations, mais on pourrait être plus strict)</span>
+
+                <span class="c1"># Si instructions d&#39;amélioration MAJEURES -&gt; RAFFINEMENT (via Synthesis LLM)</span>
+                <span class="n">instructions</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">&quot;improvement_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;Corriger les éléments manquants.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">refine_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un agent de production. AMÉLIORATION REQUISE (Focus Structurel).</span>
+<span class="s2">                </span>
+<span class="s2">                INSTRUCTIONS PRIORITAIRES : </span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
+<span class="s2">                MANQUES CRITIQUES : </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">                </span>
+<span class="s2">                Répare la structure. Ne touche pas au style.&quot;&quot;&quot;</span>
+
+                <span class="c1"># Utilisation du modèle de synthèse pour la correction</span>
+                <span class="n">current_output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">refine_prompt</span><span class="p">)</span>
+                <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur durant l&#39;audit: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">break</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit passed&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">current_output</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.execute_with_critic">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.execute_with_critic">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_with_critic</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="n">ReasoningPlan</span><span class="p">,</span>
+        <span class="n">worker_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">analysis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">audit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">reasoning_modes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Orchestre l&#39;exécution avec boucle de rétroaction et Double-Backtrack.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_response</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">feedback</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">current_plan</span> <span class="o">=</span> <span class="n">plan</span>
+        <span class="n">modes</span> <span class="o">=</span> <span class="n">reasoning_modes</span> <span class="ow">or</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_retries</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--- Tentative </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">max_retries</span><span class="si">}</span><span class="s2"> ---&quot;</span><span class="p">)</span>
+
+            <span class="c1"># 1. Exécution</span>
+            <span class="n">current_response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_with_plan</span><span class="p">(</span>
+                <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+                <span class="n">plan</span><span class="o">=</span><span class="n">current_plan</span><span class="p">,</span>
+                <span class="n">worker_llm</span><span class="o">=</span><span class="n">worker_llm</span><span class="p">,</span>
+                <span class="n">previous_feedback</span><span class="o">=</span><span class="n">feedback</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># 2. Appel du Critic H2 (PHASE 6)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 6: Évaluation critique H2&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Evaluating results (H2 Critic)...&quot;</span><span class="p">)</span>
+            
+            <span class="n">evaluation</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">critic_agent</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+                <span class="n">task</span><span class="p">,</span> <span class="n">current_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">current_response</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Score Critique: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation successful (Score: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                
+                <span class="c1"># VALIDATION -&gt; SYNTHÈSE (PHASE 7)</span>
+                <span class="n">final_output</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize_output</span><span class="p">(</span>
+                    <span class="n">task</span><span class="p">,</span>
+                    <span class="n">current_response</span><span class="p">,</span>
+                    <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">,</span>
+                    <span class="n">audit_llm</span><span class="o">=</span><span class="n">audit_llm</span><span class="p">,</span>
+                    <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">,</span>
+                    <span class="n">audit_timeout</span><span class="o">=</span><span class="n">audit_timeout</span><span class="p">,</span>
+                    <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">audit_max_retries</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>
+                    <span class="s2">&quot;plan&quot;</span><span class="p">:</span> <span class="n">current_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+                    <span class="s2">&quot;final_output&quot;</span><span class="p">:</span> <span class="n">final_output</span><span class="p">,</span>
+                    <span class="s2">&quot;critic_score&quot;</span><span class="p">:</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                    <span class="s2">&quot;attempts&quot;</span><span class="p">:</span> <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="s2">&quot;reasoning_modes&quot;</span><span class="p">:</span> <span class="n">modes</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rejeté par H2: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation failed (</span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">). Retrying...&quot;</span><span class="p">)</span>
+                <span class="n">feedback</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">feedback</span>
+
+                <span class="c1"># DOUBLE-BACKTRACK LOGIC:</span>
+                <span class="c1"># Si le feedback suggère un manque dans le PLAN, on replanifie</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                    <span class="n">kw</span> <span class="ow">in</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;plan&quot;</span><span class="p">,</span> <span class="s2">&quot;étape&quot;</span><span class="p">,</span> <span class="s2">&quot;manquante&quot;</span><span class="p">,</span> <span class="s2">&quot;structure&quot;</span><span class="p">]</span>
+                <span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Re-planification demandée par le Critique (Backtrack Phase 3)&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Backtracking to plan structure...&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">max_retries</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="c1"># Appel effectif à la restructuration du plan</span>
+                        <span class="n">new_plan</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">restructure_plan</span><span class="p">(</span>
+                            <span class="n">current_plan</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">feedback</span><span class="p">,</span> <span class="n">root_llm</span>
+                        <span class="p">)</span>
+
+                        <span class="c1"># Si le nouveau plan est différent et valide, on le met à jour</span>
+                        <span class="k">if</span> <span class="n">new_plan</span> <span class="ow">and</span> <span class="n">new_plan</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
+                            <span class="n">current_plan</span> <span class="o">=</span> <span class="n">new_plan</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;Plan mis à jour (Tentative </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">). Nouvelle exécution avec le nouveau plan.&quot;</span>
+                            <span class="p">)</span>
+                            <span class="c1"># La boucle continue avec &#39;current_plan&#39; mis à jour</span>
+                            <span class="k">continue</span>
+
+        <span class="c1"># Final pass Synthesis even if low score</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Max retries reached&quot;</span><span class="p">)</span>
+        
+        <span class="n">final_output</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize_output</span><span class="p">(</span>
+            <span class="n">task</span><span class="p">,</span>
+            <span class="n">current_response</span><span class="p">,</span>
+            <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">,</span>
+            <span class="n">audit_llm</span><span class="o">=</span><span class="n">audit_llm</span><span class="p">,</span>
+            <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">,</span>
+            <span class="n">audit_timeout</span><span class="o">=</span><span class="n">audit_timeout</span><span class="p">,</span>
+            <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">audit_max_retries</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Final&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Task processing finished&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>
+            <span class="s2">&quot;plan&quot;</span><span class="p">:</span> <span class="n">current_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">&quot;final_output&quot;</span><span class="p">:</span> <span class="n">final_output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">[NOTE: Score H2: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;critic_score&quot;</span><span class="p">:</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+            <span class="s2">&quot;failed_validation&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;reasoning_modes&quot;</span><span class="p">:</span> <span class="n">modes</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="AutoLogicEngine.run_full_cycle">
+<a class="viewcode-back" href="../../../index.html#autologic.core.engine.AutoLogicEngine.run_full_cycle">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_full_cycle</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">worker_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">audit_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+        <span class="n">audit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Orchestre tout le cycle Self-Discover optimisé (8 phases).&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Démarrage cycle 8-phases pour: </span><span class="si">{</span><span class="n">task</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Task Input&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Initializing cycle...&quot;</span><span class="p">)</span>
+
+        <span class="c1"># 0. Analyze</span>
+        <span class="n">analysis</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">analyze_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">)</span>
+
+        <span class="c1"># 1. Select</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_modules</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">selected</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to select modules&quot;</span><span class="p">}</span>
+
+        <span class="c1"># 2. Adapt</span>
+        <span class="n">adapted</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">adapt_modules</span><span class="p">(</span><span class="n">selected</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">adapted</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to adapt modules&quot;</span><span class="p">}</span>
+
+        <span class="c1"># 3. Structure</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure_reasoning</span><span class="p">(</span><span class="n">adapted</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plan</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to structure plan&quot;</span><span class="p">}</span>
+
+        <span class="c1"># 4. Verify Plan</span>
+        <span class="n">verification</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">verify_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">verification</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_valid&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plan initial invalide: </span><span class="si">{</span><span class="n">verification</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;feedback&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Re-planning shortcut could be here</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">structured_plan</span> <span class="o">=</span> <span class="n">plan</span>
+
+        <span class="c1"># 5, 6, 7. Execute, Critic, Synthesis</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_with_critic</span><span class="p">(</span>
+            <span class="n">task</span><span class="p">,</span>
+            <span class="n">plan</span><span class="p">,</span>
+            <span class="n">worker_llm</span><span class="o">=</span><span class="n">worker_llm</span><span class="p">,</span>
+            <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">,</span>
+            <span class="n">audit_llm</span><span class="o">=</span><span class="n">audit_llm</span><span class="p">,</span>
+            <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">,</span>
+            <span class="n">audit_timeout</span><span class="o">=</span><span class="n">audit_timeout</span><span class="p">,</span>
+            <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">audit_max_retries</span><span class="p">,</span>
+            <span class="n">reasoning_modes</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">selected</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Cycle 8-phases terminé&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Final&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Process completed successfully&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2025-2026, AutoLogic Team.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

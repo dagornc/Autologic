@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings as SettingsIcon, Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
+import { API_BASE_URL } from '../services/api';
 
 interface SettingsDialogProps {
     isOpen: boolean;
@@ -25,7 +26,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose, onConf
         const fetchModels = async () => {
             setLoading(true);
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/models');
+                const response = await fetch(`${API_BASE_URL}/api/models`);
                 if (response.ok) {
                     const data = await response.json();
                     setModelData(data);

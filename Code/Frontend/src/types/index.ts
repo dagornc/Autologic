@@ -31,6 +31,8 @@ export interface AutoLogicResult {
     task: string;
     plan: ReasoningPlan;
     final_output: string;
+    reasoning_modes?: string[];
+    critic_score?: number;
 }
 
 /** Configuration du provider/modèle LLM */
@@ -44,6 +46,10 @@ export interface LLMConfig {
     /** Timeout en secondes pour les requêtes API (défaut: 120) */
     timeout?: number;
     auditMaxRetries?: number;
+    retryEnabled?: boolean;
+    fallbackEnabled?: boolean;
+    rateLimit?: number;
+    retryBaseDelay?: number;
 }
 
 /** Données des modèles disponibles */
@@ -63,7 +69,8 @@ export type LoadingStage =
     | 'Executing reasoning steps...'
     | 'Validating with H2 Critic...'
     | 'Synthesizing final solution...'
-    | 'Auditing final response...';
+    | 'Auditing final response...'
+    | 'Stopped by user';
 
 
 /** Prompt structure */

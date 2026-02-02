@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ArrowLeft, Trash2, Calendar } from 'lucide-react';
 import { PlanDisplay, SolutionDisplay } from './ui';
+import { API_BASE_URL } from '../services/api';
 import type { ReasoningPlan } from '../types';
 
 interface HistoryItem {
@@ -25,7 +26,7 @@ const HistoryDisplay: React.FC = () => {
     const fetchHistory = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch('http://localhost:8000/history/');
+            const response = await fetch(`${API_BASE_URL}/history/`);
             if (!response.ok) throw new Error('Failed to fetch history');
             const data = await response.json();
             setHistory(data);
@@ -41,7 +42,7 @@ const HistoryDisplay: React.FC = () => {
         if (!confirm('Are you sure you want to delete this conversation?')) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/history/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/history/${id}`, {
                 method: 'DELETE',
             });
             if (response.ok) {

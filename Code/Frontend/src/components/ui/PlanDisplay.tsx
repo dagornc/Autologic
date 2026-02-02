@@ -3,9 +3,8 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
-import type { Variants } from 'framer-motion';
-import { Layers, ArrowRight } from 'lucide-react';
+import { motion, type Variants } from 'framer-motion';
+import { Layers } from 'lucide-react';
 import type { ReasoningPlan } from '../../types';
 
 interface PlanDisplayProps {
@@ -21,15 +20,15 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
     return (
         <motion.section variants={itemVariants} className="space-y-8">
             <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                    <Layers className="w-5 h-5 text-blue-400" />
+                <div className="h-12 w-12 rounded-2xl bg-neon-cyan/10 flex items-center justify-center border border-neon-cyan/20 shadow-[0_0_20px_rgba(0,240,255,0.2)] transition-colors">
+                    <Layers className="w-6 h-6 text-neon-cyan" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight">
+                    <h2 className="text-[28px] font-extrabold text-foreground tracking-tight">
                         Execution Plan
                     </h2>
-                    <p className="text-black dark:text-slate-400 text-sm">
-                        Strategic breakdown of the reasoning process
+                    <p className="text-muted-foreground text-sm font-medium">
+                        Strategic architectural breakdown of the reasoning process
                     </p>
                 </div>
             </div>
@@ -41,42 +40,48 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: index * 0.1 }}
-                        className="group relative overflow-hidden rounded-2xl glass-panel-next border border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                        className="group relative overflow-hidden rounded-[28px] bg-card backdrop-blur-3xl border border-white/10 dark:border-white/10 light:border-black/5 hover:border-neon-cyan/30 transition-all duration-500 shadow-modal"
                     >
                         {/* Step Indicator Gradient Bar */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-neon-cyan via-neon-cyan/50 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
-                        <div className="p-6 pl-8">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="font-mono text-[10px] font-bold tracking-widest text-blue-700 dark:text-blue-300 bg-blue-500/10 px-2 py-1 rounded uppercase border border-blue-500/20">
-                                        Step {step.step_number.toString().padStart(2, '0')}
-                                    </span>
-                                    <h3 className="text-lg font-semibold text-black dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-white transition-colors">
+                        <div className="p-8 pl-10">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="px-3 py-1 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 font-mono">
+                                        <span className="text-[11px] font-bold tracking-widest text-neon-cyan uppercase">
+                                            Step {step.step_number.toString().padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-[19px] font-bold text-foreground group-hover:text-neon-cyan transition-colors">
                                         {step.module_name}
                                     </h3>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-black dark:text-slate-500 font-mono bg-black/5 dark:bg-black/20 px-3 py-1 rounded-full border border-black/5 dark:border-white/5">
-                                    <span className="uppercase opacity-50">ID</span>
-                                    <span className="text-indigo-600 dark:text-indigo-300">{step.module_id}</span>
+                                <div className="flex items-center gap-3 px-4 py-1.5 rounded-full bg-secondary/50 border border-border font-mono">
+                                    <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">MODULE_ID</span>
+                                    <span className="text-[11px] font-bold text-neon-cyan/80">{step.module_id}</span>
                                 </div>
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-8 relative">
-                                <div className="space-y-2">
-                                    <span className="text-[10px] uppercase tracking-wider text-black dark:text-slate-500 font-bold flex items-center gap-2">
-                                        Action <ArrowRight className="w-3 h-3 opacity-50" />
-                                    </span>
-                                    <p className="text-black dark:text-slate-300 text-sm leading-relaxed border-l-2 border-indigo-500/20 dark:border-slate-700/50 pl-3">
+                            <div className="grid md:grid-cols-2 gap-10 relative">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                                        <div className="w-1 h-3 bg-neon-cyan/50 rounded-full" />
+                                        Task Strategy
+                                    </div>
+                                    <p className="text-foreground/80 text-[15px] leading-relaxed pl-3 border-l border-border py-1">
                                         {step.action}
                                     </p>
                                 </div>
-                                <div className="space-y-2">
-                                    <span className="text-[10px] uppercase tracking-wider text-black dark:text-slate-500 font-bold flex items-center gap-2">
-                                        Output Goal <ArrowRight className="w-3 h-3 opacity-50" />
-                                    </span>
-                                    <div className="text-black dark:text-indigo-200/90 text-sm leading-relaxed bg-indigo-500/5 dark:bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/20 shadow-inner">
-                                        {step.expected_output}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                                        <div className="w-1 h-3 bg-neon-emerald/50 rounded-full" />
+                                        Validation Goal
+                                    </div>
+                                    <div className="bg-background/40 p-5 rounded-2xl border border-border shadow-inner">
+                                        <p className="text-foreground/90 text-[14px] leading-relaxed font-medium">
+                                            {step.expected_output}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -85,12 +90,13 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ plan }) => {
                 ))}
             </div>
 
-            <div className="flex justify-end">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/5 border border-yellow-500/10 text-black dark:text-yellow-500/80 text-sm backdrop-blur-sm">
+            <div className="flex justify-end pt-4">
+                <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-card border border-border text-muted-foreground text-[12px] font-bold tracking-widest uppercase backdrop-blur-md">
                     <span>Complexity Analysis:</span>
-                    <span className="font-bold capitalize text-yellow-700 dark:text-yellow-400">{plan.estimated_complexity}</span>
+                    <span className="text-neon-orange font-extrabold shadow-[0_0_10px_rgba(255,159,67,0.3)]">{plan.estimated_complexity}</span>
                 </div>
             </div>
         </motion.section>
     );
 };
+

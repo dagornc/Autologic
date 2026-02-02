@@ -22,11 +22,43 @@ export const useModelCache = () => {
 
         setLoading(true);
         try {
-            const data = await api.getModels();
-            // Transform backend data to match frontend ModelData interface if needed
-            // Assuming api.getModels returns compatible structure or we adjust here
-            // For now, casting or simple assignment
-            const modelData = data as unknown as ModelData;
+            // 1. Fetch static list (fast)
+            const staticData = await api.getModels();
+            let modelData = staticData as unknown as ModelData;
+
+            // 2. Dynamic Fetch for OpenRouter (progressive enhancement)
+            // We do this if OpenRouter is in the providers list
+            if (modelData.providers.includes('OpenRouter')) {
+                try {
+                    // Note: We don't have the API key here in the hook easily without context, 
+                    // but the backend might rely on env var if no key passed.
+                    // For specific user keys, we might need to pass it, but for list browsing 
+                    // we usually rely on backend default key or public/free list capabilities.
+                    const dynamicOR = await api.getProviderModels('OpenRouter');
+
+                    if (dynamicOR && dynamicOR.models.length > 0) {
+                        // Merge models
+                        const staticModels = modelData.models['OpenRouter'] || [];
+                        const dynamicModels = dynamicOR.models;
+
+                        // Combine and deduplicate
+                        const combinedModels = Array.from(new Set([...staticModels, ...dynamicModels])).sort();
+
+                        modelData.models['OpenRouter'] = combinedModels;
+
+                        // Merge detailed info if available
+                        if (dynamicOR.models_detailed) {
+                            modelData.modelsDetailed = {
+                                ...modelData.modelsDetailed,
+                                'OpenRouter': dynamicOR.models_detailed
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch dynamic OpenRouter models', e);
+                    // Non-blocking, we keep static list
+                }
+            }
 
             setCache({ data: modelData, timestamp: now });
             setError(null);

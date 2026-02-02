@@ -63,6 +63,9 @@ class ProviderConfig(BaseModel):
     timeout: Optional[int] = 60
     worker_timeout: Optional[int] = None
 
+    free_only: Optional[bool] = True
+    worker_free_only: Optional[bool] = None
+
     # Paramètres Audit
     audit_provider: Optional[str] = None
     audit_model: Optional[str] = None
@@ -71,6 +74,22 @@ class ProviderConfig(BaseModel):
     audit_top_p: Optional[float] = None
     audit_timeout: Optional[int] = None
     audit_max_retries: Optional[int] = 3
+    audit_free_only: Optional[bool] = None
+
+    # Resilience - Root
+    rate_limit: Optional[float] = 15.0
+    retry_enabled: Optional[bool] = True
+    fallback_enabled: Optional[bool] = True
+
+    # Resilience - Worker
+    worker_rate_limit: Optional[float] = None
+    worker_retry_enabled: Optional[bool] = None
+    worker_fallback_enabled: Optional[bool] = None
+
+    # Resilience - Audit
+    audit_rate_limit: Optional[float] = None
+    audit_retry_enabled: Optional[bool] = None
+    audit_fallback_enabled: Optional[bool] = None
 
 
 class ProviderVerificationRequest(BaseModel):
@@ -111,6 +130,9 @@ class ProvidersConfigResponse(BaseModel):
     timeout: int
     worker_timeout: Optional[int] = None
 
+    free_only: bool = True
+    worker_free_only: Optional[bool] = None
+
     # Paramètres Audit
     audit_provider: Optional[str] = None
     audit_model: Optional[str] = None
@@ -119,6 +141,22 @@ class ProvidersConfigResponse(BaseModel):
     audit_top_p: Optional[float] = None
     audit_timeout: Optional[int] = None
     audit_max_retries: Optional[int] = 3
+    audit_free_only: Optional[bool] = None
+
+    # Resilience - Root
+    rate_limit: float = 15.0
+    retry_enabled: bool = True
+    fallback_enabled: bool = True
+
+    # Resilience - Worker
+    worker_rate_limit: Optional[float] = None
+    worker_retry_enabled: Optional[bool] = None
+    worker_fallback_enabled: Optional[bool] = None
+
+    # Resilience - Audit
+    audit_rate_limit: Optional[float] = None
+    audit_retry_enabled: Optional[bool] = None
+    audit_fallback_enabled: Optional[bool] = None
 
 
 class ResilienceConfigRequest(BaseModel):
@@ -197,6 +235,21 @@ async def get_providers_config() -> ProvidersConfigResponse:
         audit_top_p=config.get("audit_top_p"),
         audit_timeout=config.get("audit_timeout"),
         audit_max_retries=config.get("audit_max_retries", 3),
+        
+        # Resilience - Root
+        rate_limit=config.get("rate_limit", 15.0),
+        retry_enabled=config.get("retry_enabled", True),
+        fallback_enabled=config.get("fallback_enabled", True),
+
+        # Resilience - Worker
+        worker_rate_limit=config.get("worker_rate_limit"),
+        worker_retry_enabled=config.get("worker_retry_enabled"),
+        worker_fallback_enabled=config.get("worker_fallback_enabled"),
+
+        # Resilience - Audit
+        audit_rate_limit=config.get("audit_rate_limit"),
+        audit_retry_enabled=config.get("audit_retry_enabled"),
+        audit_fallback_enabled=config.get("audit_fallback_enabled"),
     )
 
 
@@ -370,6 +423,57 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
     else:
         factory._config.pop("audit_max_retries", None)
 
+    if config.free_only is not None:
+        factory._config["free_only"] = config.free_only
+    if config.worker_free_only is not None:
+        factory._config["worker_free_only"] = config.worker_free_only
+    else:
+        factory._config.pop("worker_free_only", None)
+    if config.audit_free_only is not None:
+        factory._config["audit_free_only"] = config.audit_free_only
+    else:
+        factory._config.pop("audit_free_only", None)
+
+    # Resilience - Root
+    if config.rate_limit is not None:
+        factory._config["rate_limit"] = config.rate_limit
+    if config.retry_enabled is not None:
+        factory._config["retry_enabled"] = config.retry_enabled
+    if config.fallback_enabled is not None:
+        factory._config["fallback_enabled"] = config.fallback_enabled
+
+    # Resilience - Worker
+    if config.worker_rate_limit is not None:
+        factory._config["worker_rate_limit"] = config.worker_rate_limit
+    else:
+        factory._config.pop("worker_rate_limit", None)
+    
+    if config.worker_retry_enabled is not None:
+        factory._config["worker_retry_enabled"] = config.worker_retry_enabled
+    else:
+        factory._config.pop("worker_retry_enabled", None)
+        
+    if config.worker_fallback_enabled is not None:
+        factory._config["worker_fallback_enabled"] = config.worker_fallback_enabled
+    else:
+        factory._config.pop("worker_fallback_enabled", None)
+
+    # Resilience - Audit
+    if config.audit_rate_limit is not None:
+        factory._config["audit_rate_limit"] = config.audit_rate_limit
+    else:
+        factory._config.pop("audit_rate_limit", None)
+        
+    if config.audit_retry_enabled is not None:
+        factory._config["audit_retry_enabled"] = config.audit_retry_enabled
+    else:
+        factory._config.pop("audit_retry_enabled", None)
+        
+    if config.audit_fallback_enabled is not None:
+        factory._config["audit_fallback_enabled"] = config.audit_fallback_enabled
+    else:
+        factory._config.pop("audit_fallback_enabled", None)
+
     logger.info(
         f"Config mise à jour: Root={config.provider}/{config.model}, Worker={config.worker_provider}/{config.worker_model}"
     )
@@ -448,6 +552,55 @@ async def update_providers_config(config: ProviderConfig) -> Dict[str, str]:
         updates["worker_timeout"] = config.worker_timeout
     else:
         updates["worker_timeout"] = None
+
+    if config.free_only is not None:
+        updates["free_only"] = config.free_only
+    if config.worker_free_only is not None:
+        updates["worker_free_only"] = config.worker_free_only
+    else:
+        updates["worker_free_only"] = None
+
+    if config.audit_free_only is not None:
+        updates["audit_free_only"] = config.audit_free_only
+    else:
+        updates["audit_free_only"] = None
+
+    # Resilience - Root
+    updates["rate_limit"] = config.rate_limit
+    updates["retry_enabled"] = config.retry_enabled
+    updates["fallback_enabled"] = config.fallback_enabled
+
+    # Resilience - Worker
+    if config.worker_rate_limit is not None:
+        updates["worker_rate_limit"] = config.worker_rate_limit
+    else:
+        updates["worker_rate_limit"] = None
+        
+    if config.worker_retry_enabled is not None:
+        updates["worker_retry_enabled"] = config.worker_retry_enabled
+    else:
+        updates["worker_retry_enabled"] = None
+
+    if config.worker_fallback_enabled is not None:
+        updates["worker_fallback_enabled"] = config.worker_fallback_enabled
+    else:
+        updates["worker_fallback_enabled"] = None
+
+    # Resilience - Audit
+    if config.audit_rate_limit is not None:
+        updates["audit_rate_limit"] = config.audit_rate_limit
+    else:
+        updates["audit_rate_limit"] = None
+        
+    if config.audit_retry_enabled is not None:
+        updates["audit_retry_enabled"] = config.audit_retry_enabled
+    else:
+        updates["audit_retry_enabled"] = None
+        
+    if config.audit_fallback_enabled is not None:
+        updates["audit_fallback_enabled"] = config.audit_fallback_enabled
+    else:
+        updates["audit_fallback_enabled"] = None
 
     # Sauvegarde asynchrone (en fait synchrone dans le thread mais rapide)
     _persist_config(updates)

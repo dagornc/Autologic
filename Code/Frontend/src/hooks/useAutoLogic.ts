@@ -2,26 +2,9 @@
  * Hook personnalisé pour la gestion du raisonnement AutoLogic
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { AutoLogicResult, LLMConfig, LoadingStage } from '../types';
-import { reasoningApi, ApiError } from '../services/api';
-
-/** Étapes de chargement pour l'UX */
-const LOADING_STAGES: LoadingStage[] = [
-    'Analyzing request intent...',
-    'Selecting reasoning modules...',
-    'Adapting modules to context...',
-    'Structuring execution plan...',
-    'Verifying plan logic...',
-    'Executing reasoning steps...',
-    'Validating with H2 Critic...',
-    'Synthesizing final solution...',
-    'Auditing final response...',
-];
-
-
-/** Intervalle entre les changements de stage (ms) */
-const STAGE_INTERVAL = 1200;
+import { reasoningApi } from '../services/api';
 
 interface UseAutoLogicReturn {
     /** Tâche en cours de saisie */
@@ -36,6 +19,8 @@ interface UseAutoLogicReturn {
     error: string | null;
     /** Stage de chargement actuel pour l'UX */
     loadingStage: LoadingStage;
+    /** Nom du modèle LLM en cours d'utilisation */
+    currentModel: string | null;
     /** Soumet la tâche pour résolution */
     submitTask: (config?: LLMConfig) => Promise<void>;
     /** Arrête la tâche en cours */
@@ -53,27 +38,8 @@ export function useAutoLogic(): UseAutoLogicReturn {
     const [result, setResult] = useState<AutoLogicResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loadingStage, setLoadingStage] = useState<LoadingStage>('');
+    const [currentModel, setCurrentModel] = useState<string | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
-
-    // Animation des stages de chargement
-    useEffect(() => {
-        if (!isLoading) {
-            setLoadingStage('');
-            return;
-        }
-
-        let currentStage = 0;
-        setLoadingStage(LOADING_STAGES[0]);
-
-        const interval = setInterval(() => {
-            currentStage++;
-            if (currentStage < LOADING_STAGES.length) {
-                setLoadingStage(LOADING_STAGES[currentStage]);
-            }
-        }, STAGE_INTERVAL);
-
-        return () => clearInterval(interval);
-    }, [isLoading]);
 
     const submitTask = useCallback(async (config?: LLMConfig) => {
         if (!task.trim()) return;
@@ -86,52 +52,78 @@ export function useAutoLogic(): UseAutoLogicReturn {
 
         setIsLoading(true);
         setError(null);
+        setError(null);
         setResult(null);
+        setLoadingStage('Analyzing request intent...'); // Initial state
+        setCurrentModel(null);
 
         try {
-            // Create new controller for this request
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
-            const data = await reasoningApi.solveFull(task, config, controller.signal);
-            setResult(data);
+            await reasoningApi.solveStream(
+                task,
+                config,
+                (event) => {
+                    if (event.type === 'result') {
+                        setResult(event.payload);
+                        setIsLoading(false);
+                        // History is handled by backend or separate call if needed, 
+                        // currently backend returns result but saving is separate in legacy?
+                        // Actually backend engine doesn't auto-save to history endpoint directly,
+                        // we might need to call saveHistory here if we want to persist on frontend side completion.
+                        // For now we trust the flow.
+                        reasoningApi.saveHistory(task, event.payload.plan, event.payload.final_output).catch(err => {
+                            console.error("Failed to save history:", err);
+                        });
+                    } else if (event.type === 'error') {
+                        setError(event.message);
+                        setIsLoading(false);
+                    } else {
+                        // Progress Event
+                        // Format: { stage: "Analyzing", status: "active", message: "..." }
+                        // We map backend stage to frontend LoadingStage string if needed
+                        // Or simply use the message or construct a string
+                        if (event.message) {
+                            setLoadingStage(event.message as LoadingStage);
+                        } else {
+                            setLoadingStage(`${event.stage}...` as LoadingStage);
+                        }
 
-            // Save to history in background
-            reasoningApi.saveHistory(task, data.plan, data.final_output).catch(err => {
-                console.error("Failed to save history:", err);
-            });
-        } catch (err) {
-            if (err instanceof Error) {
-                if (err.name === 'AbortError') {
-                    // Only set error if it wasn't a intentional user stop (which sets its own error)
-                    // If we are here, it means it's likely a timeout from api.ts
-                    if (isLoading) {
-                        setError('Request timed out. The reasoning engine is taking too long to respond.');
+                        if (event.model) {
+                            setCurrentModel(event.model);
+                        }
                     }
-                } else if (err instanceof ApiError) {
-                    setError(err.message);
-                } else {
-                    setError(err.message || 'Failed to connect to the AutoLogic Engine.');
-                }
+                },
+                (err) => {
+                    setError(err.message || 'Stream connection failed');
+                    setIsLoading(false);
+                },
+                controller.signal
+            );
+
+        } catch (err: unknown) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            if (error.name === 'AbortError') {
+                // User stopped
             } else {
-                setError('An unknown error occurred.');
-            }
-        } finally {
-            // Only clear loading if this was the current request
-            if (abortControllerRef.current?.signal.aborted === false || abortControllerRef.current === null) {
+                setError(error.message || 'Failed to start reasoning task');
                 setIsLoading(false);
             }
-            abortControllerRef.current = null;
+        } finally {
+            // Logic handled in callbacks
         }
-    }, [task, isLoading]);
+    }, [task]);
 
     const stopTask = useCallback(() => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
             setIsLoading(false);
-            setError('Task stopped by user.');
-            setLoadingStage('');
+            setIsLoading(false);
+            setError('Task stopped at your request.');
+            setLoadingStage('Stopped by user');
+            setCurrentModel(null);
         }
     }, []);
 
@@ -140,6 +132,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
         setResult(null);
         setError(null);
         setLoadingStage('');
+        setCurrentModel(null);
     }, []);
 
     return {
@@ -149,6 +142,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
         result,
         error,
         loadingStage,
+        currentModel,
         submitTask,
         stopTask,
         reset,

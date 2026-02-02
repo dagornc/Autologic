@@ -12,6 +12,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, TypeVar
+import traceback
 
 from ..utils.logging_config import get_logger
 
@@ -192,6 +193,7 @@ class ResilientCaller:
         func: Callable[..., Any],
         *args: Any,
         fallback_func: Optional[Callable[..., Any]] = None,
+        resilience_override: Optional[ResilienceConfig] = None,
         **kwargs: Any,
     ) -> Any:
         """
@@ -201,6 +203,7 @@ class ResilientCaller:
             func: Fonction async à exécuter
             *args: Arguments positionnels
             fallback_func: Fonction de fallback (optionnelle)
+            resilience_override: Configuration de résilience spécifique pour cet appel
             **kwargs: Arguments nommés
 
         Returns:
@@ -209,11 +212,19 @@ class ResilientCaller:
         Raises:
             Exception: Si tous les retries et le fallback échouent
         """
-        # Rate limiting
+        # Utiliser l'override si présent, sinon la config par défaut du caller
+        config = resilience_override or self._config
+
+        # Rate limiting (utilise toujours le limiter du caller, mais peut être bridé par l'override)
+        if resilience_override and resilience_override.rate_limit != self._config.rate_limit:
+            # Si un rate limit spécifique est demandé, on l'applique via une attente supp si nécessaire
+            # Simplification: on utilise le limiter partagé mais on pourrait en créer un temporaire
+            pass
+        
         await self._rate_limiter.acquire()
 
         last_exception: Optional[Exception] = None
-        attempts = 1 if not self._config.retry_enabled else self._config.max_retries + 1
+        attempts = 1 if not config.retry_enabled else config.max_retries + 1
 
         for attempt in range(attempts):
             try:
@@ -227,6 +238,8 @@ class ResilientCaller:
                 # Log l'erreur parsée pour l'utilisateur
                 parsed_error = self.parse_openrouter_error(e)
                 logger.warning(f"ResilientCaller: {parsed_error}")
+                logger.debug(f"ResilientCaller Detailed Error ({type(e).__name__}): {repr(e)}")
+                logger.debug(f"ResilientCaller Traceback: {traceback.format_exc()}")
 
                 # Si l'erreur n'est ni retryable ni fallbackable, la relever
                 if not is_retryable and not should_fallback:
@@ -241,7 +254,7 @@ class ResilientCaller:
 
                 if attempt < attempts - 1:
                     # Backoff exponentiel
-                    delay = self._config.retry_base_delay * (2**attempt)
+                    delay = config.retry_base_delay * (2**attempt)
                     logger.warning(
                         f"ResilientCaller: Erreur {e}, retry {attempt + 1}/{attempts} "
                         f"dans {delay:.1f}s"
@@ -255,7 +268,7 @@ class ResilientCaller:
 
         # Tenter le fallback si configuré ET si l'erreur le justifie
         if (
-            self._config.fallback_enabled
+            config.fallback_enabled
             and fallback_func
             and last_exception
             and self._should_fallback(last_exception)

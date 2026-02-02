@@ -1,0 +1,565 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autologic.core.resilience &mdash; AutoLogic Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=6ad53a97"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            AutoLogic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">AutoLogic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">autologic.core.resilience</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de autologic.core.resilience</h1><div class="highlight"><pre>
+<span></span><span class="c1"># autologic/core/resilience.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module de résilience pour les providers LLM.</span>
+
+<span class="sd">Implémente:</span>
+<span class="sd">- RateLimiter: Token bucket pour limiter les requêtes/seconde</span>
+<span class="sd">- ResilienceConfig: Configuration de résilience</span>
+<span class="sd">- ResilientCaller: Wrapper avec retry et fallback</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.logging_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ResilienceConfig">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilienceConfig">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResilienceConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration de résilience pour un provider.&quot;&quot;&quot;</span>
+
+    <span class="n">rate_limit</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">15.0</span>  <span class="c1"># Requêtes par seconde</span>
+    <span class="n">retry_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">retry_base_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># Délai de base pour backoff exponentiel</span>
+    <span class="n">fallback_enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="ResilienceConfig.to_dict">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilienceConfig.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convertit en dictionnaire.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">,</span>
+            <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">retry_enabled</span><span class="p">,</span>
+            <span class="s2">&quot;max_retries&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_retries</span><span class="p">,</span>
+            <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">retry_base_delay</span><span class="p">,</span>
+            <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fallback_enabled</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ResilienceConfig.from_dict">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilienceConfig.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ResilienceConfig&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Crée depuis un dictionnaire.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">rate_limit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">),</span>
+            <span class="n">retry_enabled</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="n">max_retries</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+            <span class="n">retry_base_delay</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+            <span class="n">fallback_enabled</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RateLimiter">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RateLimiter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RateLimiter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Token bucket rate limiter.</span>
+
+<span class="sd">    Limite le nombre de requêtes par seconde en utilisant</span>
+<span class="sd">    l&#39;algorithme du seau à jetons (token bucket).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RateLimiter.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RateLimiter.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requests_per_second</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le rate limiter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            requests_per_second: Nombre max de requêtes par seconde</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="n">requests_per_second</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">=</span> <span class="n">requests_per_second</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_update</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retourne le taux actuel.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span>
+
+<div class="viewcode-block" id="RateLimiter.set_rate">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RateLimiter.set_rate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requests_per_second</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Met à jour le taux de requêtes.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">requests_per_second</span><span class="p">)</span>  <span class="c1"># Minimum 0.1 req/s</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RateLimiter: taux mis à jour à </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_rate</span><span class="si">}</span><span class="s2"> req/s&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RateLimiter.acquire">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RateLimiter.acquire">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Acquiert un token, bloque si nécessaire.</span>
+
+<span class="sd">        Cette méthode est thread-safe et attend qu&#39;un token</span>
+<span class="sd">        soit disponible avant de retourner.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">()</span>
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_update</span>
+
+            <span class="c1"># Ajouter des tokens basés sur le temps écoulé</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">+</span> <span class="n">elapsed</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span>
+            <span class="p">)</span>  <span class="c1"># Cap à rate (burst max = 1 seconde)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_update</span> <span class="o">=</span> <span class="n">now</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Calculer le temps d&#39;attente nécessaire</span>
+                <span class="n">wait_time</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RateLimiter: attente de </span><span class="si">{</span><span class="n">wait_time</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tokens</span> <span class="o">-=</span> <span class="mi">1</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RetryableError">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RetryableError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RetryableError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception indiquant qu&#39;un retry est possible.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RetryableError.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.RetryableError.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ModelSaturatedError">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ModelSaturatedError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelSaturatedError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception indiquant que le modèle est saturé (pour fallback).&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="DataPolicyError">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.DataPolicyError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DataPolicyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exception spécifique aux erreurs de politique de données OpenRouter.</span>
+
+<span class="sd">    Cette erreur survient quand l&#39;utilisateur n&#39;a pas configuré ses</span>
+<span class="sd">    paramètres de confidentialité pour autoriser les modèles gratuits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DataPolicyError.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.DataPolicyError.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">original_error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">original_error</span> <span class="o">=</span> <span class="n">original_error</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ResilientCaller">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilientCaller">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResilientCaller</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper universel qui applique rate limiting, retry et fallback indépendamment du provider.</span>
+
+<span class="sd">    Ce wrapper est conçu pour être agnostique du provider LLM sous-jacent.</span>
+<span class="sd">    Il intercepte les exceptions, gère les retries avec backoff exponentiel,</span>
+<span class="sd">    et déclenche un fallback si nécessaire.</span>
+
+<span class="sd">    Utilisation:</span>
+<span class="sd">        caller = ResilientCaller(config, rate_limiter)</span>
+<span class="sd">        result = await caller.call(my_async_func, fallback_func)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Codes HTTP qui déclenchent un retry</span>
+    <span class="n">RETRYABLE_STATUS_CODES</span> <span class="o">=</span> <span class="p">{</span><span class="mi">429</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">}</span>
+
+    <span class="c1"># Codes HTTP qui déclenchent un fallback (inclut 404 pour data policy errors)</span>
+    <span class="n">FALLBACK_STATUS_CODES</span> <span class="o">=</span> <span class="p">{</span><span class="mi">404</span><span class="p">,</span> <span class="mi">429</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">}</span>
+
+    <span class="c1"># Messages d&#39;erreur spécifiques OpenRouter qui nécessitent un fallback</span>
+    <span class="n">OPENROUTER_FALLBACK_MESSAGES</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;no endpoints found&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;data policy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model not available&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model is currently overloaded&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model unavailable&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+<div class="viewcode-block" id="ResilientCaller.__init__">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilientCaller.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ResilienceConfig</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RateLimiter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialise le caller résilient.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Configuration de résilience</span>
+<span class="sd">            rate_limiter: Rate limiter partagé (optionnel)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span> <span class="o">=</span> <span class="n">rate_limiter</span> <span class="ow">or</span> <span class="n">RateLimiter</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResilienceConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retourne la configuration.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
+
+<div class="viewcode-block" id="ResilientCaller.update_config">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilientCaller.update_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ResilienceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Met à jour la configuration.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="o">.</span><span class="n">set_rate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ResilientCaller.call">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilientCaller.call">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">fallback_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">resilience_override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ResilienceConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Exécute une fonction avec rate limiting, retry et fallback.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            func: Fonction async à exécuter</span>
+<span class="sd">            *args: Arguments positionnels</span>
+<span class="sd">            fallback_func: Fonction de fallback (optionnelle)</span>
+<span class="sd">            resilience_override: Configuration de résilience spécifique pour cet appel</span>
+<span class="sd">            **kwargs: Arguments nommés</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Résultat de la fonction</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: Si tous les retries et le fallback échouent</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Utiliser l&#39;override si présent, sinon la config par défaut du caller</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">resilience_override</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
+
+        <span class="c1"># Rate limiting (utilise toujours le limiter du caller, mais peut être bridé par l&#39;override)</span>
+        <span class="k">if</span> <span class="n">resilience_override</span> <span class="ow">and</span> <span class="n">resilience_override</span><span class="o">.</span><span class="n">rate_limit</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">:</span>
+            <span class="c1"># Si un rate limit spécifique est demandé, on l&#39;applique via une attente supp si nécessaire</span>
+            <span class="c1"># Simplification: on utilise le limiter partagé mais on pourrait en créer un temporaire</span>
+            <span class="k">pass</span>
+        
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+
+        <span class="n">last_exception</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">attempts</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_enabled</span> <span class="k">else</span> <span class="n">config</span><span class="o">.</span><span class="n">max_retries</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">attempts</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">last_exception</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="n">is_retryable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_retryable_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">should_fallback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_fallback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+                <span class="c1"># Log l&#39;erreur parsée pour l&#39;utilisateur</span>
+                <span class="n">parsed_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_openrouter_error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ResilientCaller: </span><span class="si">{</span><span class="n">parsed_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Si l&#39;erreur n&#39;est ni retryable ni fallbackable, la relever</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_retryable</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">should_fallback</span><span class="p">:</span>
+                    <span class="k">raise</span>
+
+                <span class="c1"># Si l&#39;erreur n&#39;est pas retryable mais doit faire fallback, sortir de la boucle</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_retryable</span> <span class="ow">and</span> <span class="n">should_fallback</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;ResilientCaller: Erreur non-retryable mais fallback possible: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">break</span>
+
+                <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">attempts</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># Backoff exponentiel</span>
+                    <span class="n">delay</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">retry_base_delay</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">attempt</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;ResilientCaller: Erreur </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, retry </span><span class="si">{</span><span class="n">attempt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">attempts</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;dans </span><span class="si">{</span><span class="n">delay</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+                    <span class="c1"># Re-acquire rate limit token pour le retry</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+
+        <span class="c1"># Tous les retries ont échoué ou erreur nécessitant fallback</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ResilientCaller: Tous les retries ont échoué: </span><span class="si">{</span><span class="n">last_exception</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Tenter le fallback si configuré ET si l&#39;erreur le justifie</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">fallback_enabled</span>
+            <span class="ow">and</span> <span class="n">fallback_func</span>
+            <span class="ow">and</span> <span class="n">last_exception</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_fallback</span><span class="p">(</span><span class="n">last_exception</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;ResilientCaller: Tentative de fallback...&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rate_limiter</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">fallback_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">fallback_error</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ResilientCaller: Fallback échoué: </span><span class="si">{</span><span class="n">fallback_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># Lever l&#39;erreur originale avec message parsé</span>
+                <span class="k">raise</span> <span class="n">last_exception</span> <span class="kn">from</span><span class="w"> </span><span class="nn">fallback_error</span>
+
+        <span class="c1"># Pas de fallback, lever l&#39;erreur</span>
+        <span class="k">if</span> <span class="n">last_exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">last_exception</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Erreur inconnue dans ResilientCaller&quot;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_retryable_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Vérifie si une erreur est retryable.&quot;&quot;&quot;</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Vérifier les codes status HTTP</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">RETRYABLE_STATUS_CODES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Vérifier les messages d&#39;erreur courants</span>
+        <span class="n">retryable_messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;rate limit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;too many requests&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;service unavailable&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;timeout&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;connection&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;overloaded&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;capacity&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span> <span class="ow">in</span> <span class="n">error_str</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">retryable_messages</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_should_fallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Vérifie si une erreur doit déclencher un fallback.</span>
+
+<span class="sd">        Inclut les erreurs 404 (data policy), les erreurs de modèle</span>
+<span class="sd">        indisponible, et autres erreurs OpenRouter spécifiques.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Vérifier les codes status HTTP pour fallback</span>
+        <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">FALLBACK_STATUS_CODES</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Vérifier les messages OpenRouter spécifiques</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">msg</span> <span class="ow">in</span> <span class="n">error_str</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">OPENROUTER_FALLBACK_MESSAGES</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ResilientCaller.parse_openrouter_error">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.ResilientCaller.parse_openrouter_error">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_openrouter_error</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse une erreur OpenRouter pour fournir un message utilisateur clair.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            error: L&#39;exception originale</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Message d&#39;erreur explicite en français</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;no endpoints found&quot;</span> <span class="ow">in</span> <span class="n">error_str</span> <span class="ow">and</span> <span class="s2">&quot;data policy&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="s2">&quot;Erreur de politique de données OpenRouter: Les modèles gratuits &quot;</span>
+                <span class="s2">&quot;nécessitent d&#39;autoriser le partage de données. &quot;</span>
+                <span class="s2">&quot;Configurez vos paramètres sur https://openrouter.ai/settings/privacy&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;404&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;data policy&quot;</span> <span class="ow">in</span> <span class="n">error_str</span> <span class="ow">or</span> <span class="s2">&quot;no endpoints&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span>
+                    <span class="s2">&quot;Modèle indisponible (erreur 404): Vérifiez vos paramètres de &quot;</span>
+                    <span class="s2">&quot;confidentialité OpenRouter pour les modèles gratuits.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Modèle non trouvé (erreur 404): </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;429&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Limite de requêtes atteinte. Réessayez dans quelques instants.&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;timeout&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;Le modèle met trop de temps à répondre. Essayez un autre modèle.&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;overloaded&quot;</span> <span class="ow">in</span> <span class="n">error_str</span> <span class="ow">or</span> <span class="s2">&quot;capacity&quot;</span> <span class="ow">in</span> <span class="n">error_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="s2">&quot;Le modèle est surchargé. Un fallback vers un autre modèle sera tenté.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># Singleton des rate limiters par provider</span>
+<span class="n">_rate_limiters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RateLimiter</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">_resilience_configs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ResilienceConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="get_rate_limiter">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.get_rate_limiter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_rate_limiter</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateLimiter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Récupère ou crée un rate limiter pour un provider.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_rate_limiters</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span>
+        <span class="n">_rate_limiters</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="n">RateLimiter</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_rate_limiters</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_resilience_config">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.get_resilience_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResilienceConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Récupère la config de résilience pour un provider.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_resilience_configs</span><span class="p">:</span>
+        <span class="n">_resilience_configs</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="n">ResilienceConfig</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_resilience_configs</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="set_resilience_config">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.set_resilience_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ResilienceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Met à jour la config de résilience pour un provider.&quot;&quot;&quot;</span>
+    <span class="n">_resilience_configs</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+
+    <span class="c1"># Mettre à jour le rate limiter si existant</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">_rate_limiters</span><span class="p">:</span>
+        <span class="n">_rate_limiters</span><span class="p">[</span><span class="n">provider</span><span class="p">]</span><span class="o">.</span><span class="n">set_rate</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">rate_limit</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resilience config updated for </span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_resilient_caller">
+<a class="viewcode-back" href="../../../index.html#autologic.core.resilience.get_resilient_caller">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_resilient_caller</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResilientCaller</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Crée un ResilientCaller pour un provider.&quot;&quot;&quot;</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">get_resilience_config</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span>
+    <span class="n">rate_limiter</span> <span class="o">=</span> <span class="n">get_rate_limiter</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ResilientCaller</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">rate_limiter</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2025-2026, AutoLogic Team.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

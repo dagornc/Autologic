@@ -57,7 +57,7 @@ cd "$BACKEND_DIR" || { echo -e "${RED}❌ Backend directory not found: $BACKEND_
 
 # Start uvicorn in background
 # Using standard port 8000
-python3 -m uvicorn autologic.main:app --reload --host 0.0.0.0 --port 8000 > "$PROJECT_ROOT/Log/backend.log" 2>&1 &
+python3 -m uvicorn autologic.main:app --reload --host 0.0.0.0 --port 8000 --loop asyncio > "$PROJECT_ROOT/Log/backend.log" 2>&1 &
 BACKEND_PID=$!
 echo -e "${BLUE}ℹ️  Backend PID: $BACKEND_PID${NC}"
 

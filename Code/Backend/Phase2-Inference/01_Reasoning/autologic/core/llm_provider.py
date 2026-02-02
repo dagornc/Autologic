@@ -18,7 +18,11 @@ import random
 from pydantic import SecretStr
 from langchain_openai import ChatOpenAI
 from ..utils.logging_config import get_logger
-from .resilience import get_resilient_caller, get_resilience_config
+from .resilience import (
+    ResilienceConfig,
+    get_resilience_config,
+    get_resilient_caller,
+)
 
 logger = get_logger(__name__)
 
@@ -51,16 +55,36 @@ class OpenRouterLLM(BaseLLM):
         Initialise le provider OpenRouter.
 
         Args:
-            model_name: ID du modèle (ex: "google/gemini-2.0-flash-exp:free")
+            model_name: ID du modèle (ex: "google/gemini-2.0-flash-001")
             api_key: Clé API. Si None, lit OPENROUTER_API_KEY.
             base_url: URL de base de l'API
             timeout: Timeout en secondes
             max_retries: Nombre de retries
             resilience_key: Clé spécifique pour la configuration de résilience (ex: "openrouter_worker")
+            rate_limit: Limite de requêtes par seconde (optionnel)
+            retry_enabled: Activer les retries (optionnel)
+            fallback_enabled: Activer le fallback (optionnel)
         """
         self._model_name = model_name
         self._api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self._resilience_key = resilience_key or "openrouter"
+        
+        # Store resilience override if provided
+        self._resilience_override = None
+        if any(k in kwargs for k in ["rate_limit", "retry_enabled", "max_retries", "retry_base_delay", "fallback_enabled"]):
+            # We need to import ResilienceConfig here or assume it's available
+            from .resilience import ResilienceConfig, get_resilience_config
+            # Get default config to merge with
+            default = get_resilience_config(self._resilience_key)
+            
+            self._resilience_override = ResilienceConfig(
+                rate_limit=kwargs.get("rate_limit", default.rate_limit),
+                retry_enabled=kwargs.get("retry_enabled", default.retry_enabled),
+                max_retries=kwargs.get("max_retries", default.max_retries),
+                retry_base_delay=kwargs.get("retry_base_delay", default.retry_base_delay),
+                fallback_enabled=kwargs.get("fallback_enabled", default.fallback_enabled)
+            )
+            logger.info(f"Resilience Override for {model_name} ({self._resilience_key}): {self._resilience_override.to_dict()}")
 
         if not self._api_key:
             raise ValueError(
@@ -68,12 +92,20 @@ class OpenRouterLLM(BaseLLM):
                 "Définir OPENROUTER_API_KEY ou passer api_key."
             )
 
+        # Configure custom httpx client for better resilience
+        self.http_client = httpx.AsyncClient(
+            timeout=timeout,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+            transport=httpx.AsyncHTTPTransport(retries=3)
+        )
+        
         self.client = ChatOpenAI(
             model=self._model_name,
             api_key=SecretStr(self._api_key),
             base_url=base_url,
             timeout=timeout,
             max_retries=max_retries,
+            http_async_client=self.http_client
         )
         logger.info(
             f"OpenRouterLLM initialisé: {model_name} (key={self._resilience_key})"
@@ -162,7 +194,28 @@ class OpenRouterLLM(BaseLLM):
         try:
             config = get_resilience_config(self._resilience_key)
             fallback_func = _fallback_call if config.fallback_enabled else None
-            return await resilient_caller.call(_make_call, fallback_func=fallback_func)
+            
+            # Use instance override if available, or compute from kwargs call-time
+            resilience_override = getattr(self, "_resilience_override", None)
+            
+            if not resilience_override and any(k in kwargs for k in ["retry_enabled", "max_retries", "fallback_enabled", "retry_base_delay", "rate_limit"]):
+                resilience_override = ResilienceConfig(
+                    rate_limit=kwargs.get("rate_limit", config.rate_limit),
+                    retry_enabled=kwargs.get("retry_enabled", config.retry_enabled),
+                    max_retries=kwargs.get("max_retries", config.max_retries),
+                    retry_base_delay=kwargs.get("retry_base_delay", config.retry_base_delay),
+                    fallback_enabled=kwargs.get("fallback_enabled", config.fallback_enabled)
+                )
+
+            # If override exists, update fallback behavior based on it
+            if resilience_override:
+                fallback_func = _fallback_call if resilience_override.fallback_enabled else None
+
+            return await resilient_caller.call(
+                _make_call,
+                fallback_func=fallback_func,
+                resilience_override=resilience_override
+            )
         except Exception as e:
             logger.error(f"Erreur OpenRouter ({self._model_name}): {e}")
             raise
@@ -332,8 +385,23 @@ class OpenAILLM(BaseLLM):
             return str(response.content)
 
         try:
+            # Extract resilience overrides from kwargs
+            config = get_resilience_config(self._resilience_key)
+            resilience_override = None
+            if any(k in kwargs for k in ["retry_enabled", "max_retries", "fallback_enabled", "retry_base_delay", "rate_limit"]):
+                resilience_override = ResilienceConfig(
+                    rate_limit=kwargs.get("rate_limit", config.rate_limit),
+                    retry_enabled=kwargs.get("retry_enabled", config.retry_enabled),
+                    max_retries=kwargs.get("max_retries", config.max_retries),
+                    retry_base_delay=kwargs.get("retry_base_delay", config.retry_base_delay),
+                    fallback_enabled=kwargs.get("fallback_enabled", config.fallback_enabled)
+                )
+
             # Pas de fallback spécifique pour OpenAI pour l'instant
-            return await resilient_caller.call(_make_call)
+            return await resilient_caller.call(
+                _make_call,
+                resilience_override=resilience_override
+            )
         except Exception as e:
             logger.error(f"Erreur OpenAI ({self._model_name}): {e}")
             raise
@@ -436,7 +504,22 @@ class OllamaLLM(BaseLLM):
             return str(response.content)
 
         try:
-            return await resilient_caller.call(_make_call)
+            # Extract resilience overrides from kwargs
+            config = get_resilience_config(self._resilience_key)
+            resilience_override = None
+            if any(k in kwargs for k in ["retry_enabled", "max_retries", "fallback_enabled", "retry_base_delay", "rate_limit"]):
+                resilience_override = ResilienceConfig(
+                    rate_limit=kwargs.get("rate_limit", config.rate_limit),
+                    retry_enabled=kwargs.get("retry_enabled", config.retry_enabled),
+                    max_retries=kwargs.get("max_retries", config.max_retries),
+                    retry_base_delay=kwargs.get("retry_base_delay", config.retry_base_delay),
+                    fallback_enabled=kwargs.get("fallback_enabled", config.fallback_enabled)
+                )
+
+            return await resilient_caller.call(
+                _make_call,
+                resilience_override=resilience_override
+            )
         except Exception as e:
             logger.error(f"Erreur Ollama ({self._model_name}): {e}")
             raise
@@ -534,7 +617,22 @@ class VLlmLLM(BaseLLM):
             return str(response.content)
 
         try:
-            return await resilient_caller.call(_make_call)
+            # Extract resilience overrides from kwargs
+            config = get_resilience_config(self._resilience_key)
+            resilience_override = None
+            if any(k in kwargs for k in ["retry_enabled", "max_retries", "fallback_enabled", "retry_base_delay", "rate_limit"]):
+                resilience_override = ResilienceConfig(
+                    rate_limit=kwargs.get("rate_limit", config.rate_limit),
+                    retry_enabled=kwargs.get("retry_enabled", config.retry_enabled),
+                    max_retries=kwargs.get("max_retries", config.max_retries),
+                    retry_base_delay=kwargs.get("retry_base_delay", config.retry_base_delay),
+                    fallback_enabled=kwargs.get("fallback_enabled", config.fallback_enabled)
+                )
+
+            return await resilient_caller.call(
+                _make_call,
+                resilience_override=resilience_override
+            )
         except Exception as e:
             logger.error(f"Erreur vLLM ({self._model_name}): {e}")
             raise
@@ -660,7 +758,22 @@ class HuggingFaceLLM(BaseLLM):
                     raise RuntimeError(error_msg)
 
         try:
-            return await resilient_caller.call(_make_call)
+            # Extract resilience overrides from kwargs
+            config = get_resilience_config(self._resilience_key)
+            resilience_override = None
+            if any(k in kwargs for k in ["retry_enabled", "max_retries", "fallback_enabled", "retry_base_delay", "rate_limit"]):
+                resilience_override = ResilienceConfig(
+                    rate_limit=kwargs.get("rate_limit", config.rate_limit),
+                    retry_enabled=kwargs.get("retry_enabled", config.retry_enabled),
+                    max_retries=kwargs.get("max_retries", config.max_retries),
+                    retry_base_delay=kwargs.get("retry_base_delay", config.retry_base_delay),
+                    fallback_enabled=kwargs.get("fallback_enabled", config.fallback_enabled)
+                )
+
+            return await resilient_caller.call(
+                _make_call,
+                resilience_override=resilience_override
+            )
         except Exception as e:
             logger.error(f"Erreur HuggingFace ({self._model_name}): {e}")
             raise

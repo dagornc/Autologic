@@ -11,7 +11,7 @@ async def test_solve_task():
         "task": "Test de configuration dynamique",
         "parameters": {
             "provider": "OpenRouter",
-            "model": "google/gemini-2.0-flash-exp:free",
+            "model": "meta-llama/llama-3.3-70b-instruct:free",
             "temperature": 0.5,
             "max_tokens": 1000
         }

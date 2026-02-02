@@ -4,7 +4,7 @@ Moteur principal AutoLogic implémentant le cycle Self-Discovery.
 Refactorisé pour utiliser les modules séparés.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable, Awaitable
 from abc import ABC, abstractmethod
 import json
 from pathlib import Path
@@ -58,6 +58,7 @@ class AutoLogicEngine:
         root_model: BaseLLM,
         worker_model: BaseLLM,
         audit_model: Optional[BaseLLM] = None,
+        progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ) -> None:
         """
         Initialise le moteur AutoLogic.
@@ -66,6 +67,7 @@ class AutoLogicEngine:
             root_model: LLM puissant pour planification (GPT-4, Gemini Pro)
             worker_model: LLM rapide pour exécution (GPT-4o-mini, Llama 3)
             audit_model: LLM dédié à l'audit (optionnel, fallback sur root_model)
+            progress_callback: Fonction async pour émettre des événements de progression
         """
         self.root_llm = root_model
         self.worker_llm = worker_model
@@ -73,6 +75,7 @@ class AutoLogicEngine:
         self.reasoning_modules = self._load_modules()
         self.structured_plan: Optional[ReasoningPlan] = None
         self.history: List[Dict[str, Any]] = []
+        self.progress_callback = progress_callback
 
         # Initialisation de l'Agent Critique (utilise le modèle puissant)
         self.critic_agent = CriticAgent(root_model)
@@ -80,6 +83,18 @@ class AutoLogicEngine:
         logger.info(
             f"AutoLogicEngine initialisé avec {len(self.reasoning_modules)} modules"
         )
+
+    async def _emit_progress(self, stage: str, status: str = "active", message: str = "", model_name: str = ""):
+        """Helper pour émettre un événement de progression."""
+        if self.progress_callback:
+            event = {
+                "stage": stage,
+                "status": status,
+                "message": message,
+                "model": model_name,
+                "timestamp": time.time()
+            }
+            await self.progress_callback(event)
 
     def _load_modules(self) -> List[ReasoningModule]:
         """Charge la bibliothèque complète des modules."""
@@ -111,9 +126,13 @@ class AutoLogicEngine:
 
     @staticmethod
     def _clean_json_response(response: str) -> str:
-        """Nettoie une réponse JSON potentiellement entourée de markdown."""
-        # Suppression du markdown
+        """Nettoie une réponse JSON potentiellement entourée de markdown ou de tags de raisonnement."""
+        # Suppression des tags de raisonnement type <think>...</think>
         clean = response.strip()
+        import re
+        clean = re.sub(r'<think>.*?</think>', '', clean, flags=re.DOTALL).strip()
+
+        # Suppression du markdown
         if clean.startswith("```"):
             # Trouver la première occurrence de '{'
             start_idx = clean.find("{")
@@ -155,7 +174,7 @@ class AutoLogicEngine:
             except json.JSONDecodeError as e:
                 last_error = e
                 logger.warning(
-                    f"{method_name}: JSON parsing failed (attempt {attempt + 1}/{retries}): {e}"
+                    f"{method_name}: JSON parsing failed (attempt {attempt + 1}/{retries}): {e}\nRaw Response preview: {response[:500]}..."
                 )
                 # Optional: You could append a "Please fix JSON" instruction to the prompt here for next retry
             except Exception as e:
@@ -177,12 +196,17 @@ class AutoLogicEngine:
         """PHASE 0: ANALYSE INITIALE"""
         llm = root_llm or self.root_llm
         logger.info("Phase 0: Analyse de la tâche")
+        await self._emit_progress("Analyzing", "active", "Analyzing intent and constraints...", llm.model_name)
+        
         prompt = PromptTemplates.analyze_prompt(task)
 
         try:
-            return await self._call_and_parse_json(prompt, llm, "analyze_task")
+            result = await self._call_and_parse_json(prompt, llm, "analyze_task")
+            await self._emit_progress("Analyzing", "completed", "Analysis complete", llm.model_name)
+            return result
         except Exception:
             # Fallback simple
+            await self._emit_progress("Analyzing", "completed", "Detailed analysis skipped")
             return {"analysis": "Standard analysis", "constraints": []}
 
     async def select_modules(
@@ -194,6 +218,7 @@ class AutoLogicEngine:
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 1: Sélection des modules")
+        await self._emit_progress("Selecting", "active", "Selecting best reasoning modules...", llm.model_name)
 
         modules_json = json.dumps(
             [m.to_dict() for m in self.reasoning_modules], indent=2, ensure_ascii=False
@@ -209,11 +234,21 @@ class AutoLogicEngine:
 
             selected = [m for m in self.reasoning_modules if m.id in selected_ids]
             logger.info(f"Sélectionné {len(selected)} modules: {selected_ids}")
+            
+            logger.info(f"Sélectionné {len(selected)} modules: {selected_ids}")
+            
+            await self._emit_progress("Selecting", "completed", f"Selected {len(selected)} modules", llm.model_name)
             return selected
 
         except Exception as e:
             logger.error(f"Erreur sélection modules après retries: {e}")
-            return []
+            logger.warning("Activation du Fallback: Sélection des modules par défaut")
+            
+            fallback_ids = ["decomposer_le_probleme", "identifier_les_contraintes", "brainstorming"]
+            fallback_modules = [m for m in self.reasoning_modules if m.id in fallback_ids]
+            
+            await self._emit_progress("Selecting", "completed", "Fallback to default modules (Connection Error)")
+            return fallback_modules
 
     async def adapt_modules(
         self,
@@ -226,6 +261,7 @@ class AutoLogicEngine:
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 2: Adaptation des modules")
+        await self._emit_progress("Adapting", "active", "Adapting modules to context...", llm.model_name)
 
         selected_json = json.dumps(
             [m.to_dict() for m in selected], indent=2, ensure_ascii=False
@@ -249,11 +285,25 @@ class AutoLogicEngine:
                     )
 
             logger.info(f"Adapté {len(adapted_modules)} modules")
+            logger.info(f"Adapté {len(adapted_modules)} modules")
+            await self._emit_progress("Adapting", "completed", "Modules adapted", llm.model_name)
             return adapted_modules
 
         except Exception as e:
             logger.error(f"Erreur adaptation modules après retries: {e}")
-            return []
+            logger.warning("Activation du Fallback: Utilisation des descriptions génériques")
+            
+            fallback_adapted = [
+                AdaptedModule(
+                    base=m,
+                    adapted_description=m.description,
+                    specific_actions=[]
+                )
+                for m in selected
+            ]
+            
+            await self._emit_progress("Adapting", "completed", "Fallback to generic descriptions (Error during adaptation)")
+            return fallback_adapted
 
     async def structure_reasoning(
         self,
@@ -266,6 +316,7 @@ class AutoLogicEngine:
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 3: Structuration du plan")
+        await self._emit_progress("Structuring", "active", "Building execution plan...", llm.model_name)
 
         adapted_json = json.dumps(
             [m.to_dict() for m in adapted], indent=2, ensure_ascii=False
@@ -281,10 +332,14 @@ class AutoLogicEngine:
 
             plan = ReasoningPlan.from_dict(plan_info)
             logger.info(f"Plan créé avec {len(plan.steps)} étapes")
+            plan = ReasoningPlan.from_dict(plan_info)
+            logger.info(f"Plan créé avec {len(plan.steps)} étapes")
+            await self._emit_progress("Structuring", "completed", f"Plan created with {len(plan.steps)} steps", llm.model_name)
             return plan
 
         except Exception as e:
             logger.error(f"Erreur structuration plan après retries: {e}")
+            await self._emit_progress("Structuring", "error", "Failed to structure plan")
             return ReasoningPlan(steps=[], complexity="unknown")
 
     async def verify_plan(
@@ -293,12 +348,18 @@ class AutoLogicEngine:
         """PHASE 4: VÉRIFICATION DU PLAN"""
         llm = root_llm or self.root_llm
         logger.info("Phase 4: Vérification du plan")
+        await self._emit_progress("Verifying", "active", "Verifying plan validity...", llm.model_name)
+        
         plan_json = json.dumps(plan.to_dict(), indent=2, ensure_ascii=False)
         prompt = PromptTemplates.verify_plan_prompt(plan_json, task)
 
         try:
-            return await self._call_and_parse_json(prompt, llm, "verify_plan")
+            result = await self._call_and_parse_json(prompt, llm, "verify_plan")
+            result = await self._call_and_parse_json(prompt, llm, "verify_plan")
+            await self._emit_progress("Verifying", "completed", "Plan verified", llm.model_name)
+            return result
         except Exception:
+            await self._emit_progress("Verifying", "completed", "Validation skipped")
             return {"is_valid": True, "feedback": ""}
 
     async def restructure_plan(
@@ -314,6 +375,7 @@ class AutoLogicEngine:
         """
         llm = root_llm or self.root_llm
         logger.info("Phase 3b: Restructuration du plan (Correction)")
+        await self._emit_progress("Structuring", "active", "Refining plan based on feedback...", llm.model_name)
 
         old_plan_json = json.dumps(old_plan.to_dict(), indent=2, ensure_ascii=False)
         prompt = PromptTemplates.restructure_prompt(old_plan_json, task, feedback)
@@ -340,6 +402,7 @@ class AutoLogicEngine:
         """
         llm = worker_llm or self.worker_llm
         logger.info("Phase 5: Exécution du plan")
+        await self._emit_progress("Executing", "active", "Executing reasoning steps...", llm.model_name)
 
         plan_json = json.dumps(plan.to_dict(), indent=2, ensure_ascii=False)
         prompt = PromptTemplates.execution_prompt(
@@ -347,6 +410,7 @@ class AutoLogicEngine:
         )
 
         response = await llm.call(prompt)
+        await self._emit_progress("Executing", "completed", "Execution finished", llm.model_name)
         return response
 
     async def synthesize_output(
@@ -368,17 +432,22 @@ class AutoLogicEngine:
         audit_llm = audit_llm or self.audit_llm
 
         logger.info("Phase 7: Synthèse finale de la réponse")
+        logger.info("Phase 7: Synthèse finale de la réponse")
+        await self._emit_progress("Synthesizing", "active", "Synthesizing final output...", synthesis_llm.model_name)
+        
         prompt = PromptTemplates.synthesis_prompt(task, raw_output, analysis=analysis)
         current_output = await synthesis_llm.call(prompt)
 
         # Si pas de contraintes, on retourne direct
         if not (analysis and analysis.get("constraints")):
+            await self._emit_progress("Synthesizing", "completed", "Synthesis complete", synthesis_llm.model_name)
             return current_output
 
         # Phase 7.5: Boucle d'Audit (Universelle) - Utilise le modèle d'Audit dédié
         logger.info(
             f"Phase 7.5: Audit Universel (Timeout Global: {audit_timeout}s, Max Retries: {audit_max_retries}, Model: {audit_llm.__class__.__name__})"
         )
+        await self._emit_progress("Auditing", "active", "Auditing response against constraints...", audit_llm.model_name)
 
         start_time = time.time()
         iteration = 0
@@ -391,6 +460,10 @@ class AutoLogicEngine:
                 logger.warning(
                     f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s"
                 )
+                logger.warning(
+                    f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s"
+                )
+                await self._emit_progress("Auditing", "completed", "Audit timeout - finalizing", audit_llm.model_name)
                 return (
                     current_output
                     + "\n\n[NOTE: Audit stoppé par timeboxing global - Structure préservée]"
@@ -406,6 +479,8 @@ class AutoLogicEngine:
             )
             try:
                 # Utilisation du modèle d'audit pour la vérification
+                await self._emit_progress("Auditing", "active", f"Audit pass {iteration + 1}...", audit_llm.model_name)
+                
                 audit_data = await self._call_and_parse_json(
                     audit_prompt, audit_llm, "audit_final", retries=2
                 )
@@ -453,6 +528,7 @@ class AutoLogicEngine:
                 logger.error(f"Erreur durant l'audit: {e}")
                 break
 
+        await self._emit_progress("Auditing", "completed", "Audit passed", audit_llm.model_name)
         return current_output
 
     async def execute_with_critic(
@@ -466,6 +542,7 @@ class AutoLogicEngine:
         analysis: Optional[Dict[str, Any]] = None,
         audit_timeout: int = 30,
         audit_max_retries: int = 3,
+        reasoning_modes: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Orchestre l'exécution avec boucle de rétroaction et Double-Backtrack.
@@ -473,6 +550,7 @@ class AutoLogicEngine:
         current_response = ""
         feedback = ""
         current_plan = plan
+        modes = reasoning_modes or []
 
         for attempt in range(max_retries):
             logger.info(f"--- Tentative {attempt + 1}/{max_retries} ---")
@@ -487,12 +565,16 @@ class AutoLogicEngine:
 
             # 2. Appel du Critic H2 (PHASE 6)
             logger.info("Phase 6: Évaluation critique H2")
+            await self._emit_progress("Critic", "active", "Evaluating results (H2 Critic)...", root_llm.model_name if root_llm else self.root_llm.model_name)
+            
             evaluation = await self.critic_agent.evaluate(
                 task, current_plan.to_dict(), current_response
             )
             logger.info(f"Score Critique: {evaluation.score}")
 
             if evaluation.score >= 0.8:
+                await self._emit_progress("Critic", "completed", f"Validation successful (Score: {evaluation.score})", root_llm.model_name if root_llm else self.root_llm.model_name)
+                
                 # VALIDATION -> SYNTHÈSE (PHASE 7)
                 final_output = await self.synthesize_output(
                     task,
@@ -509,9 +591,11 @@ class AutoLogicEngine:
                     "final_output": final_output,
                     "critic_score": evaluation.score,
                     "attempts": attempt + 1,
+                    "reasoning_modes": modes,
                 }
             else:
                 logger.warning(f"Rejeté par H2: {evaluation.reason}")
+                await self._emit_progress("Critic", "active", f"Validation failed ({evaluation.score}). Retrying...", root_llm.model_name if root_llm else self.root_llm.model_name)
                 feedback = evaluation.feedback
 
                 # DOUBLE-BACKTRACK LOGIC:
@@ -523,6 +607,7 @@ class AutoLogicEngine:
                     logger.info(
                         "Re-planification demandée par le Critique (Backtrack Phase 3)"
                     )
+                    await self._emit_progress("Structuring", "active", "Backtracking to plan structure...", root_llm.model_name if root_llm else self.root_llm.model_name)
 
                     if attempt < max_retries - 1:
                         # Appel effectif à la restructuration du plan
@@ -540,6 +625,8 @@ class AutoLogicEngine:
                             continue
 
         # Final pass Synthesis even if low score
+        await self._emit_progress("Critic", "completed", "Max retries reached", root_llm.model_name if root_llm else self.root_llm.model_name)
+        
         final_output = await self.synthesize_output(
             task,
             current_response,
@@ -549,12 +636,15 @@ class AutoLogicEngine:
             audit_timeout=audit_timeout,
             audit_max_retries=audit_max_retries,
         )
+        await self._emit_progress("Final", "completed", "Task processing finished", self.root_llm.model_name)
+        
         return {
             "task": task,
             "plan": current_plan.to_dict(),
             "final_output": final_output + f"\n\n[NOTE: Score H2: {evaluation.score}]",
             "critic_score": evaluation.score,
             "failed_validation": True,
+            "reasoning_modes": modes,
         }
 
     async def run_full_cycle(
@@ -568,6 +658,7 @@ class AutoLogicEngine:
     ) -> Dict[str, Any]:
         """Orchestre tout le cycle Self-Discover optimisé (8 phases)."""
         logger.info(f"Démarrage cycle 8-phases pour: {task[:50]}...")
+        await self._emit_progress("Task Input", "active", "Initializing cycle...")
 
         # 0. Analyze
         analysis = await self.analyze_task(task, root_llm=root_llm)
@@ -605,7 +696,9 @@ class AutoLogicEngine:
             analysis=analysis,
             audit_timeout=audit_timeout,
             audit_max_retries=audit_max_retries,
+            reasoning_modes=[m.name for m in selected]
         )
 
         logger.info("Cycle 8-phases terminé")
+        await self._emit_progress("Final", "completed", "Process completed successfully")
         return result

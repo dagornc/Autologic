@@ -8,6 +8,7 @@ import { Book, AlertCircle, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { API_BASE_URL } from '../services/api';
 
 interface HelpDisplayProps {
     isVisible: boolean;
@@ -27,8 +28,7 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
         setLoading(true);
         setError(null);
         try {
-            // Utiliser une URL relative si possible ou configurable, ici on garde localhost pour le dev
-            const response = await fetch('http://localhost:8000/api/help/readme');
+            const response = await fetch(`${API_BASE_URL}/api/help/readme`);
 
             if (!response.ok) {
                 await response.text();

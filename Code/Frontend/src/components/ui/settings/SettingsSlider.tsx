@@ -25,13 +25,13 @@ export const SettingsSlider: React.FC<SliderProps> = ({
     description
 }) => {
     return (
-        <div className="space-y-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+        <div className="space-y-3 p-4 rounded-xl glass-panel-next hover:bg-[var(--glass-shimmer)] transition-colors border-glass">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2 text-sm font-medium">
                     <Icon className="w-4 h-4 text-indigo-400" />
                     <span>{label}</span>
                 </div>
-                <span className="text-xs font-mono bg-black/20 px-2 py-1 rounded text-white/90">
+                <span className="text-xs font-mono bg-[var(--glass-bg)] px-2 py-1 rounded text-foreground border border-glass">
                     {value}{unit}
                 </span>
             </div>

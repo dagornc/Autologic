@@ -15,20 +15,34 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message }) => {
         <AnimatePresence>
             {message && (
                 <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-start gap-4 text-red-800 dark:text-red-200 backdrop-blur-md"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="group relative overflow-hidden rounded-2xl bg-card border border-neon-magenta/30 p-6 flex items-start gap-5 backdrop-blur-3xl shadow-modal"
                 >
-                    <AlertCircle className="w-6 h-6 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
-                    <div>
-                        <h3 className="font-semibold text-red-600 dark:text-red-400 mb-1">
-                            Process Failed
+                    {/* Background Glow */}
+                    <div className="absolute inset-0 bg-neon-magenta/5 pointer-events-none" />
+
+                    <div className="relative shrink-0">
+                        <AlertCircle className="w-7 h-7 text-neon-magenta" />
+                        <div className="absolute inset-0 bg-neon-magenta/20 blur-lg rounded-full animate-pulse" />
+                    </div>
+
+                    <div className="relative z-10 flex-1">
+                        <h3 className="text-sm font-bold text-neon-magenta uppercase tracking-[0.2em] mb-2 font-mono">
+                            Execution_Halted
                         </h3>
-                        <p className="text-sm opacity-90">{message}</p>
+                        <p className="text-foreground/90 text-[15px] leading-relaxed font-medium">
+                            {message}
+                        </p>
+                    </div>
+
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-20 text-[10px] font-mono text-muted-foreground tracking-widest uppercase">
+                        <span>ERR_001</span>
                     </div>
                 </motion.div>
             )}
         </AnimatePresence>
     );
 };
+

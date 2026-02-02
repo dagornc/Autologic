@@ -29,6 +29,9 @@ const containerVariants = {
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
+import { DEFAULT_SETTINGS } from '../constants/defaultSettings';
+import { usePersistedSettings } from '../hooks/useSettings';
+
 /**
  * Contenu principal de l'application
  */
@@ -36,7 +39,7 @@ const AutoLogicContent: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [activeSection, setActiveSection] = useState('home');
-    const [config, setConfig] = useState<LLMConfig>({ provider: '', model: '' });
+    const [settings, setSettings] = usePersistedSettings(DEFAULT_SETTINGS);
 
     const {
         task,
@@ -50,6 +53,20 @@ const AutoLogicContent: React.FC = () => {
     } = useAutoLogic();
 
     const handleSubmit = () => {
+        // Map settings to LLMConfig for the root agent
+        const config: LLMConfig = {
+            provider: settings.provider,
+            model: settings.model,
+            apiKey: settings.apiKey,
+            temperature: settings.temperature,
+            maxTokens: settings.maxTokens,
+            topP: settings.topP,
+            timeout: settings.timeout,
+            auditMaxRetries: settings.auditMaxRetries,
+            retryEnabled: settings.retryEnabled,
+            fallbackEnabled: settings.fallbackEnabled,
+            rateLimit: settings.rateLimit,
+        };
         submitTask(config);
     };
 
@@ -66,26 +83,21 @@ const AutoLogicContent: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-indigo-500/30 selection:text-indigo-600 dark:selection:text-indigo-200 overflow-x-hidden relative">
+        <div className="min-h-screen w-full bg-background text-foreground font-sans selection:bg-neon-cyan/20 selection:text-neon-cyan overflow-x-hidden relative">
+
+            {/* Noise Texture Layer */}
+            <div className="fixed inset-0 opacity-[0.02] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] z-[1]" />
 
             {/* Ambient Liquid Background */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-[flow_15s_infinite_alternate]" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-purple-600/10 rounded-full mix-blend-screen filter blur-[120px] opacity-30 animate-[flow_20s_infinite_alternate-reverse]" />
-                <div className="absolute top-[30%] left-[20%] w-[400px] h-[400px] bg-blue-500/10 rounded-full mix-blend-overlay filter blur-[80px] opacity-20 animate-[pulse_8s_infinite]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-flow bg-neon-cyan/30" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-flow-reverse bg-neon-magenta/30" />
+                <div className="absolute top-[30%] left-[20%] w-[400px] h-[400px] rounded-full mix-blend-overlay filter blur-[80px] opacity-10 animate-pulse-slow bg-neon-cyan/20" />
             </div>
-
-            {/* Sidebar */}
-            <Sidebar
-                isExpanded={isSidebarExpanded}
-                onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
-                onNavigate={handleNavigate}
-                activeSection={activeSection}
-            />
 
             {/* Main Content Area */}
             <main
-                className={`relative z-10 transition-all duration-300 min-h-screen flex flex-col ${isSidebarExpanded ? 'pl-[260px]' : 'pl-[100px]'
+                className={`relative z-10 transition-all duration-500 min-h-screen flex flex-col ${isSidebarExpanded ? 'pl-[260px]' : 'pl-[100px]'
                     }`}
             >
                 {/* Main Glass Window */}
@@ -93,7 +105,7 @@ const AutoLogicContent: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
-                    className="max-w-5xl w-full mx-auto my-8 bg-white/60 dark:bg-black/40 backdrop-blur-2xl rounded-3xl border border-black/5 dark:border-white/10 shadow-2xl overflow-hidden min-h-[85vh] flex flex-col relative"
+                    className="max-w-5xl w-full mx-auto my-8 bg-white/[0.02] backdrop-blur-3xl rounded-[32px] overflow-hidden min-h-[85vh] flex flex-col relative border border-white/10 shadow-modal"
                 >
                     {/* Interior Scroll Container */}
                     <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-12 custom-scrollbar">
@@ -118,7 +130,19 @@ const AutoLogicContent: React.FC = () => {
                                         onTaskChange={setTask}
                                         onSubmit={handleSubmit}
                                         isLoading={isLoading}
-                                        config={config}
+                                        config={{
+                                            provider: settings.provider,
+                                            model: settings.model,
+                                            apiKey: settings.apiKey,
+                                            temperature: settings.temperature,
+                                            maxTokens: settings.maxTokens,
+                                            topP: settings.topP,
+                                            timeout: settings.timeout,
+                                            auditMaxRetries: settings.auditMaxRetries,
+                                            retryEnabled: settings.retryEnabled,
+                                            fallbackEnabled: settings.fallbackEnabled,
+                                            rateLimit: settings.rateLimit,
+                                        }}
                                         onStop={stopTask}
                                     />
 
@@ -167,11 +191,20 @@ const AutoLogicContent: React.FC = () => {
                 </motion.div>
             </main>
 
+            {/* Sidebar Navigation */}
+            <Sidebar
+                isExpanded={isSidebarExpanded}
+                onToggle={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                onNavigate={handleNavigate}
+                activeSection={activeSection}
+            />
+
             {/* Settings Drawer */}
             <SettingsDrawer
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onConfigChange={setConfig}
+                onConfigChange={setSettings}
+                settings={settings}
             />
         </div>
     );

@@ -2,16 +2,23 @@
 
 import os
 import sys
+from pathlib import Path
 
-# Ajouter le chemin vers le code source
+# Chemins vers le code source
+# Module principal autologic
 sys.path.insert(0, os.path.abspath('../../Code/Backend/Phase2-Inference/01_Reasoning'))
+# Chemins additionnels pour les sous-modules
+sys.path.insert(0, os.path.abspath('../../Code/Backend/Phase2-Inference/01_Reasoning/autologic'))
+sys.path.insert(0, os.path.abspath('../../Code/Backend/Phase2-Inference/01_Reasoning/autologic/core'))
+sys.path.insert(0, os.path.abspath('../../Code/Backend/Phase2-Inference/01_Reasoning/autologic/routers'))
+sys.path.insert(0, os.path.abspath('../../Code/Backend/Phase2-Inference/01_Reasoning/autologic/utils'))
 
 # -- Informations du projet --
 project = 'AutoLogic'
-copyright = '2025, AutoLogic Team'
+copyright = '2025-2026, AutoLogic Team'
 author = 'AutoLogic Team'
-release = '0.2.0'
-version = '0.2.0'
+release = '0.3.0'
+version = '0.3.0'
 
 # -- Configuration générale --
 extensions = [
@@ -70,7 +77,6 @@ html_theme_options = {
     'sticky_navigation': True,
     'includehidden': True,
     'titles_only': False,
-    'display_version': True,
     'prev_next_buttons_location': 'bottom',
     'style_external_links': True,
 }

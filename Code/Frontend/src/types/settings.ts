@@ -2,12 +2,17 @@ export interface SettingsConfig {
     provider: string;
     model: string;
     apiKey: string;
+    freeModelsOnly: boolean;
+
+    // Global Context
+    systemContext?: string;
 
     // Worker specific configuration
     workerProvider?: string;
     workerModel?: string;
     workerApiKey?: string;
     useWorkerSameAsRoot: boolean;
+    workerFreeModelsOnly?: boolean;
 
     // Hyperparameters - Root
     temperature: number;
@@ -26,6 +31,7 @@ export interface SettingsConfig {
     auditModel?: string;
     auditApiKey?: string;
     useAuditSameAsRoot: boolean;
+    auditFreeModelsOnly?: boolean;
 
     // Hyperparameters - Audit
     auditTemperature?: number;
@@ -34,10 +40,25 @@ export interface SettingsConfig {
     auditTimeout?: number;
     auditMaxRetries: number;
 
-    // Resilience
+    // Resilience - Global / Root (Strategic)
     rateLimit: number;
     retryEnabled: boolean;
     fallbackEnabled: boolean;
+
+    // Resilience - Worker
+    workerRateLimit?: number;
+    workerRetryEnabled?: boolean;
+    workerFallbackEnabled?: boolean;
+
+    // Resilience - Audit
+    auditRateLimit?: number;
+    auditRetryEnabled?: boolean;
+    auditFallbackEnabled?: boolean;
+
+    // Accessibility
+    reducedMotion: boolean;
+    dyslexicFont: boolean;
+    highContrast: boolean;
 }
 
 export interface ResilienceSettings {

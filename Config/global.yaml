@@ -8,7 +8,7 @@ llm:
   active_model: gpt-4-turbo
   temperature: 0.5
   max_tokens: 2048
-  timeout: 60
+  timeout: 120
   max_retries: 3
   resilience:
     rate_limit: 15.0
@@ -20,8 +20,9 @@ llm:
     openrouter:
       enabled: true
       base_url: https://openrouter.ai/api/v1
-      default_model: meta-llama/llama-3.3-70b-instruct:free
+      default_model: google/gemini-2.0-flash-001
       models:
+      - google/gemini-2.0-flash-001
       - meta-llama/llama-3.3-70b-instruct:free
       - anthropic/claude-3-opus
       - anthropic/claude-3-sonnet
@@ -66,6 +67,10 @@ llm:
       - microsoft/Phi-3-mini-4k-instruct
   top_p: 1.0
   audit_max_retries: 3
+  free_only: true
+  rate_limit: 15.0
+  retry_enabled: true
+  fallback_enabled: true
 database:
   host: localhost
   port: 5432

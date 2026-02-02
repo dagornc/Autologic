@@ -10,3 +10,4 @@ export { LoadingOverlay } from './LoadingOverlay';
 export { ErrorMessage } from './ErrorMessage';
 export { PlanDisplay } from './PlanDisplay';
 export { SolutionDisplay } from './SolutionDisplay';
+export { ReasoningModesDisplay } from './ReasoningModesDisplay';
