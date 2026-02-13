@@ -1,5 +1,6 @@
 
 import asyncio
+import pytest
 from typing import Any
 from autologic.core.engine import AutoLogicEngine, BaseLLM
 from autologic.core.models import ReasoningModule
@@ -13,6 +14,7 @@ class FailingLLM(BaseLLM):
         # Simulate an error (e.g., malformed JSON that fails parsing even after retries)
         return "This is not JSON at all."
 
+@pytest.mark.asyncio
 async def test_adaptation_fallback():
     # Setup
     llm = FailingLLM()

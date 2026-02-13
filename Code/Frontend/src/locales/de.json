@@ -1,0 +1,248 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "prompts": "Prompts",
+        "history": "Verlauf",
+        "help": "Hilfe",
+        "settings": "Einstellungen"
+    },
+    "language": {
+        "label": "Sprache",
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
+    },
+    "dashboard": {
+        "title": "Was lösen wir heute?",
+        "subtitle": "Orchestrierung autonomer Agenten zur Lösung komplexer Denkaufgaben.",
+        "inputPlaceholder": "Beschreiben Sie Ihr Problem oder Ihre Denkaufgabe...",
+        "submit": "Analyse starten",
+        "stop": "Stoppen"
+    },
+    "settings": {
+        "title": "Einstellungen",
+        "tabs": {
+            "general": "Allgemein",
+            "strategic": "Strategisch",
+            "tactical": "Taktisch",
+            "audit": "Audit"
+        },
+        "general": {
+            "provider": "Anbieter",
+            "model": "Modell",
+            "freeOnly": "Nur kostenlose Modelle",
+            "connectionStatus": "Verbindungsstatus",
+            "connected": "Verbunden",
+            "disconnected": "Getrennt",
+            "searchModel": "Modell suchen...",
+            "appearance": "Erscheinung & Verhalten",
+            "themeMode": "Theme-Modus",
+            "accessibility": "Barrierefreiheit",
+            "reducedMotion": "Reduzierte Bewegung",
+            "reducedMotionDesc": "Animationen für ein statischeres Erlebnis minimieren.",
+            "dyslexicFont": "Legasthenie-Schrift",
+            "dyslexicFontDesc": "Zu OpenDyslexic oder vergrößertem Abstand wechseln.",
+            "highContrast": "Hoher Kontrast",
+            "highContrastDesc": "Lesbarkeit mit stärkeren Rändern und soliden Hintergründen erhöhen."
+        },
+        "strategic": {
+            "agentTitle": "Strategischer Agent",
+            "agentDesc": "Der Masterplaner und Entscheidungsträger.",
+            "maxWorkers": "Maximale Agenten",
+            "maxWorkersDesc": "Anzahl parallel arbeitender Agenten",
+            "temperature": "Kreativität (Temperatur)",
+            "temperatureDesc": "Steuert die Kreativität der Antworten",
+            "maxTokens": "Maximale Tokens",
+            "maxTokensDesc": "Token-Limit pro Antwort",
+            "resilience": "Resilienz & Zuverlässigkeit",
+            "autoRetries": "Automatische Wiederholungen",
+            "autoRetriesDesc": "Fehlgeschlagene LLM-Aufrufe automatisch wiederholen.",
+            "smartFallback": "Intelligenter Fallback",
+            "smartFallbackDesc": "Bei Überlastung auf alternative Modelle zurückgreifen.",
+            "rateLimit": "Ratenlimit (Anf/min)",
+            "systemContext": "Systemkontext",
+            "systemContextPlaceholder": "Globalen Systemkontext eingeben..."
+        },
+        "tactical": {
+            "agentTitle": "Taktischer Agent",
+            "agentDesc": "Führt spezifische Teilaufgaben des Wurzel-Agenten aus.",
+            "syncToggle": "Strategische Konfiguration verwenden",
+            "syncToggleDesc": "Einstellungen vom Wurzel-Agenten für Ausführungsaufgaben übernehmen.",
+            "linkedToStrategic": "Verknüpft mit Strategischem Agent",
+            "retries": "Wiederholungen",
+            "retriesDesc": "Anzahl automatischer Wiederholungsversuche",
+            "rateLimit": "Ratenlimit",
+            "rateLimitDesc": "Anfragen pro Minute",
+            "smartFallback": "Intelligenter Fallback",
+            "smartFallbackDesc": "Bei Fehler auf alternatives Modell wechseln",
+            "timeout": "Zeitüberschreitung",
+            "timeoutDesc": "Maximale Dauer pro Anfrage (Sekunden)",
+            "temperature": "Kreativität (Temperatur)",
+            "resilience": "Resilienz & Zuverlässigkeit",
+            "autoRetries": "Automatische Wiederholungen",
+            "autoRetriesDesc": "Fehlgeschlagene LLM-Aufrufe automatisch wiederholen.",
+            "rateLimitLabel": "Ratenlimit (Anf/min)"
+        },
+        "audit": {
+            "agentTitle": "Audit-Agent",
+            "agentDesc": "Validiert die Ausgabe des Taktischen Agenten.",
+            "syncToggle": "Strategische Konfiguration verwenden",
+            "syncToggleDesc": "Das Hauptgehirn für die Validierung verwenden (empfohlen für Konsistenz).",
+            "linkedToStrategic": "Verknüpft mit Strategischem Agent",
+            "h2Critic": "H2-Kritiker",
+            "h2CriticDesc": "Kritische Bewertung der Ergebnisse aktivieren",
+            "criticTemperature": "Kritiker-Temperatur",
+            "criticTemperatureDesc": "Kreativität des Kritiker-Agenten",
+            "autoImprove": "Auto-Verbesserung",
+            "autoImproveDesc": "Schwache Ergebnisse automatisch verbessern",
+            "maxRetries": "Max. Audit-Wiederholungen",
+            "temperature": "Kreativität (Temperatur)",
+            "resilience": "Resilienz & Zuverlässigkeit",
+            "autoRetries": "Automatische Wiederholungen",
+            "autoRetriesDesc": "Fehlgeschlagene LLM-Aufrufe automatisch wiederholen.",
+            "smartFallback": "Intelligenter Fallback",
+            "smartFallbackDesc": "Bei Überlastung auf alternative Modelle zurückgreifen.",
+            "rateLimit": "Ratenlimit (Anf/min)"
+        }
+    },
+    "prompts": {
+        "title": "Prompt-Verwaltung",
+        "search": "Prompt suchen...",
+        "newPrompt": "Neuer Prompt",
+        "categories": {
+            "all": "Alle",
+            "logic": "Logik",
+            "creative": "Kreativ",
+            "analysis": "Analyse",
+            "custom": "Benutzerdefiniert"
+        },
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "use": "Verwenden",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "emptyState": "Keine Prompts gefunden.",
+        "emptyStateAction": "Erstellen Sie Ihren ersten Prompt!",
+        "nameLabel": "Name",
+        "namePlaceholder": "Prompt-Name",
+        "contentLabel": "Inhalt",
+        "contentPlaceholder": "Prompt-Inhalt...",
+        "categoryLabel": "Kategorie",
+        "create": "Prompt erstellen",
+        "editTitle": "Prompt bearbeiten",
+        "confirmDelete": "Sind Sie sicher, dass Sie diesen Prompt löschen möchten?",
+        "subtitle": "Verwalten Sie Ihre KI-Reasoning-Vorlagen",
+        "emptyStateDesc": "Ihre Bibliothek ist leer. KI-Vorlagen, die Sie erstellen, werden hier angezeigt.",
+        "toCreate": "zum Erstellen",
+        "promptCount": "Prompt(s)"
+    },
+    "history": {
+        "title": "Verlauf",
+        "back": "Zurück zum Verlauf",
+        "emptyState": "Kein Verlauf gefunden.",
+        "emptyStateAction": "Starten Sie Ihre erste Konversation!",
+        "loading": "Verlauf wird geladen...",
+        "task": "Aufgabe",
+        "confirmDelete": "Sind Sie sicher, dass Sie diese Konversation löschen möchten?",
+        "deleteTitle": "Konversation löschen"
+    },
+    "help": {
+        "title": "Dokumentation",
+        "subtitle": "Benutzerhandbuch und Projektinformationen",
+        "loading": "Dokumentation wird geladen...",
+        "error": "Hilfedatei konnte nicht geladen werden."
+    },
+    "common": {
+        "close": "Schließen",
+        "loading": "Laden...",
+        "error": "Fehler",
+        "theme": {
+            "toggle": "Thema wechseln",
+            "light": "Hell",
+            "dark": "Dunkel"
+        }
+    },
+    "suggestions": {
+        "title": "Beispiel ausprobieren",
+        "chips": {
+            "market": "Wettbewerbsmarkt für KI-Startups analysieren",
+            "strategy": "Go-to-Market-Strategie für ein SaaS-Produkt erstellen",
+            "debug": "Speicherleck in einem verteilten System debuggen",
+            "research": "Aktuelle Fortschritte im Reinforcement Learning zusammenfassen"
+        },
+        "cards": {
+            "market": {
+                "title": "Marktanalyse",
+                "prompt": "Führen Sie eine umfassende Wettbewerbsanalyse für ein neues KI-SaaS-Startup auf dem europäischen Markt durch."
+            },
+            "strategy": {
+                "title": "Produktstrategie",
+                "prompt": "Entwerfen Sie eine Go-to-Market-Strategie für eine B2B-SaaS-Plattform zur automatisierten Dokumentenverarbeitung."
+            },
+            "debug": {
+                "title": "Code-Debugging",
+                "prompt": "Analysieren und debuggen Sie ein Speicherleck in einer verteilten Node.js-Microservices-Architektur."
+            },
+            "research": {
+                "title": "Forschungssynthese",
+                "prompt": "Fassen Sie die neuesten Forschungen (2024-2025) zum Multi-Agenten Reinforcement Learning zusammen."
+            }
+        }
+    },
+    "progress": {
+        "step": "Schritt {{current}}/{{total}}",
+        "elapsed": "vergangen",
+        "remaining": "verbleibend"
+    },
+    "score": {
+        "qualityScore": "Qualitätsbewertung",
+        "excellent": "Ausgezeichnet",
+        "veryGood": "Sehr gut",
+        "good": "Gut",
+        "average": "Durchschnittlich",
+        "low": "Verbesserungsbedürftig"
+    },
+    "solution": {
+        "title": "Endlösung",
+        "subtitle": "Synthetisierte Ausgabe der Reasoning-Engine",
+        "copy": "Kopieren",
+        "exportMd": "Markdown",
+        "exportPdf": "PDF",
+        "copied": "Kopiert!",
+        "exported": "Exportiert!"
+    },
+    "toast": {
+        "taskComplete": "Aufgabe abgeschlossen",
+        "taskCompleteMsg": "Ihre Aufgabe wurde erfolgreich gelöst.",
+        "taskError": "Aufgabe fehlgeschlagen",
+        "taskStopped": "Aufgabe gestoppt",
+        "taskStoppedMsg": "Die Verarbeitung wurde unterbrochen."
+    },
+    "onboarding": {
+        "skip": "Tour überspringen",
+        "next": "Weiter",
+        "getStarted": "Loslegen",
+        "step1": {
+            "title": "Willkommen bei AutoLogic",
+            "desc": "Eine fortschrittliche Reasoning-Engine, die autonome Agenten orchestriert, um komplexe Probleme Schritt für Schritt zu lösen."
+        },
+        "step2": {
+            "title": "Problem beschreiben",
+            "desc": "Geben Sie Ihre komplexe Aufgabe ein. AutoLogic wird analysieren, planen und einen mehrstufigen Denkprozess ausführen."
+        },
+        "step3": {
+            "title": "Denkprozess beobachten",
+            "desc": "Verfolgen Sie den Reasoning-Prozess in Echtzeit mit dem visuellen Flussdiagramm und der Fortschrittsleiste."
+        },
+        "step4": {
+            "title": "Verifizierte Ergebnisse",
+            "desc": "Erhalten Sie eine umfassende Lösung mit Qualitätsbewertung. Exportieren als Markdown oder PDF."
+        }
+    },
+    "shortcuts": {
+        "submit": "Aufgabe senden",
+        "focus": "Eingabe fokussieren",
+        "settings": "Einstellungen öffnen"
+    }
+}

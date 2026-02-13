@@ -50,6 +50,16 @@ export interface LLMConfig {
     fallbackEnabled?: boolean;
     rateLimit?: number;
     retryBaseDelay?: number;
+
+    // Worker Resilience (modèle secondaire)
+    workerRateLimit?: number;
+    workerRetryEnabled?: boolean;
+    workerFallbackEnabled?: boolean;
+
+    // Audit Resilience (modèle d'audit H2)
+    auditRateLimit?: number;
+    auditRetryEnabled?: boolean;
+    auditFallbackEnabled?: boolean;
 }
 
 /** Données des modèles disponibles */

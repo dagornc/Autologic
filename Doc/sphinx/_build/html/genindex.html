@@ -95,9 +95,13 @@
 <h2 id="_">_</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.core.engine.AutoLogicEngine.__init__">__init__() (méthode autologic.core.engine.AutoLogicEngine)</a>
+      <li><a href="index.html#autologic.core.critic.CriticAgent.__init__">__init__() (méthode autologic.core.critic.CriticAgent)</a>
 
       <ul>
+        <li><a href="index.html#autologic.core.critic.LLMInterface.__init__">(méthode autologic.core.critic.LLMInterface)</a>
+</li>
+        <li><a href="index.html#autologic.core.engine.AutoLogicEngine.__init__">(méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
         <li><a href="index.html#autologic.core.llm_provider.HuggingFaceLLM.__init__">(méthode autologic.core.llm_provider.HuggingFaceLLM)</a>
 </li>
         <li><a href="index.html#autologic.core.llm_provider.OllamaLLM.__init__">(méthode autologic.core.llm_provider.OllamaLLM)</a>
@@ -107,6 +111,18 @@
         <li><a href="index.html#autologic.core.llm_provider.OpenRouterLLM.__init__">(méthode autologic.core.llm_provider.OpenRouterLLM)</a>
 </li>
         <li><a href="index.html#autologic.core.llm_provider.VLlmLLM.__init__">(méthode autologic.core.llm_provider.VLlmLLM)</a>
+</li>
+        <li><a href="index.html#autologic.core.model_registry.ModelInfo.__init__">(méthode autologic.core.model_registry.ModelInfo)</a>
+</li>
+        <li><a href="index.html#autologic.core.model_registry.ModelRegistry.__init__">(méthode autologic.core.model_registry.ModelRegistry)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.AdaptedModule.__init__">(méthode autologic.core.models.AdaptedModule)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.ReasoningModule.__init__">(méthode autologic.core.models.ReasoningModule)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.ReasoningPlan.__init__">(méthode autologic.core.models.ReasoningPlan)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.ReasoningPlanStep.__init__">(méthode autologic.core.models.ReasoningPlanStep)</a>
 </li>
         <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.__init__">(méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
@@ -129,11 +145,21 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.resilience.RateLimiter.acquire">acquire() (méthode autologic.core.resilience.RateLimiter)</a>
 </li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep.action">action (attribut autologic.core.models.ReasoningPlanStep)</a>
+</li>
       <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.active_model">active_model (attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.active_provider">active_provider (attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.adapt_modules">adapt_modules() (méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.adaptation_prompt">adaptation_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.AdaptedModule.adapted_description">adapted_description (attribut autologic.core.models.AdaptedModule)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.AdaptedModule">AdaptedModule (classe dans autologic.core.models)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.analyze_prompt">analyze_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.analyze_task">analyze_task() (méthode autologic.core.engine.AutoLogicEngine)</a>
 </li>
@@ -145,6 +171,8 @@
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.audit_fallback_enabled">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.audit_final_prompt">audit_final_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
+</li>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.audit_free_only">audit_free_only (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
@@ -187,14 +215,14 @@
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.audit_retry_enabled">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.audit_temperature">audit_temperature (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.audit_temperature">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.audit_timeout">audit_timeout (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
@@ -205,6 +233,13 @@
 
       <ul>
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.audit_top_p">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
+</li>
+      </ul></li>
+      <li>
+    autologic.core.critic
+
+      <ul>
+        <li><a href="index.html#module-autologic.core.critic">module</a>
 </li>
       </ul></li>
       <li>
@@ -222,6 +257,27 @@
 </li>
       </ul></li>
       <li>
+    autologic.core.model_registry
+
+      <ul>
+        <li><a href="index.html#module-autologic.core.model_registry">module</a>
+</li>
+      </ul></li>
+      <li>
+    autologic.core.models
+
+      <ul>
+        <li><a href="index.html#module-autologic.core.models">module</a>
+</li>
+      </ul></li>
+      <li>
+    autologic.core.prompts
+
+      <ul>
+        <li><a href="index.html#module-autologic.core.prompts">module</a>
+</li>
+      </ul></li>
+      <li>
     autologic.core.provider_factory
 
       <ul>
@@ -236,10 +292,24 @@
 </li>
       </ul></li>
       <li>
+    autologic.routers.history
+
+      <ul>
+        <li><a href="index.html#module-autologic.routers.history">module</a>
+</li>
+      </ul></li>
+      <li>
     autologic.routers.models
 
       <ul>
         <li><a href="index.html#module-autologic.routers.models">module</a>
+</li>
+      </ul></li>
+      <li>
+    autologic.routers.prompts
+
+      <ul>
+        <li><a href="index.html#module-autologic.routers.prompts">module</a>
 </li>
       </ul></li>
       <li>
@@ -259,6 +329,10 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.models.AdaptedModule.base">base (attribut autologic.core.models.AdaptedModule)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.engine.BaseLLM">BaseLLM (classe dans autologic.core.engine)</a>
 </li>
   </ul></td>
@@ -267,9 +341,11 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.core.engine.BaseLLM.call">call() (méthode autologic.core.engine.BaseLLM)</a>
+      <li><a href="index.html#autologic.core.critic.LLMInterface.call">call() (méthode autologic.core.critic.LLMInterface)</a>
 
       <ul>
+        <li><a href="index.html#autologic.core.engine.BaseLLM.call">(méthode autologic.core.engine.BaseLLM)</a>
+</li>
         <li><a href="index.html#autologic.core.llm_provider.HuggingFaceLLM.call">(méthode autologic.core.llm_provider.HuggingFaceLLM)</a>
 </li>
         <li><a href="index.html#autologic.core.llm_provider.OllamaLLM.call">(méthode autologic.core.llm_provider.OllamaLLM)</a>
@@ -283,10 +359,20 @@
         <li><a href="index.html#autologic.core.resilience.ResilientCaller.call">(méthode autologic.core.resilience.ResilientCaller)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.models.ReasoningModule.category">category (attribut autologic.core.models.ReasoningModule)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlan.complexity">complexity (attribut autologic.core.models.ReasoningPlan)</a>
+</li>
       <li><a href="index.html#autologic.core.resilience.ResilientCaller.config">config (propriété autologic.core.resilience.ResilientCaller)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.prompts.PromptBase.content">content (attribut autologic.routers.prompts.PromptBase)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.routers.prompts.PromptUpdate.content">(attribut autologic.routers.prompts.PromptUpdate)</a>
+</li>
+      </ul></li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.create_audit_llm">create_audit_llm() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.create_llm">create_llm() (dans le module autologic.core.provider_factory)</a>
@@ -295,7 +381,19 @@
         <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.create_llm">(méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
       </ul></li>
+      <li><a href="index.html#autologic.routers.prompts.create_prompt">create_prompt() (dans le module autologic.routers.prompts)</a>
+</li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.create_worker_llm">create_worker_llm() (méthode autologic.core.provider_factory.ProviderFactory)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.Prompt.created_at">created_at (attribut autologic.routers.prompts.Prompt)</a>
+</li>
+      <li><a href="index.html#autologic.routers.history.CreateHistoryRequest">CreateHistoryRequest (classe dans autologic.routers.history)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.critic_evaluation_prompt">critic_evaluation_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
+</li>
+      <li><a href="index.html#autologic.core.critic.CriticAgent">CriticAgent (classe dans autologic.core.critic)</a>
+</li>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation">CriticEvaluation (classe dans autologic.core.critic)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -304,6 +402,16 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.resilience.DataPolicyError">DataPolicyError</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.default_params">default_params (attribut autologic.core.model_registry.ModelRegistry)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.history.delete_history_item">delete_history_item() (dans le module autologic.routers.history)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.delete_prompt">delete_prompt() (dans le module autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningModule.description">description (attribut autologic.core.models.ReasoningModule)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -319,13 +427,19 @@
         <li><a href="index.html#autologic.routers.reasoning.ErrorResponse.error">(attribut autologic.routers.reasoning.ErrorResponse)</a>
 </li>
       </ul></li>
+      <li><a href="index.html#autologic.routers.reasoning.ErrorResponse">ErrorResponse (classe dans autologic.routers.reasoning)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.routers.reasoning.ErrorResponse">ErrorResponse (classe dans autologic.routers.reasoning)</a>
+      <li><a href="index.html#autologic.core.critic.CriticAgent.evaluate">evaluate() (méthode autologic.core.critic.CriticAgent)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.execute_with_critic">execute_with_critic() (méthode autologic.core.engine.AutoLogicEngine)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.execute_with_plan">execute_with_plan() (méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.execution_prompt">execution_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep.expected_output">expected_output (attribut autologic.core.models.ReasoningPlanStep)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -345,20 +459,32 @@
         <li><a href="index.html#autologic.routers.models.ResilienceConfigResponse.fallback_enabled">(attribut autologic.routers.models.ResilienceConfigResponse)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.resilience.ResilientCaller.FALLBACK_STATUS_CODES">FALLBACK_STATUS_CODES (attribut autologic.core.resilience.ResilientCaller)</a>
 </li>
-      <li><a href="index.html#autologic.routers.reasoning.TaskResponse.final_output">final_output (attribut autologic.routers.reasoning.TaskResponse)</a>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation.feedback">feedback (attribut autologic.core.critic.CriticEvaluation)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.history.CreateHistoryRequest.final_output">final_output (attribut autologic.routers.history.CreateHistoryRequest)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.routers.history.HistoryItem.final_output">(attribut autologic.routers.history.HistoryItem)</a>
+</li>
+        <li><a href="index.html#autologic.routers.reasoning.TaskResponse.final_output">(attribut autologic.routers.reasoning.TaskResponse)</a>
+</li>
+      </ul></li>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.free_only">free_only (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.free_only">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
-      <li><a href="index.html#autologic.core.resilience.ResilienceConfig.from_dict">from_dict() (méthode de la classe autologic.core.resilience.ResilienceConfig)</a>
+      <li><a href="index.html#autologic.core.models.ReasoningPlan.from_dict">from_dict() (méthode de la classe autologic.core.models.ReasoningPlan)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.core.resilience.ResilienceConfig.from_dict">(méthode de la classe autologic.core.resilience.ResilienceConfig)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -369,25 +495,35 @@
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_active_provider">get_active_provider() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.get_all_models">get_all_models() (méthode autologic.core.model_registry.ModelRegistry)</a>
+</li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_audit_model">get_audit_model() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_audit_provider">get_audit_provider() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_available_providers">get_available_providers() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.get_default_params">get_default_params() (méthode autologic.core.model_registry.ModelRegistry)</a>
+</li>
       <li><a href="index.html#autologic.routers.reasoning.get_engine">get_engine() (dans le module autologic.routers.reasoning)</a>
+</li>
+      <li><a href="index.html#autologic.routers.history.get_history_item">get_history_item() (dans le module autologic.routers.history)</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.get_models_by_provider">get_models_by_provider() (méthode autologic.core.model_registry.ModelRegistry)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_models_for_provider">get_models_for_provider() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.get_provider_config">get_provider_config() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
-      <li><a href="index.html#autologic.core.provider_factory.get_provider_factory">get_provider_factory() (dans le module autologic.core.provider_factory)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.provider_factory.get_provider_factory">get_provider_factory() (dans le module autologic.core.provider_factory)</a>
+</li>
       <li><a href="index.html#autologic.routers.models.get_provider_models">get_provider_models() (dans le module autologic.routers.models)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.get_provider_resilience_config">get_provider_resilience_config() (dans le module autologic.routers.models)</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.get_providers">get_providers() (méthode autologic.core.model_registry.ModelRegistry)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.get_providers_config">get_providers_config() (dans le module autologic.routers.models)</a>
 </li>
@@ -411,10 +547,12 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.core.provider_factory.ProviderType.HUGGINGFACE">HUGGINGFACE (attribut autologic.core.provider_factory.ProviderType)</a>
+      <li><a href="index.html#autologic.routers.history.HistoryItem">HistoryItem (classe dans autologic.routers.history)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.provider_factory.ProviderType.HUGGINGFACE">HUGGINGFACE (attribut autologic.core.provider_factory.ProviderType)</a>
+</li>
       <li><a href="index.html#autologic.core.llm_provider.HuggingFaceLLM">HuggingFaceLLM (classe dans autologic.core.llm_provider)</a>
 </li>
   </ul></td>
@@ -422,6 +560,18 @@
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.model_registry.ModelInfo.id">id (attribut autologic.core.model_registry.ModelInfo)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.core.models.ReasoningModule.id">(attribut autologic.core.models.ReasoningModule)</a>
+</li>
+        <li><a href="index.html#autologic.routers.history.HistoryItem.id">(attribut autologic.routers.history.HistoryItem)</a>
+</li>
+        <li><a href="index.html#autologic.routers.prompts.Prompt.id">(attribut autologic.routers.prompts.Prompt)</a>
+</li>
+      </ul></li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory.is_provider_enabled">is_provider_enabled() (méthode autologic.core.provider_factory.ProviderFactory)</a>
 </li>
@@ -431,6 +581,8 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.history.list_history">list_history() (dans le module autologic.routers.history)</a>
+</li>
       <li><a href="index.html#autologic.routers.models.list_models">list_models() (dans le module autologic.routers.models)</a>
 
       <ul>
@@ -450,6 +602,10 @@
       <li><a href="index.html#autologic.core.llm_provider.OpenRouterLLM.list_models_detailed">list_models_detailed() (méthode de la classe autologic.core.llm_provider.OpenRouterLLM)</a>
 </li>
       <li><a href="index.html#autologic.routers.reasoning.list_modules">list_modules() (dans le module autologic.routers.reasoning)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.list_prompts">list_prompts() (dans le module autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.core.critic.LLMInterface">LLMInterface (classe dans autologic.core.critic)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -473,9 +629,15 @@
       </ul></li>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.model">model (attribut autologic.routers.models.ProviderConfig)</a>
 </li>
-      <li><a href="index.html#autologic.routers.models.ProviderConfig.model_config">model_config (attribut autologic.routers.models.ProviderConfig)</a>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation.model_config">model_config (attribut autologic.core.critic.CriticEvaluation)</a>
 
       <ul>
+        <li><a href="index.html#autologic.routers.history.CreateHistoryRequest.model_config">(attribut autologic.routers.history.CreateHistoryRequest)</a>
+</li>
+        <li><a href="index.html#autologic.routers.history.HistoryItem.model_config">(attribut autologic.routers.history.HistoryItem)</a>
+</li>
+        <li><a href="index.html#autologic.routers.models.ProviderConfig.model_config">(attribut autologic.routers.models.ProviderConfig)</a>
+</li>
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.model_config">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
         <li><a href="index.html#autologic.routers.models.ProviderStatus.model_config">(attribut autologic.routers.models.ProviderStatus)</a>
@@ -486,6 +648,14 @@
 </li>
         <li><a href="index.html#autologic.routers.models.ResilienceConfigResponse.model_config">(attribut autologic.routers.models.ResilienceConfigResponse)</a>
 </li>
+        <li><a href="index.html#autologic.routers.prompts.Prompt.model_config">(attribut autologic.routers.prompts.Prompt)</a>
+</li>
+        <li><a href="index.html#autologic.routers.prompts.PromptBase.model_config">(attribut autologic.routers.prompts.PromptBase)</a>
+</li>
+        <li><a href="index.html#autologic.routers.prompts.PromptCreate.model_config">(attribut autologic.routers.prompts.PromptCreate)</a>
+</li>
+        <li><a href="index.html#autologic.routers.prompts.PromptUpdate.model_config">(attribut autologic.routers.prompts.PromptUpdate)</a>
+</li>
         <li><a href="index.html#autologic.routers.reasoning.ErrorResponse.model_config">(attribut autologic.routers.reasoning.ErrorResponse)</a>
 </li>
         <li><a href="index.html#autologic.routers.reasoning.TaskRequest.model_config">(attribut autologic.routers.reasoning.TaskRequest)</a>
@@ -493,8 +663,6 @@
         <li><a href="index.html#autologic.routers.reasoning.TaskResponse.model_config">(attribut autologic.routers.reasoning.TaskResponse)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.engine.BaseLLM.model_name">model_name (propriété autologic.core.engine.BaseLLM)</a>
 
       <ul>
@@ -509,6 +677,12 @@
         <li><a href="index.html#autologic.core.llm_provider.VLlmLLM.model_name">(propriété autologic.core.llm_provider.VLlmLLM)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.core.model_registry.ModelInfo">ModelInfo (classe dans autologic.core.model_registry)</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry">ModelRegistry (classe dans autologic.core.model_registry)</a>
+</li>
       <li><a href="index.html#autologic.routers.models.ProviderStatus.models">models (attribut autologic.routers.models.ProviderStatus)</a>
 </li>
       <li><a href="index.html#autologic.core.resilience.ModelSaturatedError">ModelSaturatedError</a>
@@ -517,27 +691,49 @@
     module
 
       <ul>
+        <li><a href="index.html#module-autologic.core.critic">autologic.core.critic</a>
+</li>
         <li><a href="index.html#module-autologic.core.engine">autologic.core.engine</a>
 </li>
         <li><a href="index.html#module-autologic.core.llm_provider">autologic.core.llm_provider</a>
+</li>
+        <li><a href="index.html#module-autologic.core.model_registry">autologic.core.model_registry</a>
+</li>
+        <li><a href="index.html#module-autologic.core.models">autologic.core.models</a>
+</li>
+        <li><a href="index.html#module-autologic.core.prompts">autologic.core.prompts</a>
 </li>
         <li><a href="index.html#module-autologic.core.provider_factory">autologic.core.provider_factory</a>
 </li>
         <li><a href="index.html#module-autologic.core.resilience">autologic.core.resilience</a>
 </li>
+        <li><a href="index.html#module-autologic.routers.history">autologic.routers.history</a>
+</li>
         <li><a href="index.html#module-autologic.routers.models">autologic.routers.models</a>
+</li>
+        <li><a href="index.html#module-autologic.routers.prompts">autologic.routers.prompts</a>
 </li>
         <li><a href="index.html#module-autologic.routers.reasoning">autologic.routers.reasoning</a>
 </li>
       </ul></li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep.module_id">module_id (attribut autologic.core.models.ReasoningPlanStep)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep.module_name">module_name (attribut autologic.core.models.ReasoningPlanStep)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.routers.models.ProviderStatus.name">name (attribut autologic.routers.models.ProviderStatus)</a>
+      <li><a href="index.html#autologic.core.model_registry.ModelInfo.name">name (attribut autologic.core.model_registry.ModelInfo)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.core.models.ReasoningModule.name">(attribut autologic.core.models.ReasoningModule)</a>
 </li>
+        <li><a href="index.html#autologic.routers.models.ProviderStatus.name">(attribut autologic.routers.models.ProviderStatus)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -570,11 +766,29 @@
 </li>
       <li><a href="index.html#autologic.core.resilience.ResilientCaller.parse_openrouter_error">parse_openrouter_error() (méthode statique autologic.core.resilience.ResilientCaller)</a>
 </li>
-      <li><a href="index.html#autologic.routers.reasoning.TaskResponse.plan">plan (attribut autologic.routers.reasoning.TaskResponse)</a>
-</li>
-      <li><a href="index.html#autologic.routers.models.ProviderConfig.provider">provider (attribut autologic.routers.models.ProviderConfig)</a>
+      <li><a href="index.html#autologic.routers.history.CreateHistoryRequest.plan">plan (attribut autologic.routers.history.CreateHistoryRequest)</a>
 
       <ul>
+        <li><a href="index.html#autologic.routers.history.HistoryItem.plan">(attribut autologic.routers.history.HistoryItem)</a>
+</li>
+        <li><a href="index.html#autologic.routers.reasoning.TaskResponse.plan">(attribut autologic.routers.reasoning.TaskResponse)</a>
+</li>
+      </ul></li>
+      <li><a href="index.html#autologic.routers.prompts.Prompt">Prompt (classe dans autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.PromptBase">PromptBase (classe dans autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.PromptCreate">PromptCreate (classe dans autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates">PromptTemplates (classe dans autologic.core.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.PromptUpdate">PromptUpdate (classe dans autologic.routers.prompts)</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelInfo.provider">provider (attribut autologic.core.model_registry.ModelInfo)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.routers.models.ProviderConfig.provider">(attribut autologic.routers.models.ProviderConfig)</a>
+</li>
         <li><a href="index.html#autologic.routers.models.ProviderVerificationRequest.provider">(attribut autologic.routers.models.ProviderVerificationRequest)</a>
 </li>
         <li><a href="index.html#autologic.routers.models.ResilienceConfigRequest.provider">(attribut autologic.routers.models.ResilienceConfigRequest)</a>
@@ -582,6 +796,8 @@
         <li><a href="index.html#autologic.routers.models.ResilienceConfigResponse.provider">(attribut autologic.routers.models.ResilienceConfigResponse)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.llm_provider.HuggingFaceLLM.provider_name">provider_name (propriété autologic.core.llm_provider.HuggingFaceLLM)</a>
 
       <ul>
@@ -594,11 +810,11 @@
         <li><a href="index.html#autologic.core.llm_provider.VLlmLLM.provider_name">(propriété autologic.core.llm_provider.VLlmLLM)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.ProviderConfig">ProviderConfig (classe dans autologic.routers.models)</a>
 </li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderFactory">ProviderFactory (classe dans autologic.core.provider_factory)</a>
+</li>
+      <li><a href="index.html#autologic.core.model_registry.ModelRegistry.providers">providers (attribut autologic.core.model_registry.ModelRegistry)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse">ProvidersConfigResponse (classe dans autologic.routers.models)</a>
 </li>
@@ -630,19 +846,31 @@
       </ul></li>
       <li><a href="index.html#autologic.core.resilience.RateLimiter">RateLimiter (classe dans autologic.core.resilience)</a>
 </li>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation.reason">reason (attribut autologic.core.critic.CriticEvaluation)</a>
+</li>
       <li><a href="index.html#autologic.routers.reasoning.TaskResponse.reasoning_modes">reasoning_modes (attribut autologic.routers.reasoning.TaskResponse)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningModule">ReasoningModule (classe dans autologic.core.models)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlan">ReasoningPlan (classe dans autologic.core.models)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep">ReasoningPlanStep (classe dans autologic.core.models)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.refine_prompt">refine_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
       <li><a href="index.html#autologic.core.resilience.ResilienceConfig">ResilienceConfig (classe dans autologic.core.resilience)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.ResilienceConfigRequest">ResilienceConfigRequest (classe dans autologic.routers.models)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.ResilienceConfigResponse">ResilienceConfigResponse (classe dans autologic.routers.models)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.resilience.ResilientCaller">ResilientCaller (classe dans autologic.core.resilience)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.restructure_plan">restructure_plan() (méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.restructure_prompt">restructure_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
       <li><a href="index.html#autologic.core.resilience.ResilienceConfig.retry_base_delay">retry_base_delay (attribut autologic.core.resilience.ResilienceConfig)</a>
 
@@ -674,7 +902,13 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.history.save_history">save_history() (dans le module autologic.routers.history)</a>
+</li>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation.score">score (attribut autologic.core.critic.CriticEvaluation)</a>
+</li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.select_modules">select_modules() (méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.selection_prompt">selection_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
       <li><a href="index.html#autologic.routers.reasoning.set_engine">set_engine() (dans le module autologic.routers.reasoning)</a>
 </li>
@@ -682,13 +916,25 @@
 </li>
       <li><a href="index.html#autologic.core.resilience.set_resilience_config">set_resilience_config() (dans le module autologic.core.resilience)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.reasoning.solve_task">solve_task() (dans le module autologic.routers.reasoning)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.reasoning.solve_task_stream">solve_task_stream() (dans le module autologic.routers.reasoning)</a>
 </li>
+      <li><a href="index.html#autologic.core.models.AdaptedModule.specific_actions">specific_actions (attribut autologic.core.models.AdaptedModule)</a>
+</li>
+      <li><a href="index.html#autologic.core.critic.CriticEvaluation.status">status (attribut autologic.core.critic.CriticEvaluation)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlanStep.step_number">step_number (attribut autologic.core.models.ReasoningPlanStep)</a>
+</li>
+      <li><a href="index.html#autologic.core.models.ReasoningPlan.steps">steps (attribut autologic.core.models.ReasoningPlan)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.structuration_prompt">structuration_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
+</li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.structure_reasoning">structure_reasoning() (méthode autologic.core.engine.AutoLogicEngine)</a>
+</li>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.synthesis_prompt">synthesis_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.synthesize_output">synthesize_output() (méthode autologic.core.engine.AutoLogicEngine)</a>
 </li>
@@ -698,9 +944,19 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#autologic.routers.reasoning.TaskRequest.task">task (attribut autologic.routers.reasoning.TaskRequest)</a>
+      <li><a href="index.html#autologic.routers.prompts.PromptBase.tags">tags (attribut autologic.routers.prompts.PromptBase)</a>
 
       <ul>
+        <li><a href="index.html#autologic.routers.prompts.PromptUpdate.tags">(attribut autologic.routers.prompts.PromptUpdate)</a>
+</li>
+      </ul></li>
+      <li><a href="index.html#autologic.routers.history.CreateHistoryRequest.task">task (attribut autologic.routers.history.CreateHistoryRequest)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.routers.history.HistoryItem.task">(attribut autologic.routers.history.HistoryItem)</a>
+</li>
+        <li><a href="index.html#autologic.routers.reasoning.TaskRequest.task">(attribut autologic.routers.reasoning.TaskRequest)</a>
+</li>
         <li><a href="index.html#autologic.routers.reasoning.TaskResponse.task">(attribut autologic.routers.reasoning.TaskResponse)</a>
 </li>
       </ul></li>
@@ -714,16 +970,34 @@
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.temperature">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.timeout">timeout (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
         <li><a href="index.html#autologic.routers.models.ProvidersConfigResponse.timeout">(attribut autologic.routers.models.ProvidersConfigResponse)</a>
 </li>
       </ul></li>
-      <li><a href="index.html#autologic.core.resilience.ResilienceConfig.to_dict">to_dict() (méthode autologic.core.resilience.ResilienceConfig)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.history.HistoryItem.timestamp">timestamp (attribut autologic.routers.history.HistoryItem)</a>
 </li>
+      <li><a href="index.html#autologic.routers.prompts.PromptBase.title">title (attribut autologic.routers.prompts.PromptBase)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.routers.prompts.PromptUpdate.title">(attribut autologic.routers.prompts.PromptUpdate)</a>
+</li>
+      </ul></li>
+      <li><a href="index.html#autologic.core.models.AdaptedModule.to_dict">to_dict() (méthode autologic.core.models.AdaptedModule)</a>
+
+      <ul>
+        <li><a href="index.html#autologic.core.models.ReasoningModule.to_dict">(méthode autologic.core.models.ReasoningModule)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.ReasoningPlan.to_dict">(méthode autologic.core.models.ReasoningPlan)</a>
+</li>
+        <li><a href="index.html#autologic.core.models.ReasoningPlanStep.to_dict">(méthode autologic.core.models.ReasoningPlanStep)</a>
+</li>
+        <li><a href="index.html#autologic.core.resilience.ResilienceConfig.to_dict">(méthode autologic.core.resilience.ResilienceConfig)</a>
+</li>
+      </ul></li>
       <li><a href="index.html#autologic.routers.models.ProviderConfig.top_p">top_p (attribut autologic.routers.models.ProviderConfig)</a>
 
       <ul>
@@ -738,11 +1012,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.resilience.ResilientCaller.update_config">update_config() (méthode autologic.core.resilience.ResilientCaller)</a>
 </li>
+      <li><a href="index.html#autologic.routers.prompts.update_prompt">update_prompt() (dans le module autologic.routers.prompts)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.routers.models.update_providers_config">update_providers_config() (dans le module autologic.routers.models)</a>
 </li>
       <li><a href="index.html#autologic.routers.models.update_resilience_config">update_resilience_config() (dans le module autologic.routers.models)</a>
+</li>
+      <li><a href="index.html#autologic.routers.prompts.Prompt.updated_at">updated_at (attribut autologic.routers.prompts.Prompt)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -752,10 +1030,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#autologic.core.engine.AutoLogicEngine.verify_plan">verify_plan() (méthode autologic.core.engine.AutoLogicEngine)</a>
 </li>
-      <li><a href="index.html#autologic.routers.models.verify_provider_connection">verify_provider_connection() (dans le module autologic.routers.models)</a>
+      <li><a href="index.html#autologic.core.prompts.PromptTemplates.verify_plan_prompt">verify_plan_prompt() (méthode statique autologic.core.prompts.PromptTemplates)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#autologic.routers.models.verify_provider_connection">verify_provider_connection() (dans le module autologic.routers.models)</a>
+</li>
       <li><a href="index.html#autologic.core.provider_factory.ProviderType.VLLM">VLLM (attribut autologic.core.provider_factory.ProviderType)</a>
 </li>
       <li><a href="index.html#autologic.core.llm_provider.VLlmLLM">VLlmLLM (classe dans autologic.core.llm_provider)</a>

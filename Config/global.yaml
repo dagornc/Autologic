@@ -8,7 +8,7 @@ llm:
   active_model: gpt-4-turbo
   temperature: 0.5
   max_tokens: 2048
-  timeout: 120
+  timeout: 60
   max_retries: 3
   resilience:
     rate_limit: 15.0
@@ -66,7 +66,8 @@ llm:
       - google/gemma-7b
       - microsoft/Phi-3-mini-4k-instruct
   top_p: 1.0
-  audit_max_retries: 3
+  audit_timeout: 60
+  audit_max_retries: 5
   free_only: true
   rate_limit: 15.0
   retry_enabled: true

@@ -1,10 +1,14 @@
 /**
- * Composant d'affichage de l'aide (README.md) - Premium Layout
+ * Help Display Component — Apple HIG 2025 Multilingual
+ *
+ * Renders README.md documentation with Apple typography hierarchy.
+ * 40px h1, 17px body, 13px caption. Frosted glass panel with accent bar.
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Book, AlertCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -20,6 +24,7 @@ const variants = {
 };
 
 export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
+    const { t } = useTranslation();
     const [content, setContent] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -32,18 +37,18 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
 
             if (!response.ok) {
                 await response.text();
-                throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                throw new Error(`${t('common.error')} ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             setContent(data.content);
         } catch (err) {
-            console.error("Erreur fetchReadme:", err);
-            setError(err instanceof Error ? err.message : "Impossible de charger le fichier d'aide.");
+            console.error("Error fetchReadme:", err);
+            setError(err instanceof Error ? err.message : t('help.error'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (isVisible && !content) {
@@ -60,20 +65,22 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
             animate="visible"
             className="space-y-8 pb-32 h-full overflow-y-auto custom-scrollbar pr-4 py-4"
         >
+            {/* Header — Apple HIG */}
             <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                     <Book className="w-5 h-5 text-indigo-400" />
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                        Documentation
+                        {t('help.title')}
                     </h2>
-                    <p className="text-muted-foreground text-sm">
-                        Guide d'utilisation et informations sur le projet
+                    <p className="text-muted-foreground text-[13px] tracking-wide">
+                        {t('help.subtitle')}
                     </p>
                 </div>
             </div>
 
+            {/* Content Card */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -86,15 +93,24 @@ export const HelpDisplay: React.FC<HelpDisplayProps> = ({ isVisible }) => {
                     {loading ? (
                         <div className="flex items-center justify-center p-12 text-muted-foreground">
                             <Loader2 className="w-8 h-8 animate-spin" />
-                            <span className="ml-3">Chargement de la documentation...</span>
+                            <span className="ml-3 text-[15px]">{t('help.loading')}</span>
                         </div>
                     ) : error ? (
                         <div className="flex items-center justify-center p-12 text-red-400">
                             <AlertCircle className="w-6 h-6 mr-2" />
-                            {error}
+                            <span className="text-[15px]">{error}</span>
                         </div>
                     ) : (
-                        <article className="prose prose-invert prose-indigo max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-p:text-slate-300 prose-li:text-slate-300 prose-strong:text-white prose-code:text-indigo-300 prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
+                        <article className="prose prose-invert prose-indigo max-w-none
+                            prose-headings:font-bold prose-headings:tracking-tight
+                            prose-h1:text-[32px] prose-h1:leading-tight
+                            prose-h2:text-[24px] prose-h2:mt-10 prose-h2:mb-4
+                            prose-h3:text-[20px]
+                            prose-p:text-[15px] prose-p:text-slate-300 prose-p:leading-relaxed
+                            prose-li:text-[15px] prose-li:text-slate-300
+                            prose-strong:text-white
+                            prose-code:text-indigo-300 prose-code:text-[13px] prose-code:font-mono
+                            prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeRaw]}

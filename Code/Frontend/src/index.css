@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  /* --- Apple HIG 2025 Design Token System --- */
+
+  /* Semantic Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -21,52 +24,51 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* Radius System */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
-  /* --- Liquid Glass Token System v1.0 --- */
-
-  /* Semantic Palettes */
-  --color-liquid-ice: #e0f2fe;
-  /* Polar Day Base */
-  --color-liquid-night: #020617;
-  /* Aurora Night Base */
-
-  --color-neon-orange: #ff9f43;
-  --color-neon-magenta: #ff006e;
+  /* --- Apple HIG Color Tokens --- */
+  --color-apple-blue: #007AFF;
+  --color-apple-green: #34C759;
+  --color-apple-orange: #FF9500;
+  --color-apple-red: #FF3B30;
+  --color-apple-yellow: #FFCC00;
+  --color-apple-purple: #AF52DE;
+  --color-apple-teal: #5AC8FA;
+  --color-apple-gray: #8E8E93;
+  --color-apple-gray2: #636366;
+  --color-apple-gray3: #48484A;
+  --color-apple-gray4: #3A3A3C;
+  --color-apple-gray5: #2C2C2E;
+  --color-apple-gray6: #1C1C1E;
 
   /* Glass Colors */
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
   --color-glass-highlight: var(--glass-highlight);
 
-  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  /* Shadows — Soft Apple style */
+  --shadow-apple-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-apple-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-apple-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-apple-xl: 0 24px 60px rgba(0, 0, 0, 0.16), 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 25px 60px -12px rgba(0, 0, 0, 0.35);
 
-  /* Shadows */
-  --shadow-glass-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  --shadow-glass-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  --shadow-glass-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
-  --shadow-neon-cyan: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.2);
-  --shadow-neon-magenta: 0 0 10px rgba(255, 0, 110, 0.5), 0 0 20px rgba(255, 0, 110, 0.2);
+  /* Legacy compat shadows (used by glass-panel) */
+  --shadow-glass-sm: var(--shadow-apple-sm);
+  --shadow-glass-md: var(--shadow-apple-md);
+  --shadow-glass-lg: var(--shadow-apple-lg);
+  --shadow-neon-cyan: 0 0 6px rgba(0, 122, 255, 0.3);
+  --shadow-neon-magenta: 0 0 6px rgba(175, 82, 222, 0.3);
 
   /* Animations */
-  --animate-aurora: aurora 20s linear infinite;
   --animate-float: float 6s ease-in-out infinite;
-  --animate-liquid-pulse: liquid-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-liquid-pulse: subtle-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* --- Animations --- */
-@keyframes aurora {
-  0% {
-    background-position: 50% 50%, 50% 50%;
-  }
-
-  100% {
-    background-position: 350% 50%, 350% 50%;
-  }
-}
-
 @keyframes float {
 
   0%,
@@ -75,167 +77,269 @@
   }
 
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-6px);
   }
 }
 
-@keyframes liquid-pulse {
+@keyframes subtle-pulse {
 
   0%,
   100% {
     opacity: 1;
-    transform: scale(1);
   }
 
   50% {
-    opacity: 0.8;
-    transform: scale(1.02);
+    opacity: 0.7;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @layer base {
   :root {
-    /* --- Mode: "Aurore Liquide" (Default/Dark) --- */
-    --background: oklch(3% 0.01 270);
-    /* #050508 - Un peu plus profond */
-    --foreground: oklch(95% 0.01 270);
-    /* Plus blanc, moins gris */
+    /* --- Apple Dark Mode (Default) --- */
+    --background: #1C1C1E;
+    --foreground: #F5F5F7;
 
-    --card: oklch(10% 0.02 270 / 0.7);
-    --card-foreground: oklch(98% 0.005 270);
+    --card: #2C2C2E;
+    --card-foreground: #F5F5F7;
 
-    --popover: oklch(5% 0.01 270);
-    --popover-foreground: oklch(98% 0.005 270);
+    --popover: #2C2C2E;
+    --popover-foreground: #F5F5F7;
 
-    --primary: oklch(75% 0.18 195);
-    --primary-foreground: oklch(0% 0 0);
+    --primary: #007AFF;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: oklch(20% 0.02 270);
-    --secondary-foreground: oklch(98% 0.005 270);
+    --secondary: #2C2C2E;
+    --secondary-foreground: #F5F5F7;
 
-    --muted: oklch(20% 0.02 270);
-    --muted-foreground: oklch(80% 0.01 270);
-    /* Plus clair pour le texte secondaire en mode sombre */
+    --muted: #3A3A3C;
+    --muted-foreground: #8E8E93;
 
-    --accent: oklch(70% 0.20 330);
-    --accent-foreground: oklch(98% 0.005 270);
+    --accent: #007AFF;
+    --accent-foreground: #FFFFFF;
 
-    --destructive: oklch(65% 0.24 25);
-    --destructive-foreground: oklch(98% 0.005 0);
+    --destructive: #FF3B30;
+    --destructive-foreground: #FFFFFF;
 
-    --border: oklch(20% 0.02 270);
-    --input: oklch(20% 0.02 270);
-    --ring: oklch(75% 0.18 195);
+    --border: rgba(255, 255, 255, 0.1);
+    --input: rgba(255, 255, 255, 0.08);
+    --ring: #007AFF;
 
     --radius: 1rem;
 
-    /* System v3.0 Identifiers */
-    --color-general: oklch(90% 0.005 270);
-    /* Silver/Neutral plus clair */
-    --color-strategic: oklch(75% 0.18 195);
-    /* Deep Cyan */
-    --color-strategic-rgb: 0, 240, 255;
-    --color-tactical: oklch(72% 0.19 150);
-    /* Saturated Emerald */
-    --color-tactical-rgb: 16, 185, 129;
-    --color-audit: oklch(80% 0.16 85);
-    /* Golden Amber */
-    --color-audit-rgb: 245, 158, 11;
+    /* System v3.0 Identifiers (Apple-mapped) */
+    --color-general: #8E8E93;
+    --color-strategic: #007AFF;
+    --color-strategic-rgb: 0, 122, 255;
+    --color-tactical: #34C759;
+    --color-tactical-rgb: 52, 199, 89;
+    --color-audit: #FF9500;
+    --color-audit-rgb: 255, 149, 0;
 
-    /* Glass Stratas (Dark) */
-    --glass-1-bg: oklch(100% 0 0 / 0.03);
-    --glass-1-border: oklch(100% 0 0 / 0.06);
-    --glass-1-blur: 8px;
+    /* Glass Stratas (Apple Dark) */
+    --glass-bg: rgba(44, 44, 46, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.04);
 
-    --glass-2-bg: oklch(100% 0 0 / 0.08);
-    --glass-2-border: oklch(100% 0 0 / 0.12);
-    --glass-2-blur: 16px;
+    --glass-1-bg: rgba(255, 255, 255, 0.04);
+    --glass-1-border: rgba(255, 255, 255, 0.06);
+    --glass-1-blur: 12px;
 
-    --glass-3-bg: oklch(100% 0 0 / 0.15);
-    --glass-3-border: linear-gradient(135deg, oklch(100% 0 0 / 0.3) 0%, oklch(100% 0 0 / 0) 100%);
+    --glass-2-bg: rgba(255, 255, 255, 0.08);
+    --glass-2-border: rgba(255, 255, 255, 0.10);
+    --glass-2-blur: 20px;
+
+    --glass-3-bg: rgba(255, 255, 255, 0.12);
+    --glass-3-border: rgba(255, 255, 255, 0.14);
     --glass-3-blur: 32px;
+
+    /* Legacy neon compat (mapped to Apple palette) */
+    --color-neon-cyan: #007AFF;
+    --color-neon-magenta: #AF52DE;
+    --color-neon-emerald: #34C759;
+    --color-neon-orange: #FF9500;
+    --color-neon-violet: #AF52DE;
   }
 
   .light {
-    /* --- Mode: "Jour Polaire" (Light) --- */
-    --background: oklch(98% 0.005 80);
-    /* #f8f8fa - Plus clair */
-    --foreground: oklch(20% 0.02 270);
-    /* Plus foncé (plus noir) */
+    /* --- Apple Light Mode --- */
+    --background: #F2F2F7;
+    --foreground: #1C1C1E;
 
-    --card: oklch(100% 0 0 / 0.85);
-    --card-foreground: oklch(10% 0.02 270);
+    --card: #FFFFFF;
+    --card-foreground: #1C1C1E;
 
-    --popover: oklch(98% 0.005 80);
-    --popover-foreground: oklch(10% 0.02 270);
+    --popover: #FFFFFF;
+    --popover-foreground: #1C1C1E;
 
-    --primary: oklch(45% 0.18 195);
-    /* Plus saturé et profond */
-    --primary-foreground: oklch(100% 0 0);
+    --primary: #007AFF;
+    --primary-foreground: #FFFFFF;
 
-    --secondary: oklch(94% 0.01 270);
-    --secondary-foreground: oklch(10% 0.02 270);
+    --secondary: #F2F2F7;
+    --secondary-foreground: #1C1C1E;
 
-    --muted: oklch(94% 0.01 270);
-    --muted-foreground: oklch(35% 0.02 270);
-    /* Plus foncé pour le texte secondaire en mode clair */
+    --muted: #E5E5EA;
+    --muted-foreground: #6C6C70;
 
-    --accent: oklch(45% 0.20 330);
-    --accent-foreground: oklch(10% 0.02 270);
+    --accent: #007AFF;
+    --accent-foreground: #FFFFFF;
 
-    --destructive: oklch(50% 0.20 25);
-    --destructive-foreground: oklch(100% 0 0);
+    --destructive: #FF3B30;
+    --destructive-foreground: #FFFFFF;
 
-    --border: oklch(0% 0 0 / 0.15);
-    --input: oklch(0% 0 0 / 0.10);
-    --ring: oklch(45% 0.18 195);
+    --border: rgba(0, 0, 0, 0.1);
+    --input: rgba(0, 0, 0, 0.06);
+    --ring: #007AFF;
 
-    /* System v3.0 Identifiers (Darker for Light Mode) */
-    --color-general: oklch(25% 0.02 270);
-    --color-strategic: oklch(45% 0.18 195);
-    --color-tactical: oklch(40% 0.18 150);
-    --color-audit: oklch(45% 0.16 85);
+    /* System v3.0 Identifiers (Light) */
+    --color-general: #6C6C70;
+    --color-strategic: #007AFF;
+    --color-tactical: #248A3D;
+    --color-audit: #C93400;
 
-    /* Glass Stratas (Light - Frozen Paper) */
-    --glass-1-bg: oklch(100% 0 0 / 0.7);
-    --glass-1-border: oklch(0% 0 0 / 0.08);
-    --glass-1-blur: 8px;
+    /* Glass Stratas (Apple Light) */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-highlight: rgba(255, 255, 255, 0.8);
 
-    --glass-2-bg: oklch(100% 0 0 / 0.85);
-    --glass-2-border: oklch(0% 0 0 / 0.12);
-    --glass-2-blur: 16px;
+    --glass-1-bg: rgba(255, 255, 255, 0.72);
+    --glass-1-border: rgba(0, 0, 0, 0.06);
+    --glass-1-blur: 12px;
 
-    --glass-3-bg: oklch(100% 0 0 / 0.95);
-    --glass-3-border: oklch(0% 0 0 / 0.15);
+    --glass-2-bg: rgba(255, 255, 255, 0.85);
+    --glass-2-border: rgba(0, 0, 0, 0.08);
+    --glass-2-blur: 20px;
+
+    --glass-3-bg: rgba(255, 255, 255, 0.95);
+    --glass-3-border: rgba(0, 0, 0, 0.10);
     --glass-3-blur: 24px;
+
+    /* Legacy neon compat (Apple Light) */
+    --color-neon-cyan: #007AFF;
+    --color-neon-magenta: #AF52DE;
+    --color-neon-emerald: #248A3D;
+    --color-neon-orange: #C93400;
+    --color-neon-violet: #AF52DE;
   }
 
   body {
-    @apply bg-background text-foreground tracking-tight transition-colors duration-700 ease-in-out;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground tracking-tight transition-colors duration-500 ease-in-out;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 }
 
 @layer components {
-  /* --- Utility Classes for Liquid Glass --- */
 
+  /* --- Apple Frosted Glass Panel --- */
   .glass-panel {
-    @apply bg-glass-bg backdrop-blur-xl border border-glass-border shadow-glass-sm transition-all duration-300;
-    /* Simulated inner light */
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 0 var(--glass-highlight);
+    @apply backdrop-blur-xl border shadow-apple-sm transition-all duration-300;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
   }
 
   .glass-panel:hover {
-    @apply bg-glass-bg/80 border-glass-highlight;
-    box-shadow:
-      0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
+    @apply shadow-apple-md;
+    border-color: var(--glass-highlight);
   }
 
+  /* --- Apple Text Glow (subtle) --- */
   .text-glow {
-    text-shadow: 0 0 20px currentColor;
+    text-shadow: 0 0 12px rgba(0, 122, 255, 0.2);
+  }
+
+  /* --- Apple Grouped Card --- */
+  .apple-card {
+    @apply bg-card rounded-2xl border border-border shadow-apple-sm transition-all duration-300;
+  }
+
+  .apple-card:hover {
+    @apply shadow-apple-md;
+  }
+
+  /* --- Apple Section Header --- */
+  .apple-section-header {
+    @apply text-[13px] font-semibold text-muted-foreground uppercase tracking-wider;
+  }
+
+  /* --- Custom Scrollbar (Apple-style) --- */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    border-radius: 3px;
+    opacity: 0.3;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    opacity: 0.6;
+  }
+
+  /* Micro-animation utilities — P1 improvement #6 */
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

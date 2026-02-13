@@ -1,7 +1,15 @@
+/**
+ * Audit Agent Panel — Apple HIG + i18n
+ *
+ * Critic agent configuration with sync-to-strategic toggle,
+ * decorative orange orb illustration, and quality controls.
+ */
+
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import GlassSurface from '../shared/GlassSurface';
 import LiquidToggle from '../shared/LiquidToggle';
-import { ShieldCheck, Link, Zap } from 'lucide-react';
+import { ShieldCheck, Link } from 'lucide-react';
 import { GlassSlider } from '../../ui/GlassSlider';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,154 +25,144 @@ interface AuditPanelWithModelsProps {
 }
 
 const AuditPanel: React.FC<AuditPanelWithModelsProps> = ({ config, onChange, modelData, loading }) => {
+    const { t } = useTranslation();
     const isSynced = config.useAuditSameAsRoot;
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-[var(--color-audit)]">
+        <div className="space-y-8 pb-4">
             {/* Sync Control */}
-            <GlassSurface strata={2} className="p-4 border-[var(--color-audit)]/30">
+            <GlassSurface strata={1} className="px-4">
                 <LiquidToggle
                     enabled={isSynced}
                     onChange={(v) => onChange('useAuditSameAsRoot', v)}
-                    label="Use Strategic Configuration"
-                    description="Use the main brain for validation (recommended for consistency)."
+                    label={t('settings.audit.syncToggle')}
+                    description={t('settings.audit.syncToggleDesc')}
                     colorIdentity="audit"
                     isSyncToggle={true}
                 />
             </GlassSurface>
 
             <div className="relative">
-                {/* Visual "Pulse" Badge when synced */}
+                {/* Linked badge overlay */}
                 <AnimatePresence>
                     {isSynced && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
+                            initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
                             className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
                         >
-                            <div className="bg-[var(--glass-3-bg)] backdrop-blur-md border border-[var(--color-audit)]/50 px-8 py-4 rounded-full shadow-[0_0_40px_rgba(var(--color-audit-rgb),0.3)] flex items-center gap-3">
-                                <Link size={18} className="text-[var(--color-audit)] animate-pulse" />
-                                <span className="text-sm font-semibold text-foreground">Linked to Strategic Brain</span>
+                            <div className="bg-card/95 backdrop-blur-md border border-border px-6 py-3 rounded-2xl shadow-apple-md flex items-center gap-2.5">
+                                <Link size={16} className="text-[#FF9500]" />
+                                <span className="text-[14px] font-medium text-foreground">{t('settings.audit.linkedToStrategic')}</span>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Main Content with Blur/Fade effect */}
+                {/* Main content — fades when synced */}
                 <motion.div
                     animate={{
-                        opacity: isSynced ? 0.3 : 1,
-                        filter: isSynced ? 'blur(4px)' : 'blur(0px)',
-                        scale: isSynced ? 0.98 : 1
+                        opacity: isSynced ? 0.25 : 1,
+                        filter: isSynced ? 'blur(3px)' : 'blur(0px)',
                     }}
-                    transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                    className={cn("space-y-6 transition-all", isSynced && "pointer-events-none")}
+                    transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                    className={cn("space-y-8 transition-all", isSynced && "pointer-events-none")}
                 >
-                    <GlassSurface strata={3} className="p-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                            <ShieldCheck size={120} />
+                    {/* Hero Card */}
+                    <GlassSurface strata={2} className="p-6 sm:p-8 relative overflow-hidden">
+                        <div className="absolute -top-8 -right-8 w-[160px] h-[160px] opacity-25 pointer-events-none">
+                            <img src="/audit-orb.png" alt="" className="w-full h-full object-contain" aria-hidden="true" />
                         </div>
 
                         <div className="relative z-10 space-y-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-[var(--color-audit)]/10 rounded-xl border border-[var(--color-audit)]/20 shadow-[0_0_20px_var(--color-audit)/10]">
-                                    <ShieldCheck size={28} className="text-[var(--color-audit)]" />
+                                <div className="w-12 h-12 rounded-2xl bg-[#FF9500]/10 border border-[#FF9500]/15 flex items-center justify-center">
+                                    <ShieldCheck size={24} className="text-[#FF9500]" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-foreground leading-tight tracking-tight">Audit Agent (Critic)</h2>
-                                    <p className="text-sm text-muted-foreground mt-1">Validates the output of the Tactical agent.</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="md:col-span-2">
-                                    <ModelSelector
-                                        provider={config.auditProvider || ''}
-                                        model={config.auditModel || ''}
-                                        freeModelsOnly={config.auditFreeModelsOnly}
-                                        onProviderChange={(val) => onChange('auditProvider', val)}
-                                        onModelChange={(val) => onChange('model', val)}
-                                        onFreeModelsOnlyChange={(val) => onChange('auditFreeModelsOnly', val)}
-                                        modelData={modelData}
-                                        loading={loading}
-                                        labelPrefix="Audit"
-                                        disabled={isSynced}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Max Audit Retries</label>
-                                    <GlassSurface strata={1} className="p-0.5">
-                                        <input
-                                            type="number"
-                                            className="w-full bg-transparent border-none px-4 py-2.5 text-sm focus:outline-none placeholder-muted-foreground/50"
-                                            value={config.auditMaxRetries || 3}
-                                            onChange={(e) => onChange('auditMaxRetries', parseInt(e.target.value))}
-                                            disabled={isSynced}
-                                        />
-                                    </GlassSurface>
+                                    <h2 className="text-lg font-semibold text-foreground tracking-tight">{t('settings.audit.agentTitle')}</h2>
+                                    <p className="text-[13px] text-muted-foreground mt-0.5">{t('settings.audit.agentDesc')}</p>
                                 </div>
                             </div>
 
                             <div className="pt-2">
-                                <GlassSlider
-                                    label="Creativity (Temperature)"
-                                    value={config.auditTemperature ?? 0.3}
-                                    min={0} max={1} step={0.1}
-                                    colorIdentity="audit"
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('auditTemperature', parseFloat(e.target.value))}
+                                <ModelSelector
+                                    provider={config.auditProvider || ''}
+                                    model={config.auditModel || ''}
+                                    freeModelsOnly={config.auditFreeModelsOnly}
+                                    onProviderChange={(val) => onChange('auditProvider', val)}
+                                    onModelChange={(val) => onChange('auditModel', val)}
+                                    onFreeModelsOnlyChange={(val) => onChange('auditFreeModelsOnly', val)}
+                                    modelData={modelData}
+                                    loading={loading}
+                                    labelPrefix="Audit"
                                     disabled={isSynced}
                                 />
                             </div>
+
+                            {/* Max retries */}
+                            <div className="space-y-1.5">
+                                <label className="text-[13px] font-medium text-muted-foreground">{t('settings.audit.maxRetries')}</label>
+                                <input
+                                    type="number"
+                                    className={cn(
+                                        "w-full sm:w-[120px] bg-background border border-border rounded-xl px-3.5 py-2.5 text-[15px]",
+                                        "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                                        "transition-all duration-200",
+                                        isSynced && "opacity-40 cursor-not-allowed"
+                                    )}
+                                    value={config.auditMaxRetries || 3}
+                                    onChange={(e) => onChange('auditMaxRetries', parseInt(e.target.value))}
+                                    disabled={isSynced}
+                                />
+                            </div>
+
+                            <GlassSlider
+                                label={t('settings.audit.temperature')}
+                                value={config.auditTemperature ?? 0.3}
+                                min={0} max={1} step={0.1}
+                                colorIdentity="audit"
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('auditTemperature', parseFloat(e.target.value))}
+                                disabled={isSynced}
+                            />
                         </div>
                     </GlassSurface>
-                </motion.div>
 
-                {/* Resilience Section */}
-                <motion.div
-                    animate={{
-                        opacity: isSynced ? 0.3 : 1,
-                        filter: isSynced ? 'blur(4px)' : 'blur(0px)',
-                    }}
-                    transition={{ duration: 0.6 }}
-                    className={cn("mt-8 space-y-4 transition-all", isSynced && "pointer-events-none")}
-                >
-                    <div className="px-1">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-audit)] mb-4 flex items-center gap-2">
-                            <Zap size={14} className="animate-pulse" />
-                            Resilience & Reliability
+                    {/* Resilience */}
+                    <section>
+                        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-1">
+                            {t('settings.audit.resilience')}
                         </h3>
-                    </div>
-                    <GlassSurface strata={2} className="p-6 space-y-4 divide-y divide-[var(--border)] border-[var(--color-audit)]/20">
-                        <div className="space-y-4 pb-4">
+                        <GlassSurface strata={1} className="px-4 divide-y divide-border">
                             <LiquidToggle
                                 enabled={config?.auditRetryEnabled ?? true}
                                 onChange={(val) => onChange('auditRetryEnabled', val)}
-                                label="Auto-Retries"
-                                description="Automatically retry failed LLM calls."
+                                label={t('settings.audit.autoRetries')}
+                                description={t('settings.audit.autoRetriesDesc')}
                                 colorIdentity="audit"
                                 disabled={isSynced}
                             />
                             <LiquidToggle
                                 enabled={config?.auditFallbackEnabled ?? true}
                                 onChange={(val) => onChange('auditFallbackEnabled', val)}
-                                label="Smart Fallback"
-                                description="Fallback to alternative models if overloaded."
+                                label={t('settings.audit.smartFallback')}
+                                description={t('settings.audit.smartFallbackDesc')}
                                 colorIdentity="audit"
                                 disabled={isSynced}
                             />
-                        </div>
-                        <div className="pt-4">
-                            <GlassSlider
-                                label="Rate Limit (Req/min)"
-                                value={config?.auditRateLimit ?? 15}
-                                min={1} max={120} step={1}
-                                onChange={(e) => onChange('auditRateLimit', parseInt(e.target.value))}
-                                colorIdentity="audit"
-                                disabled={isSynced}
-                            />
-                        </div>
-                    </GlassSurface>
+                            <div className="py-1">
+                                <GlassSlider
+                                    label={t('settings.audit.rateLimit')}
+                                    value={config?.auditRateLimit ?? 15}
+                                    min={1} max={120} step={1}
+                                    onChange={(e) => onChange('auditRateLimit', parseInt(e.target.value))}
+                                    colorIdentity="audit"
+                                    disabled={isSynced}
+                                />
+                            </div>
+                        </GlassSurface>
+                    </section>
                 </motion.div>
             </div>
         </div>

@@ -1,0 +1,597 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="fr" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>autologic.core.prompts &mdash; AutoLogic Documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=6ad53a97"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/translations.js?v=e6b791cb"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Recherche" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            AutoLogic
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Rechercher docs" aria-label="Rechercher docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">AutoLogic</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Code du module</a></li>
+      <li class="breadcrumb-item active">autologic.core.prompts</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Code source de autologic.core.prompts</h1><div class="highlight"><pre>
+<span></span><span class="c1"># autologic/core/prompts.py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Templates de prompts pour les différentes phases du cycle Self-Discover.</span>
+<span class="sd">Centralise tous les prompts utilisés par le moteur AutoLogic.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="PromptTemplates">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PromptTemplates</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection de templates de prompts pour le cycle Self-Discover.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PromptTemplates.analyze_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.analyze_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_prompt</span><span class="p">(</span><span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 0: ANALYSE INITIALE</span>
+<span class="sd">        Évalue la tâche, identifie les contraintes et les pré-requis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un analyste expert. Analyse la tâche suivante pour identifier :</span>
+<span class="s2">1. L&#39;objectif principal</span>
+<span class="s2">2. Les contraintes implicites et explicites</span>
+<span class="s2">3. Les connaissances nécessaires</span>
+<span class="s2">4. Les pièges potentiels (ex: hallucinations sur &#39;Antigravity&#39;)</span>
+
+<span class="s2">TÂCHE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">RETOURNE UN JSON STRICT :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;analysis&quot;: &quot;Analyse détaillée...&quot;,</span>
+<span class="s2">  &quot;constraints&quot;: [&quot;c1&quot;, &quot;c2&quot;],</span>
+<span class="s2">  &quot;domain&quot;: &quot;Domaine technique&quot;,</span>
+<span class="s2">  &quot;priority&quot;: &quot;low|medium|high&quot;</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.selection_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.selection_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">selection_prompt</span><span class="p">(</span><span class="n">modules_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Génère le prompt pour la phase de sélection des modules.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            modules_json: Les modules disponibles en format JSON</span>
+<span class="sd">            task: La tâche à résoudre</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Le prompt formaté pour la sélection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un expert en métacognition et stratégies de raisonnement.</span>
+
+<span class="s2">BIBLIOTHÈQUE DE MODULES DE RAISONNEMENT (106 modules disponibles) :</span>
+<span class="si">{</span><span class="n">modules_json</span><span class="si">}</span>
+
+<span class="s2">TÂCHE À RÉSOUDRE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS :</span>
+<span class="s2">Analyse cette tâche et sélectionne UNIQUEMENT les modules de raisonnement</span>
+<span class="s2">qui sont pertinents et nécessaires pour la résoudre efficacement.</span>
+
+<span class="s2">Critères de sélection :</span>
+<span class="s2">- Pertinence : Le module apporte-t-il une valeur ajoutée réelle ?</span>
+<span class="s2">- Complémentarité : Les modules sélectionnés se combinent-ils bien ?</span>
+<span class="s2">- Parcimonie : Éviter la sur-ingénierie (max 7 modules recommandé)</span>
+
+<span class="s2">RETOURNE UN JSON STRICT (pas de markdown) :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;selected_modules&quot;: [&quot;id1&quot;, &quot;id2&quot;, &quot;id3&quot;],</span>
+<span class="s2">  &quot;reasoning&quot;: &quot;Explication concise du choix stratégique&quot;</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.adaptation_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.adaptation_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adaptation_prompt</span><span class="p">(</span><span class="n">selected_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Génère le prompt pour la phase d&#39;adaptation des modules.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            selected_json: Les modules sélectionnés en format JSON</span>
+<span class="sd">            task: La tâche à résoudre</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Le prompt formaté pour l&#39;adaptation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un expert en adaptation de stratégies cognitives.</span>
+
+<span class="s2">TÂCHE SPÉCIFIQUE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">MODULES SÉLECTIONNÉS (actuellement génériques) :</span>
+<span class="si">{</span><span class="n">selected_json</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS :</span>
+<span class="s2">Réécris et affine chaque module pour qu&#39;il soit SPÉCIFIQUEMENT adapté</span>
+<span class="s2">à cette tâche précise. Transforme-les de génériques à contextuels.</span>
+
+<span class="s2">Exemple de transformation :</span>
+<span class="s2">- Générique : &quot;Simplifier le problème&quot;</span>
+<span class="s2">- Adapté pour &quot;Résoudre équation du 2nd degré&quot; :</span>
+<span class="s2">  &quot;Isoler d&#39;abord le terme en x², puis factoriser ou utiliser le discriminant&quot;</span>
+
+<span class="s2">Pour chaque module :</span>
+<span class="s2">1. Réécrire la description de manière contextualisée</span>
+<span class="s2">2. Lister 2-3 actions spécifiques à effectuer</span>
+
+<span class="s2">RETOURNE UN JSON STRICT :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;adapted_modules&quot;: [</span>
+<span class="s2">    </span><span class="se">{{</span>
+<span class="s2">      &quot;id&quot;: &quot;simplify&quot;,</span>
+<span class="s2">      &quot;adapted_description&quot;: &quot;Description contextualisée et précise...&quot;,</span>
+<span class="s2">      &quot;specific_actions&quot;: [</span>
+<span class="s2">        &quot;Action concrète 1&quot;,</span>
+<span class="s2">        &quot;Action concrète 2&quot;</span>
+<span class="s2">      ]</span>
+<span class="s2">    </span><span class="se">}}</span><span class="s2">,</span>
+<span class="s2">    ...</span>
+<span class="s2">  ]</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.structuration_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.structuration_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">structuration_prompt</span><span class="p">(</span><span class="n">adapted_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Génère le prompt pour la phase de structuration du plan.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            adapted_json: Les modules adaptés en format JSON</span>
+<span class="sd">            task: La tâche à résoudre</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Le prompt formaté pour la structuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un expert en planification stratégique et ordonnancement de tâches.</span>
+
+<span class="s2">TÂCHE À RÉSOUDRE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">MODULES ADAPTÉS DISPONIBLES :</span>
+<span class="si">{</span><span class="n">adapted_json</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS :</span>
+<span class="s2">Assemble ces modules en un PLAN DE RAISONNEMENT cohérent, ordonné et</span>
+<span class="s2">exécutable. Chaque étape doit être :</span>
+<span class="s2">- Claire et actionnable</span>
+<span class="s2">- Ordonnée logiquement (dépendances respectées)</span>
+<span class="s2">- Associée à un output attendu</span>
+
+<span class="s2">Principes de structuration :</span>
+<span class="s2">- Commencer par les fondations (simplification, cadrage)</span>
+<span class="s2">- Progresser vers l&#39;analyse approfondie</span>
+<span class="s2">- Terminer par validation et synthèse</span>
+
+<span class="s2">RETOURNE UN JSON STRICT. TA RÉPONSE DOIT ÊTRE UNIQUEMENT UN OBJET JSON.</span>
+<span class="s2">PAS DE COMMENTAIRES, PAS DE TEXTE D&#39;ACCOMPAGNEMENT, PAS DE BLOCS MARKDOWN.</span>
+
+<span class="s2">FORMAT ATTENDU :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;reasoning_plan&quot;: </span><span class="se">{{</span>
+<span class="s2">    &quot;steps&quot;: [</span>
+<span class="s2">      </span><span class="se">{{</span>
+<span class="s2">        &quot;step_number&quot;: 1,</span>
+<span class="s2">        &quot;module_id&quot;: &quot;ID_DU_MODULE&quot;,</span>
+<span class="s2">        &quot;module_name&quot;: &quot;NOM_DU_MODULE&quot;,</span>
+<span class="s2">        &quot;action&quot;: &quot;Description précise de l&#39;action&quot;,</span>
+<span class="s2">        &quot;expected_output&quot;: &quot;Résultat attendu&quot;</span>
+<span class="s2">      </span><span class="se">}}</span>
+<span class="s2">    ],</span>
+<span class="s2">    &quot;estimated_complexity&quot;: &quot;low|medium|high&quot;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.verify_plan_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.verify_plan_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify_plan_prompt</span><span class="p">(</span><span class="n">plan_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 4: VÉRIFICATION DU PLAN</span>
+<span class="sd">        Valide la cohérence logique du plan avant exécution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un expert en audit de processus.</span>
+<span class="s2">Vérifie si ce plan de raisonnement est complet et logique pour résoudre la tâche.</span>
+
+<span class="s2">TÂCHE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">PLAN PROPOSÉ :</span>
+<span class="si">{</span><span class="n">plan_json</span><span class="si">}</span>
+
+<span class="s2">Vérifie :</span>
+<span class="s2">- Toutes les contraintes de la tâche sont-elles adressées ?</span>
+<span class="s2">- L&#39;ordre des étapes est-il optimal ?</span>
+<span class="s2">- Manque-t-il une étape cruciale ?</span>
+
+<span class="s2">RETOURNE UN JSON STRICT :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;is_valid&quot;: true|false,</span>
+<span class="s2">  &quot;feedback&quot;: &quot;Feedback si invalide, sinon vide&quot;,</span>
+<span class="s2">  &quot;suggestions&quot;: [&quot;s1&quot;, &quot;s2&quot;]</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.restructure_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.restructure_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">restructure_prompt</span><span class="p">(</span><span class="n">old_plan_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">feedback</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 3b: RE-STRUCTURATION (Backtrack)</span>
+<span class="sd">        Corrige le plan rejeté par le Critique.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un expert en planification stratégique.</span>
+<span class="s2">ALERTE : Le plan précédent a été rejeté par l&#39;Agent Critique.</span>
+
+<span class="s2">TÂCHE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">ANCIEN PLAN (REJETÉ) :</span>
+<span class="si">{</span><span class="n">old_plan_json</span><span class="si">}</span>
+
+<span class="s2">FEEDBACK DU CRITIQUE (À INTÉGRER IMPÉRATIVEMENT) :</span>
+<span class="s2">&quot;</span><span class="si">{</span><span class="n">feedback</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="s2">INSTRUCTIONS :</span>
+<span class="s2">Génère une NOUVELLE version du plan de raisonnement qui corrige ces défauts.</span>
+<span class="s2">Sois précis et adresse directement les points soulevés dans le feedback.</span>
+<span class="s2">Conserve le format strict attendu pour un plan de raisonnement.</span>
+
+<span class="s2">RETOURNE UN JSON STRICT (objet &#39;reasoning_plan&#39;) :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;reasoning_plan&quot;: </span><span class="se">{{</span>
+<span class="s2">    &quot;steps&quot;: [</span>
+<span class="s2">      </span><span class="se">{{</span>
+<span class="s2">        &quot;step_number&quot;: 1,</span>
+<span class="s2">        &quot;module_id&quot;: &quot;...&quot;,</span>
+<span class="s2">        &quot;module_name&quot;: &quot;...&quot;,</span>
+<span class="s2">        &quot;action&quot;: &quot;...&quot;,</span>
+<span class="s2">        &quot;expected_output&quot;: &quot;...&quot;</span>
+<span class="s2">      </span><span class="se">}}</span>
+<span class="s2">    ],</span>
+<span class="s2">    &quot;estimated_complexity&quot;: &quot;low|medium|high&quot;</span>
+<span class="s2">  </span><span class="se">}}</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.execution_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.execution_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execution_prompt</span><span class="p">(</span><span class="n">plan_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">previous_feedback</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Génère le prompt pour la phase d&#39;exécution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plan_json: Le plan de raisonnement en format JSON</span>
+<span class="sd">            task: La tâche à résoudre</span>
+<span class="sd">            previous_feedback: Feedback critique d&#39;une tentative précédente (si applicable)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Le prompt formaté pour l&#39;exécution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">base_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un agent d&#39;exécution rigoureux.</span>
+
+<span class="s2">TÂCHE À RÉSOUDRE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">PLAN DE RAISONNEMENT À SUIVRE STRICTEMENT :</span>
+<span class="si">{</span><span class="n">plan_json</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS :</span>
+<span class="s2">Exécute chaque étape du plan globalement pour fournir une réponse finale complète.</span>
+<span class="s2">Structure ta réponse en suivant les étapes du plan.</span>
+
+<span class="s2">Pour chaque étape du plan:</span>
+<span class="s2">1. Rappelle l&#39;étape</span>
+<span class="s2">2. Effectue le raisonnement/action</span>
+<span class="s2">3. Donne le résultat</span>
+
+<span class="s2">Termine par une CONCLUSION FINALE CLAIRE.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">previous_feedback</span><span class="p">:</span>
+            <span class="n">base_prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">ALERTE - TENTATIVE DE CORRECTION :</span>
+<span class="s2">Une tentative précédente a été rejetée par le Critique. Voici le feedback à intégrer IMPÉRATIVEMENT :</span>
+<span class="s2">&quot;</span><span class="si">{</span><span class="n">previous_feedback</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="s2">Corrige ta réponse pour répondre exactement à ce feedback.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">base_prompt</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.synthesis_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.synthesis_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">synthesis_prompt</span><span class="p">(</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">execution_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">analysis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 7: SYNTHÈSE FINALE</span>
+<span class="sd">        Affine et polit la réponse finale pour une qualité premium en tenant compte des contraintes initiales.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">constraints_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">analysis</span> <span class="ow">and</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;constraints&quot;</span><span class="p">):</span>
+            <span class="n">constraints_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">CONTRAINTES À RESPECTER IMPÉRATIVEMENT :</span><span class="se">\n</span><span class="s2">- &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">- &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;constraints&quot;</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un éditeur expert en communication technique.</span>
+<span class="s2">Ta mission est de prendre le résultat brut de l&#39;exécution et de le transformer en une réponse &quot;Premium&quot;, claire et parfaitement structurée.</span>
+
+<span class="s2">TÂCHE INITIALE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+<span class="si">{</span><span class="n">constraints_str</span><span class="si">}</span>
+
+<span class="s2">RÉSULTAT BRUT DE RÉFÉRENCE :</span>
+<span class="si">{</span><span class="n">execution_output</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS DE RÉDACTION :</span>
+<span class="s2">1. **Structure Premium** : Utilise une hiérarchie Markdown claire (Titres, listes, gras).</span>
+<span class="s2">2. **Fidélité &amp; Précision** : Respecte scrupuleusement les contraintes mentionnées ci-dessus.</span>
+<span class="s2">3. **Ton Professionnel** : Adopte un ton expert, concis et utile.</span>
+<span class="s2">4. **Clean-up** : Supprime les répétitions d&#39;étapes de raisonnement internes, ne garde que la substance de la réponse.</span>
+<span class="s2">5. **Conclusion Logic** : Termine par une synthèse actionnable ou un résumé clair.</span>
+
+<span class="s2">RETOURNE LA RÉPONSE FINALE FORMATÉE (Markdown).&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.audit_final_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.audit_final_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">audit_final_prompt</span><span class="p">(</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">final_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">analysis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">previous_context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 7.5: AUDIT FINAL (UNIVERSEL)</span>
+<span class="sd">        Vérifie la suffisance structurelle (90%) et la loi du rendement décroissant.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">constraints_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">analysis</span> <span class="ow">and</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;constraints&quot;</span><span class="p">):</span>
+            <span class="n">constraints_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">- &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">- &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;constraints&quot;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un auditeur système de production (Production Supervisor).</span>
+<span class="s2">Ta mission est d&#39;assurer l&#39;efficacité : &quot;Le mieux est l&#39;ennemi du bien&quot;.</span>
+
+<span class="s2">TÂCHE INITIALE : </span><span class="si">{</span><span class="n">task</span><span class="si">}</span>
+<span class="s2">CONTRAINTES GLOBALES : </span><span class="si">{</span><span class="n">constraints_str</span><span class="si">}</span>
+
+<span class="s2">CONTENU À AUDITER :</span>
+<span class="si">{</span><span class="n">final_output</span><span class="si">}</span>
+
+<span class="s2">RÈGLES D&#39;AUDIT (UNIVERSELLES) :</span>
+<span class="s2">1. Suffisance Structurelle : Si 90% des instructions/contraintes sont respectées, VALIDE.</span>
+<span class="s2">2. Rendement Décroissant : Si les seules améliorations possibles sont mineures (style, ponctuation, synonymes) ou subjectives, INTERDIS LA BOUCLE (Force Success).</span>
+<span class="s2">3. Intégrité : La structure globale prime sur les détails.</span>
+
+<span class="s2">RETOURNE UN JSON STRICT :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;structural_sufficiency_score&quot;: [0-100],</span>
+<span class="s2">  &quot;is_sufficient&quot;: true|false,</span>
+<span class="s2">  &quot;required_changes_type&quot;: &quot;NONE|MINOR|MAJOR&quot;,</span>
+<span class="s2">  &quot;missing_critical_elements&quot;: [&quot;element1&quot;, &quot;element2&quot;],</span>
+<span class="s2">  &quot;improvement_instructions&quot;: &quot;Seulement si changements MAJEURS requis.&quot;</span>
+<span class="se">}}</span><span class="s2">&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.refine_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.refine_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">refine_prompt</span><span class="p">(</span>
+        <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">current_output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">instructions</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">missing_elements</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        PHASE 7.5b: RAFFINEMENT STRUCTUREL</span>
+<span class="sd">        Produit une version améliorée du contenu en conservant le contexte complet.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            task: La tâche initiale</span>
+<span class="sd">            current_output: Le contenu actuel à améliorer</span>
+<span class="sd">            instructions: Instructions d&#39;amélioration de l&#39;audit</span>
+<span class="sd">            missing_elements: Liste des éléments manquants critiques</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Le prompt formaté pour le raffinement</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">missing_str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;- </span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">missing_elements</span><span class="p">)</span> <span class="k">if</span> <span class="n">missing_elements</span> <span class="k">else</span> <span class="s2">&quot;Aucun&quot;</span>
+        
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un agent de production expert en amélioration structurelle.</span>
+
+<span class="s2">TÂCHE INITIALE :</span>
+<span class="si">{</span><span class="n">task</span><span class="si">}</span>
+
+<span class="s2">CONTENU ACTUEL À AMÉLIORER :</span>
+<span class="si">{</span><span class="n">current_output</span><span class="si">}</span>
+
+<span class="s2">INSTRUCTIONS D&#39;AMÉLIORATION :</span>
+<span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
+
+<span class="s2">ÉLÉMENTS MANQUANTS CRITIQUES :</span>
+<span class="si">{</span><span class="n">missing_str</span><span class="si">}</span>
+
+<span class="s2">RÈGLES STRICTES :</span>
+<span class="s2">1. CONSERVE tout le contenu existant qui est valide et pertinent</span>
+<span class="s2">2. AJOUTE les éléments manquants identifiés ci-dessus</span>
+<span class="s2">3. AMÉLIORE la structure et la clarté sans altérer le style</span>
+<span class="s2">4. PRODUIS une réponse COMPLÈTE et substantielle, PAS un résumé ni une demande de clarification</span>
+<span class="s2">5. NE DEMANDE JAMAIS d&#39;informations supplémentaires - tu as tout ce qu&#39;il faut</span>
+
+<span class="s2">RETOURNE LE CONTENU AMÉLIORÉ ET COMPLET (format Markdown).&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PromptTemplates.critic_evaluation_prompt">
+<a class="viewcode-back" href="../../../index.html#autologic.core.prompts.PromptTemplates.critic_evaluation_prompt">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">critic_evaluation_prompt</span><span class="p">(</span>
+        <span class="n">input_task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">autologic_plan</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">generated_response</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Génère le prompt pour l&#39;Agent Critique H2 (Version Google Antigravity).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;RÔLE :</span>
+<span class="s2">Tu es l&#39;Agent Critique H2 (Heuristic &amp; Hypothesis Evaluator), un auditeur expert chargé de valider la fiabilité des réponses générées par un système d&#39;IA. Ton rôle est de filtrer les hallucinations et de garantir que l&#39;exécution suit strictement le plan de raisonnement établi.</span>
+
+<span class="s2">CONTEXTE DE VÉRITÉ (Sujet : Google Antigravity) :</span>
+<span class="s2">Attention, le terme &quot;Google Antigravity&quot; est piégeux et sujet aux hallucinations. Tu dois sanctionner toute réponse qui s&#39;écarte des faits suivants :</span>
+<span class="s2">1. Ce n&#39;est PAS une technologie de propulsion ou de physique réelle développée par Google.</span>
+<span class="s2">2. C&#39;est un &quot;Easter Egg&quot; (projet artistique web) créé par Mr. Doob en 2009 utilisant le moteur physique Box2D.</span>
+<span class="s2">3. Si le texte parle de recherche scientifique, il doit faire référence à &quot;Google DeepMind&quot; et à des simulations (ex: MuJoCo, AlphaFold) ou à l&#39;optimisation de code (AlphaDev), mais jamais à de l&#39;antigravité physique.</span>
+
+<span class="s2">ENTRÉES :</span>
+<span class="s2">1. [USER_TASK] : La demande de l&#39;utilisateur.</span>
+<span class="s2">2. [AUTOLOGIC_PLAN] : Le plan structuré généré par le module AutoLogic (étapes de raisonnement).</span>
+<span class="s2">3. [CANDIDATE_RESPONSE] : La réponse à évaluer.</span>
+
+<span class="s2">TACHE :</span>
+<span class="s2">Évalue la [CANDIDATE_RESPONSE] et attribue un &quot;score_h2&quot; entre 0.0 et 1.0.</span>
+<span class="s2">- Score &lt; 0.8 : REJET (Déclenche un Backtrack).</span>
+<span class="s2">- Score &gt;= 0.8 : VALIDATION.</span>
+
+<span class="s2">CRITÈRES DE NOTATION (FEW-SHOT LEARNING) :</span>
+
+<span class="s2">--- Exemple 1 (Hallucination - REJET) ---</span>
+<span class="s2">Task: &quot;Comment utiliser l&#39;API Google Antigravity pour des drones ?&quot;</span>
+<span class="s2">Plan: 1. Vérifier l&#39;existence de l&#39;API. 2. Analyser la documentation.</span>
+<span class="s2">Response: &quot;L&#39;API Google Antigravity permet de moduler la masse des drones via le cloud. Utilisez la fonction `setGravity(0)`.&quot;</span>
+<span class="s2">&gt;&gt; Sortie Attendue :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;score_h2&quot;: 0.1,</span>
+<span class="s2">  &quot;status&quot;: &quot;REJET&quot;,</span>
+<span class="s2">  &quot;feedback&quot;: &quot;Hallucination critique. Google ne possède pas de technologie d&#39;antigravité. Il s&#39;agit d&#39;un Easter Egg JavaScript, pas d&#39;une API physique. Corrigez en clarifiant la nature du projet.&quot;</span>
+<span class="se">}}</span>
+
+<span class="s2">--- Exemple 2 (Non-respect du Plan - REJET) ---</span>
+<span class="s2">Task: &quot;Explique le fonctionnement technique de l&#39;Easter Egg Google Gravity.&quot;</span>
+<span class="s2">Plan: 1. Identifier le moteur physique (Box2D). 2. Expliquer l&#39;injection dans le DOM. 3. Analyser la gestion des collisions.</span>
+<span class="s2">Response: &quot;C&#39;est un site très amusant où tout tombe quand on bouge la souris. C&#39;est une blague classique de Google.&quot;</span>
+<span class="s2">&gt;&gt; Sortie Attendue :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;score_h2&quot;: 0.5,</span>
+<span class="s2">  &quot;status&quot;: &quot;REJET&quot;,</span>
+<span class="s2">  &quot;feedback&quot;: &quot;La réponse est factuellement vraie mais superficielle. Le plan AutoLogic demandait une analyse technique (Box2D, DOM, Collisions) qui est absente. Exécutez les étapes techniques du plan.&quot;</span>
+<span class="se">}}</span>
+
+<span class="s2">--- Exemple 3 (Réussite - VALIDATION) ---</span>
+<span class="s2">Task: &quot;Quel est le lien entre Google et la gravité ?&quot;</span>
+<span class="s2">Plan: 1. Disambiguïser le terme (Easter Egg vs Recherche). 2. Citer les projets DeepMind pertinents.</span>
+<span class="s2">Response: &quot;Il faut distinguer deux choses. D&#39;un côté, &#39;Google Gravity&#39; est un projet web artistique de 2009. De l&#39;autre, Google DeepMind utilise l&#39;apprentissage par renforcement pour apprendre à des agents virtuels à marcher sous des contraintes de gravité simulée.&quot;</span>
+<span class="s2">&gt;&gt; Sortie Attendue :</span>
+<span class="se">{{</span>
+<span class="s2">  &quot;score_h2&quot;: 0.95,</span>
+<span class="s2">  &quot;status&quot;: &quot;VALID&quot;,</span>
+<span class="s2">  &quot;feedback&quot;: &quot;Réponse nuancée, factuelle et conforme au plan.&quot;</span>
+<span class="se">}}</span>
+
+<span class="s2">INSTRUCTIONS FINALES :</span>
+<span class="s2">Analyse les entrées ci-dessous et génère UNIQUEMENT un objet JSON.</span>
+
+<span class="s2">[USER_TASK] : </span><span class="si">{</span><span class="n">input_task</span><span class="si">}</span>
+<span class="s2">[AUTOLOGIC_PLAN] : </span><span class="si">{</span><span class="n">autologic_plan</span><span class="si">}</span>
+<span class="s2">[CANDIDATE_RESPONSE] : </span><span class="si">{</span><span class="n">generated_response</span><span class="si">}</span><span class="s2">&quot;&quot;&quot;</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Droits d'auteur 2025-2026, AutoLogic Team.</p>
+  </div>
+
+  Compilé avec <a href="https://www.sphinx-doc.org/">Sphinx</a> en utilisant un
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">thème</a>
+    fourni par <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -24,7 +24,7 @@ export const useModelCache = () => {
         try {
             // 1. Fetch static list (fast)
             const staticData = await api.getModels();
-            let modelData = staticData as unknown as ModelData;
+            const modelData = staticData as unknown as ModelData;
 
             // 2. Dynamic Fetch for OpenRouter (progressive enhancement)
             // We do this if OpenRouter is in the providers list

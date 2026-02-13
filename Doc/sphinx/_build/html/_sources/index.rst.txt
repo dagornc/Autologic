@@ -47,6 +47,72 @@ AutoLogic orchestre dynamiquement **3 agents spécialisés** :
 * **Worker Agent** - Exécution des étapes avec accès au contexte RAG
 * **Audit Agent** - Validation et contrôle qualité des résultats
 
+Utilisation des LLM par Phase
+-----------------------------
+
+Chaque phase du cycle Self-Discovery utilise un LLM spécifique :
+
+.. list-table:: Mapping LLM par Phase
+   :widths: 10 20 15 55
+   :header-rows: 1
+
+   * - Phase
+     - Nom
+     - LLM
+     - Description
+   * - 0
+     - ANALYZE
+     - 🧠 Root
+     - Analyse intention utilisateur, extraction contraintes
+   * - 1
+     - SELECT
+     - 🧠 Root
+     - Sélection des modules parmi 106 disponibles
+   * - 2
+     - ADAPT
+     - 🧠 Root
+     - Adaptation des descriptions au contexte
+   * - 3
+     - STRUCTURE
+     - 🧠 Root
+     - Génération du plan d'exécution étape par étape
+   * - 4
+     - VERIFY
+     - 🧠 Root
+     - Vérification logique et cohérence du plan
+   * - 5
+     - EXECUTE
+     - 🔨 Worker
+     - Exécution avec accès RAG/contexte
+   * - 6
+     - CRITIC (H2)
+     - 🧠 Root
+     - Évaluation qualité (score < 0.8 → Double-Backtrack)
+   * - 7
+     - SYNTHESIS
+     - 🧠 Root
+     - Compilation finale, formatage réponse
+   * - 7.5
+     - AUDIT
+     - ⚖️ Audit
+     - Boucle d'audit itérative time-boxed
+   * - 3b
+     - RESTRUCTURE
+     - 🧠 Root
+     - Re-planification (Double-Backtrack depuis H2)
+
+.. note::
+   Le **CriticAgent** (Phase 6) utilise le modèle Root car il est initialisé dans le 
+   constructeur de ``AutoLogicEngine`` avec ``CriticAgent(root_model)``. Cela garantit 
+   une évaluation de haute qualité avant validation.
+
+Récapitulatif par Modèle
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+* **Root (Strategic)** : Phases 0, 1, 2, 3, 3b, 4, 6, 7 - Modèle puissant (GPT-4, Gemini Pro)
+* **Worker (Execution)** : Phase 5 uniquement - Modèle rapide et économique (GPT-4o-mini, Llama 3)
+* **Audit (Validation)** : Phase 7.5 uniquement - Modèle économique ou gratuit
+
 Multi-Provider LLM
 ------------------
 
@@ -339,6 +405,26 @@ Core Modules
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: autologic.core.critic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.model_registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.core.prompts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Router Modules
 --------------
 
@@ -348,6 +434,16 @@ Router Modules
    :show-inheritance:
 
 .. automodule:: autologic.routers.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.routers.history
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: autologic.routers.prompts
    :members:
    :undoc-members:
    :show-inheritance:

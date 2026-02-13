@@ -1,3 +1,10 @@
+/**
+ * Apple HIG System Configuration Panel
+ *
+ * Desktop: Sidebar + Content layout (macOS System Settings)
+ * Mobile: Segmented control + full-width scrolling content
+ */
+
 import React, { useState } from 'react';
 import TabNavigation from './TabNavigation';
 import type { TabId } from './TabNavigation';
@@ -38,19 +45,21 @@ const SystemConfigurationPanel: React.FC<SystemConfigurationPanelProps> = ({ con
     };
 
     return (
-        <div className="flex flex-col h-full space-y-6">
-            <div className="shrink-0 pt-2 px-1">
+        <div className="flex flex-col md:flex-row gap-6 h-full">
+            {/* Sidebar (Desktop) / Segmented control (Mobile) */}
+            <div className="md:w-[200px] shrink-0">
                 <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
             </div>
 
-            <div className="flex-1 relative min-h-[400px]">
+            {/* Content */}
+            <div className="flex-1 relative min-h-[400px] overflow-y-auto custom-scrollbar">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
-                        initial={{ opacity: 0, x: 10, filter: 'blur(4px)' }}
-                        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                        exit={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                         className="h-full"
                     >
                         {renderPanel()}

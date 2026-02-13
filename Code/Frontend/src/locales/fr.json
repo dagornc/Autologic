@@ -1,0 +1,248 @@
+{
+    "nav": {
+        "dashboard": "Tableau de bord",
+        "prompts": "Prompts",
+        "history": "Historique",
+        "help": "Aide",
+        "settings": "Paramètres"
+    },
+    "language": {
+        "label": "Langue",
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
+    },
+    "dashboard": {
+        "title": "Que résolvons-nous aujourd'hui ?",
+        "subtitle": "Orchestration d'agents autonomes pour résoudre des tâches de raisonnement complexes.",
+        "inputPlaceholder": "Décrivez votre problème ou votre tâche de raisonnement...",
+        "submit": "Lancer l'analyse",
+        "stop": "Arrêter"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "tabs": {
+            "general": "Général",
+            "strategic": "Stratégique",
+            "tactical": "Tactique",
+            "audit": "Audit"
+        },
+        "general": {
+            "provider": "Fournisseur",
+            "model": "Modèle",
+            "freeOnly": "Modèles gratuits uniquement",
+            "connectionStatus": "Statut de connexion",
+            "connected": "Connecté",
+            "disconnected": "Déconnecté",
+            "searchModel": "Rechercher un modèle...",
+            "appearance": "Apparence & Comportement",
+            "themeMode": "Mode du thème",
+            "accessibility": "Accessibilité",
+            "reducedMotion": "Réduire les animations",
+            "reducedMotionDesc": "Minimiser les animations pour une expérience plus statique.",
+            "dyslexicFont": "Police adaptée dyslexie",
+            "dyslexicFontDesc": "Utiliser OpenDyslexic ou un espacement accru.",
+            "highContrast": "Contraste élevé",
+            "highContrastDesc": "Augmenter la lisibilité avec des bordures plus fortes et des arrière-plans unis."
+        },
+        "strategic": {
+            "agentTitle": "Agent Stratégique",
+            "agentDesc": "Le planificateur maître et décideur.",
+            "maxWorkers": "Agents maximum",
+            "maxWorkersDesc": "Nombre d'agents travaillant en parallèle",
+            "temperature": "Créativité (Température)",
+            "temperatureDesc": "Contrôle la créativité des réponses",
+            "maxTokens": "Tokens maximum",
+            "maxTokensDesc": "Limite de tokens par réponse",
+            "resilience": "Résilience & Fiabilité",
+            "autoRetries": "Relances automatiques",
+            "autoRetriesDesc": "Relancer automatiquement les appels LLM échoués.",
+            "smartFallback": "Fallback intelligent",
+            "smartFallbackDesc": "Basculer vers un modèle alternatif en cas de surcharge.",
+            "rateLimit": "Limite de débit (Req/min)",
+            "systemContext": "Contexte système",
+            "systemContextPlaceholder": "Saisissez le contexte système global..."
+        },
+        "tactical": {
+            "agentTitle": "Agent Tactique",
+            "agentDesc": "Exécute les sous-tâches définies par l'agent racine.",
+            "syncToggle": "Utiliser la configuration Stratégique",
+            "syncToggleDesc": "Hériter des paramètres de l'agent racine pour les tâches d'exécution.",
+            "linkedToStrategic": "Lié à l'Agent Stratégique",
+            "retries": "Tentatives",
+            "retriesDesc": "Nombre de tentatives automatiques",
+            "rateLimit": "Limite de débit",
+            "rateLimitDesc": "Requêtes par minute",
+            "smartFallback": "Fallback intelligent",
+            "smartFallbackDesc": "Basculer vers un modèle alternatif en cas d'erreur",
+            "timeout": "Délai d'expiration",
+            "timeoutDesc": "Durée maximale par requête (secondes)",
+            "temperature": "Créativité (Température)",
+            "resilience": "Résilience & Fiabilité",
+            "autoRetries": "Relances automatiques",
+            "autoRetriesDesc": "Relancer automatiquement les appels LLM échoués.",
+            "rateLimitLabel": "Limite de débit (Req/min)"
+        },
+        "audit": {
+            "agentTitle": "Agent d'Audit",
+            "agentDesc": "Valide la sortie de l'agent Tactique.",
+            "syncToggle": "Utiliser la configuration Stratégique",
+            "syncToggleDesc": "Utiliser le cerveau principal pour la validation (recommandé pour la cohérence).",
+            "linkedToStrategic": "Lié à l'Agent Stratégique",
+            "h2Critic": "Critique H2",
+            "h2CriticDesc": "Activer l'évaluation critique des résultats",
+            "criticTemperature": "Température du critique",
+            "criticTemperatureDesc": "Créativité de l'agent critique",
+            "autoImprove": "Auto-amélioration",
+            "autoImproveDesc": "Améliorer automatiquement les résultats faibles",
+            "maxRetries": "Tentatives d'audit max",
+            "temperature": "Créativité (Température)",
+            "resilience": "Résilience & Fiabilité",
+            "autoRetries": "Relances automatiques",
+            "autoRetriesDesc": "Relancer automatiquement les appels LLM échoués.",
+            "smartFallback": "Fallback intelligent",
+            "smartFallbackDesc": "Basculer vers un modèle alternatif en cas de surcharge.",
+            "rateLimit": "Limite de débit (Req/min)"
+        }
+    },
+    "prompts": {
+        "title": "Gestion des Prompts",
+        "search": "Rechercher un prompt...",
+        "newPrompt": "Nouveau Prompt",
+        "categories": {
+            "all": "Tout",
+            "logic": "Logique",
+            "creative": "Créatif",
+            "analysis": "Analyse",
+            "custom": "Personnalisé"
+        },
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "use": "Utiliser",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "emptyState": "Aucun prompt trouvé.",
+        "emptyStateAction": "Créez votre premier prompt !",
+        "nameLabel": "Nom",
+        "namePlaceholder": "Nom du prompt",
+        "contentLabel": "Contenu",
+        "contentPlaceholder": "Contenu du prompt...",
+        "categoryLabel": "Catégorie",
+        "create": "Créer un prompt",
+        "editTitle": "Modifier le prompt",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce prompt ?",
+        "subtitle": "Gérez vos templates de raisonnement IA",
+        "emptyStateDesc": "Votre bibliothèque est vide. Les templates IA que vous créez apparaîtront ici.",
+        "toCreate": "pour créer",
+        "promptCount": "prompt(s)"
+    },
+    "history": {
+        "title": "Historique",
+        "back": "Retour à l'historique",
+        "emptyState": "Aucun historique trouvé.",
+        "emptyStateAction": "Lancez votre première conversation !",
+        "loading": "Chargement de l'historique...",
+        "task": "Tâche",
+        "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+        "deleteTitle": "Supprimer la conversation"
+    },
+    "help": {
+        "title": "Documentation",
+        "subtitle": "Guide d'utilisation et informations sur le projet",
+        "loading": "Chargement de la documentation...",
+        "error": "Impossible de charger le fichier d'aide."
+    },
+    "common": {
+        "close": "Fermer",
+        "loading": "Chargement...",
+        "error": "Erreur",
+        "theme": {
+            "toggle": "Basculer le thème",
+            "light": "Clair",
+            "dark": "Sombre"
+        }
+    },
+    "suggestions": {
+        "title": "Essayez un exemple",
+        "chips": {
+            "market": "Analyser un marché concurrentiel des startups IA",
+            "strategy": "Élaborer une stratégie go-to-market pour un produit SaaS",
+            "debug": "Déboguer une fuite mémoire dans un système distribué",
+            "research": "Synthétiser les avancées récentes en apprentissage par renforcement"
+        },
+        "cards": {
+            "market": {
+                "title": "Analyse de marché",
+                "prompt": "Réalisez une analyse concurrentielle complète pour une nouvelle startup SaaS IA entrant sur le marché européen. Identifiez les concurrents clés, les niches et les opportunités de positionnement stratégique."
+            },
+            "strategy": {
+                "title": "Stratégie produit",
+                "prompt": "Concevez une stratégie go-to-market pour une plateforme SaaS B2B de traitement documentaire automatisé. Incluez le modèle tarifaire, le calendrier de lancement et les canaux d'acquisition."
+            },
+            "debug": {
+                "title": "Débogage de code",
+                "prompt": "Analysez et déboguez une fuite mémoire dans une architecture de microservices Node.js distribués. Le système utilise Redis pour le cache et PostgreSQL pour la persistance. L'utilisation mémoire augmente de 200Mo/heure."
+            },
+            "research": {
+                "title": "Synthèse de recherche",
+                "prompt": "Synthétisez les dernières recherches (2024-2025) sur l'apprentissage par renforcement multi-agents. Comparez les approches, soulignez les percées clés et identifiez les problèmes ouverts."
+            }
+        }
+    },
+    "progress": {
+        "step": "Étape {{current}}/{{total}}",
+        "elapsed": "écoulé",
+        "remaining": "restant"
+    },
+    "score": {
+        "qualityScore": "Score de qualité",
+        "excellent": "Excellent",
+        "veryGood": "Très bien",
+        "good": "Bien",
+        "average": "Moyen",
+        "low": "À améliorer"
+    },
+    "solution": {
+        "title": "Solution finale",
+        "subtitle": "Sortie synthétisée du moteur de raisonnement",
+        "copy": "Copier",
+        "exportMd": "Markdown",
+        "exportPdf": "PDF",
+        "copied": "Copié !",
+        "exported": "Exporté !"
+    },
+    "toast": {
+        "taskComplete": "Tâche terminée",
+        "taskCompleteMsg": "Votre tâche de raisonnement a été résolue avec succès.",
+        "taskError": "Échec de la tâche",
+        "taskStopped": "Tâche arrêtée",
+        "taskStoppedMsg": "Le traitement a été interrompu."
+    },
+    "onboarding": {
+        "skip": "Passer le tutoriel",
+        "next": "Continuer",
+        "getStarted": "Commencer",
+        "step1": {
+            "title": "Bienvenue sur AutoLogic",
+            "desc": "Un moteur de raisonnement avancé qui orchestre des agents autonomes pour résoudre des problèmes complexes étape par étape."
+        },
+        "step2": {
+            "title": "Décrivez votre problème",
+            "desc": "Tapez votre tâche complexe dans le champ de saisie. AutoLogic analysera, planifiera et exécutera un processus de raisonnement multi-étapes."
+        },
+        "step3": {
+            "title": "Suivez la réflexion",
+            "desc": "Suivez le processus de raisonnement en temps réel avec le diagramme de flux visuel et la barre de progression. Chaque étape est validée par un Critique H2."
+        },
+        "step4": {
+            "title": "Obtenez des résultats vérifiés",
+            "desc": "Recevez une solution complète avec un score de qualité. Exportez en Markdown ou PDF, et consultez votre historique à tout moment."
+        }
+    },
+    "shortcuts": {
+        "submit": "Soumettre la tâche",
+        "focus": "Focus sur le champ",
+        "settings": "Ouvrir les paramètres"
+    }
+}

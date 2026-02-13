@@ -1,3 +1,10 @@
+/**
+ * Apple HIG Slider
+ *
+ * Clean rounded-track slider with Apple-style thumb,
+ * animated fill, and value badge. No glow effects.
+ */
+
 import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -20,47 +27,39 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
     max = 100,
     ...props
 }) => {
-    // Calculate percentage for the filled track background
     const percentage = useMemo(() => {
         const minVal = parseFloat(min.toString());
         const maxVal = parseFloat(max.toString());
-        const currentVal = value;
         if (isNaN(minVal) || isNaN(maxVal)) return 0;
-        return Math.min(100, Math.max(0, ((currentVal - minVal) / (maxVal - minVal)) * 100));
+        return Math.min(100, Math.max(0, ((value - minVal) / (maxVal - minVal)) * 100));
     }, [value, min, max]);
 
     return (
-        <div className={cn("py-2 space-y-3", className, disabled && "opacity-50 grayscale pointer-events-none")}>
+        <div className={cn("py-3 space-y-3", className, disabled && "opacity-40 pointer-events-none")}>
             <div className="flex justify-between items-center">
-                <label className="text-xs font-medium text-muted-foreground tracking-wide uppercase">{label}</label>
+                <label className="text-[13px] font-medium text-muted-foreground">{label}</label>
                 <div className={cn(
-                    "px-2 py-0.5 rounded-md bg-background/50 border border-white/10 shadow-sm",
-                    "text-xs font-mono font-bold",
-                    `text-[var(--color-${colorIdentity})]`
+                    "min-w-[40px] text-center px-2 py-0.5 rounded-lg bg-card border border-border",
+                    "text-[13px] font-semibold tabular-nums text-foreground"
                 )}>
                     {value}
                 </div>
             </div>
 
-            <div className="relative w-full h-6 flex items-center group">
-                {/* Track Background */}
-                <div className="absolute top-1/2 left-0 w-full h-1.5 -translate-y-1/2 rounded-full overflow-hidden bg-[var(--glass-border)]/30 backdrop-blur-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]">
+            <div className="relative w-full h-7 flex items-center group">
+                {/* Track */}
+                <div className="absolute top-1/2 left-0 w-full h-[6px] -translate-y-1/2 rounded-full overflow-hidden bg-border/50">
                     {/* Filled portion */}
                     <motion.div
-                        className={cn(
-                            "h-full relative",
-                            `bg-[var(--color-${colorIdentity})]`
-                        )}
+                        className="h-full rounded-full bg-primary"
                         style={{ width: `${percentage}%` }}
                         initial={false}
                         animate={{ width: `${percentage}%` }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    >
-                        <div className="absolute inset-0 bg-white/20" /> {/* Shine on fill */}
-                    </motion.div>
+                    />
                 </div>
 
-                {/* The Input Range (Invisible but interactive) */}
+                {/* Native range input (invisible but interactive) */}
                 <input
                     type="range"
                     min={min}
@@ -74,25 +73,18 @@ export const GlassSlider: React.FC<GlassSliderProps> = ({
                     {...props}
                 />
 
-                {/* Custom Thumb (Visual Only) */}
+                {/* Visual thumb */}
                 <motion.div
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-lg border-2 border-white/80 pointer-events-none z-20",
-                        `bg-[var(--color-${colorIdentity})]`,
-                        "group-hover:scale-110 group-active:scale-95 transition-transform duration-200"
+                        "absolute top-1/2 -translate-y-1/2 w-[22px] h-[22px] rounded-full bg-white shadow-apple-md pointer-events-none z-20",
+                        "border border-black/5",
+                        "group-hover:shadow-apple-lg transition-shadow duration-200"
                     )}
-                    style={{ left: `calc(${percentage}% - 10px)` }} // Center the thumb (half width)
+                    style={{ left: `calc(${percentage}% - 11px)` }}
                     initial={false}
-                    animate={{ left: `calc(${percentage}% - 10px)` }}
+                    animate={{ left: `calc(${percentage}% - 11px)` }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                >
-                    {/* Glow effect */}
-                    <div className={cn(
-                        "absolute inset-0 rounded-full opacity-50 blur-sm",
-                        `bg-[var(--color-${colorIdentity})]`
-                    )} />
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/60 to-transparent" />
-                </motion.div>
+                />
             </div>
         </div>
     );

@@ -124,6 +124,54 @@ class AutoLogicEngine:
             logger.error(f"Erreur de parsing JSON: {e}")
             return []
 
+    def _compute_dynamic_timeout(
+        self, base_timeout: int, complexity: str, steps_count: int
+    ) -> int:
+        """
+        Calcule un timeout adapté à la complexité de la tâche.
+
+        Args:
+            base_timeout: Timeout de base en secondes
+            complexity: Niveau de complexité (low, medium, high, unknown)
+            steps_count: Nombre d'étapes dans le plan
+
+        Returns:
+            Timeout ajusté en secondes
+        """
+        multipliers = {"low": 1.0, "medium": 1.5, "high": 2.5, "unknown": 1.5}
+        mult = multipliers.get(complexity.lower(), 1.5)
+        # +10s par étape au-delà de 5
+        extra_steps = max(0, steps_count - 5) * 10
+        result = int(base_timeout * mult + extra_steps)
+        logger.debug(
+            f"Dynamic timeout: base={base_timeout}, complexity={complexity}, "
+            f"steps={steps_count} -> {result}s"
+        )
+        return result
+
+    @staticmethod
+    def _is_confused_output(output: str) -> bool:
+        """
+        Détecte si la sortie du LLM est une réponse "confuse" plutôt qu'un contenu utile.
+
+        Args:
+            output: La sortie à vérifier
+
+        Returns:
+            True si la sortie semble être une confusion du LLM
+        """
+        confusion_markers = [
+            "je n'ai pas de contenu",
+            "merci de fournir",
+            "élément requis",
+            "je comprends que vous souhaitez",
+            "je ne peux pas",
+            "veuillez préciser",
+            "information manquante",
+        ]
+        output_lower = output.lower()
+        return any(marker in output_lower for marker in confusion_markers)
+
     @staticmethod
     def _clean_json_response(response: str) -> str:
         """Nettoie une réponse JSON potentiellement entourée de markdown ou de tags de raisonnement."""
@@ -420,23 +468,45 @@ class AutoLogicEngine:
         root_llm: Optional[BaseLLM] = None,
         audit_llm: Optional[BaseLLM] = None,
         analysis: Optional[Dict[str, Any]] = None,
-        audit_timeout: int = 30,
-        audit_max_retries: int = 3,
+        audit_timeout: int = 60,
+        audit_max_retries: int = 5,
+        plan_complexity: str = "medium",
+        plan_steps_count: int = 5,
     ) -> str:
         """
         PHASE 7 & 7.5: SYNTHÈSE & AUDIT ITÉRATIF
         Affine la réponse finale avec une boucle d'audit time-boxed.
+
+        Args:
+            task: La tâche originale
+            raw_output: La sortie brute de l'exécution
+            root_llm: LLM pour la synthèse
+            audit_llm: LLM pour l'audit
+            analysis: Analyse initiale avec contraintes
+            audit_timeout: Timeout de base pour l'audit (auto-ajusté)
+            audit_max_retries: Nombre max de passes d'audit
+            plan_complexity: Complexité du plan (low/medium/high)
+            plan_steps_count: Nombre d'étapes dans le plan
         """
         # Phase 7: Synthèse (Strategic Model)
         synthesis_llm = root_llm or self.root_llm
         audit_llm = audit_llm or self.audit_llm
 
-        logger.info("Phase 7: Synthèse finale de la réponse")
+        # Calcul du timeout dynamique
+        effective_timeout = self._compute_dynamic_timeout(
+            audit_timeout, plan_complexity, plan_steps_count
+        )
+
         logger.info("Phase 7: Synthèse finale de la réponse")
         await self._emit_progress("Synthesizing", "active", "Synthesizing final output...", synthesis_llm.model_name)
         
         prompt = PromptTemplates.synthesis_prompt(task, raw_output, analysis=analysis)
         current_output = await synthesis_llm.call(prompt)
+
+        # Détection de sortie confuse - fallback sur raw_output
+        if self._is_confused_output(current_output):
+            logger.warning("Synthèse confuse détectée - fallback sur raw_output")
+            current_output = raw_output
 
         # Si pas de contraintes, on retourne direct
         if not (analysis and analysis.get("constraints")):
@@ -445,7 +515,7 @@ class AutoLogicEngine:
 
         # Phase 7.5: Boucle d'Audit (Universelle) - Utilise le modèle d'Audit dédié
         logger.info(
-            f"Phase 7.5: Audit Universel (Timeout Global: {audit_timeout}s, Max Retries: {audit_max_retries}, Model: {audit_llm.__class__.__name__})"
+            f"Phase 7.5: Audit Universel (Timeout Effectif: {effective_timeout}s, Max Retries: {audit_max_retries}, Model: {audit_llm.__class__.__name__})"
         )
         await self._emit_progress("Auditing", "active", "Auditing response against constraints...", audit_llm.model_name)
 
@@ -456,18 +526,13 @@ class AutoLogicEngine:
         while True:
             # Check Timeout (Force Proceed logic - Universal)
             elapsed = time.time() - start_time
-            if elapsed > audit_timeout:
+            if elapsed > effective_timeout:
                 logger.warning(
-                    f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s"
-                )
-                logger.warning(
-                    f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s"
+                    f"Audit Global Timeout: Force Proceed après {elapsed:.1f}s (limite: {effective_timeout}s)"
                 )
                 await self._emit_progress("Auditing", "completed", "Audit timeout - finalizing", audit_llm.model_name)
-                return (
-                    current_output
-                    + "\n\n[NOTE: Audit stoppé par timeboxing global - Structure préservée]"
-                )
+                # Retourner le contenu sans annotation de timeout si le contenu est valide
+                return current_output
 
             if iteration >= max_iterations:
                 logger.warning("Audit: Max iterations rounded")
@@ -513,15 +578,23 @@ class AutoLogicEngine:
                 instructions = audit_data.get(
                     "improvement_instructions", "Corriger les éléments manquants."
                 )
-                refine_prompt = f"""Tu es un agent de production. AMÉLIORATION REQUISE (Focus Structurel).
-                
-                INSTRUCTIONS PRIORITAIRES : {instructions}
-                MANQUES CRITIQUES : {', '.join(missing)}
-                
-                Répare la structure. Ne touche pas au style."""
+                # Utilisation du template centralisé avec contexte complet
+                refine_prompt = PromptTemplates.refine_prompt(
+                    task=task,
+                    current_output=current_output,
+                    instructions=instructions,
+                    missing_elements=missing,
+                )
 
                 # Utilisation du modèle de synthèse pour la correction
-                current_output = await synthesis_llm.call(refine_prompt)
+                refined_output = await synthesis_llm.call(refine_prompt)
+                
+                # Vérifier que le raffinement n'est pas confus
+                if not self._is_confused_output(refined_output):
+                    current_output = refined_output
+                else:
+                    logger.warning("Raffinement confus détecté - conservation de la version précédente")
+                
                 iteration += 1
 
             except Exception as e:
@@ -584,6 +657,8 @@ class AutoLogicEngine:
                     analysis=analysis,
                     audit_timeout=audit_timeout,
                     audit_max_retries=audit_max_retries,
+                    plan_complexity=current_plan.complexity,
+                    plan_steps_count=len(current_plan.steps),
                 )
                 return {
                     "task": task,
@@ -635,6 +710,8 @@ class AutoLogicEngine:
             analysis=analysis,
             audit_timeout=audit_timeout,
             audit_max_retries=audit_max_retries,
+            plan_complexity=current_plan.complexity,
+            plan_steps_count=len(current_plan.steps),
         )
         await self._emit_progress("Final", "completed", "Task processing finished", self.root_llm.model_name)
         

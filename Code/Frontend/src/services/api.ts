@@ -10,6 +10,7 @@ export interface SSEProgressEvent {
     stage: string;
     status: string;
     message?: string;
+    model?: string;
 }
 
 export interface SSEResultEvent {

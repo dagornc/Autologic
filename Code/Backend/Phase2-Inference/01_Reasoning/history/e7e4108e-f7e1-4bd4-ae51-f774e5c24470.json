@@ -1,0 +1,75 @@
+{
+  "id": "e7e4108e-f7e1-4bd4-ae51-f774e5c24470",
+  "timestamp": "2026-02-02T19:04:30.826650",
+  "task": "Quels sont les meilleures opportunités business IA à lancer en france en 2026. je veux une analyse  detaillée (swot, tows, bcg, mc kinsey)  et des descriptions precises pour un business parfait.",
+  "plan": {
+    "steps": [
+      {
+        "step_number": 1,
+        "module_id": "hierarchical_abstraction_reasoning",
+        "module_name": "Hierarchical Abstraction Reasoning",
+        "action": "Poser le cadre macro : identifier les 3-4 méga-tendances IA globales à horizon 2026 (IA générative → agents, cloud → edge/IA frugale, open source/souveraineté, automatisation des connaissances métiers) et expliciter leurs impacts spécifiques sur l’Europe et la France (AI Act, France 2030, tissu PME/ETI, positionnement souverain).",
+        "expected_output": "Note de cadrage synthétique (2-3 pages) décrivant les méga-tendances IA 2026, leurs implications pour le marché français et une première liste de 6-8 grands domaines d’opportunités potentiels."
+      },
+      {
+        "step_number": 2,
+        "module_id": "decomposer_le_probleme",
+        "module_name": "Décomposer le problème",
+        "action": "Cartographier l’écosystème IA français 2026 : (1) segmenter en 4 couches (infrastructure, middleware, applications verticales, services), (2) cartographier les 5 secteurs économiques français à plus forte croissance IA (2025-2028) et les principaux acteurs déjà en place, (3) décomposer la chaîne de valeur IA en 7 maillons (collecte → conformité) en identifiant pour chaque maillon les pain points spécifiques des PME/ETI françaises.",
+        "expected_output": "Carte de l’écosystème IA France 2026 (tableaux + schémas) avec : liste des secteurs prioritaires, des maillons sous-servis, et une short-list de 10-12 niches d’opportunités par croisement secteur × maillon de la chaîne de valeur."
+      },
+      {
+        "step_number": 3,
+        "module_id": "utiliser_la_pensee_systemique",
+        "module_name": "Utiliser la pensée systémique",
+        "action": "Analyser les interdépendances régulation–politique industrielle–talents–concurrence : (1) cartographier les flux de financement publics/privés (France 2030, Bpifrance, crédits d’impôt) vers les usages IA, (2) évaluer les effets de second ordre de l’AI Act (demande en audit/conformité, labels IA de confiance, IA souveraine), (3) modéliser l’écosystème de talents IA français et ses tensions (fuite des cerveaux, pénurie, opportunités no-code/outsourcing).",
+        "expected_output": "Analyse systémique (1-2 pages + diagramme) mettant en évidence : niches protégées par la régulation, barrières à l’entrée structurelles, segments où la pénurie de talents et la souveraineté créent un avantage compétitif pour un nouvel entrant français ou européen."
+      },
+      {
+        "step_number": 4,
+        "module_id": "analyser_les_risques_et_opportunites",
+        "module_name": "Analyser les risques et opportunités",
+        "action": "Identifier les risques et les opportunités contrarian : (1) lister au moins 5 opportunités ‘à contre-courant’ liées aux contraintes (conformité AI Act, IA frugale/edge, audit de modèles, outillage pour data governance, tooling pour agents IA), (2) évaluer le risque réglementaire par secteur clé (santé, RH, finance, industrie, marketing, secteur public), (3) identifier les fenêtres de timing 2025-2027 pour chaque type de niche (avant saturation, après validation marché).",
+        "expected_output": "Tableau risques/opportunités par secteur et par type de solution, avec : 5 opportunités contrarian décrites, scoring de risque réglementaire, et fenêtre de lancement optimale pour chaque grande catégorie d’usage IA."
+      },
+      {
+        "step_number": 5,
+        "module_id": "definir_les_criteres_de_decision",
+        "module_name": "Définir les critères de décision",
+        "action": "Construire une grille multicritères pour évaluer chaque opportunité identifiée : (1) formaliser 8 critères pondérés (taille marché, croissance, marge brute, barrières à l’entrée, risque réglementaire, besoin capital, time-to-market, potentiel d’exit), (2) définir des seuils go/no-go (TAM France, marge >60 %, time-to-revenue <18 mois, etc.), (3) intégrer des critères spécifiquement français (éligibilité CIR/CII, attractivité Bpifrance/VCs FR, scalabilité européenne, accès marchés publics, potentiel label ‘IA de confiance’).",
+        "expected_output": "Matrice de décision pondérée (fichier tableau) applicable aux 10-12 niches, avec pondérations justifiées, seuils go/no-go explicites et format de scoring standardisé (par ex. note de 1 à 5 par critère)."
+      },
+      {
+        "step_number": 6,
+        "module_id": "peser_les_alternatives",
+        "module_name": "Peser les alternatives",
+        "action": "Évaluer systématiquement les 10-12 opportunités : (1) produire une SWOT individuelle pour chaque opportunité, (2) appliquer la matrice TOWS pour dégager les meilleures stratégies offensives/défensives, (3) construire une matrice BCG (croissance du marché vs part de marché atteignable en 3 ans) pour ces opportunités, (4) scorer chaque opportunité dans une matrice McKinsey GE (attractivité industrie × force compétitive atteignable) pour identifier les 3-4 ‘bets’ prioritaires.",
+        "expected_output": "Dossier comparatif comprenant : 10-12 SWOT, une matrice TOWS synthétique, une matrice BCG positionnant chaque opportunité (Stars, Cash Cows, Question Marks, Dogs), une matrice McKinsey GE avec scores détaillés, et un ranking initial des 3-4 meilleures opportunités IA France 2026."
+      },
+      {
+        "step_number": 7,
+        "module_id": "domain_specific_heuristic_activation",
+        "module_name": "Domain-Specific Heuristic Activation",
+        "action": "Filtrer et prioriser les 3-4 meilleures opportunités via les heuristiques VC et French Tech : (1) appliquer le ‘Mistral pattern’ (souveraineté + excellence technique + timing réglementaire) pour tester le potentiel de positionnement premium, (2) vérifier la scalabilité hors France (DACH/Benelux/Sud Europe) et la compatibilité avec les attentes des investisseurs français, (3) intégrer les contraintes go-to-market B2B France (cycles de vente, importance des grands comptes, rôle des intégrateurs/ESN, partenariats cabinets de conseil).",
+        "expected_output": "Note de priorisation VC-oriented réduisant la liste à un TOP 2 ou TOP 3 d’opportunités, avec pour chacune : justification d’attractivité pour VCs/Bpifrance, stratégie d’expansion européenne, et hypothèses de go-to-market adaptées au contexte français."
+      },
+      {
+        "step_number": 8,
+        "module_id": "hierarchical_abstraction_reasoning",
+        "module_name": "Hierarchical Abstraction Reasoning",
+        "action": "Pour le TOP 3 (ou TOP 2) opportunités retenues, descendre au niveau micro : (1) détailler pour chaque opportunité un Business Model Canvas complet (segments clients, proposition de valeur, canaux, revenus, coûts, ressources clés, partenaires, activités clés), (2) définir une première modélisation des unit economics (fourchette de CAC, LTV, marge brute, payback period, pricing), (3) proposer une roadmap produit & go-to-market sur 18 mois (MVP, POC avec 1-2 grands comptes, industrialisation, élargissement Europe).",
+        "expected_output": "Dossiers business complets pour chaque opportunité finaliste : Business Model Canvas, hypothèses chiffrées de base (unit economics), roadmap 18 mois, permettant d’identifier le ‘business parfait’ (meilleur ratio attractivité/risque/exécutabilité)."
+      },
+      {
+        "step_number": 9,
+        "module_id": "peser_les_alternatives",
+        "module_name": "Peser les alternatives",
+        "action": "Comparer finement les opportunités finalistes pour retenir le ‘business parfait’ : (1) réappliquer la matrice McKinsey GE avec les nouvelles données micro (unit economics, faisabilité exécution), (2) construire une grille de scoring finale incluant viabilité financière, complexité d’exécution, risques clés et avantage compétitif défendable, (3) formuler une recommandation finale argumentée de l’opportunité n°1 et du positionnement précis à adopter en France en 2026.",
+        "expected_output": "Recommandation finale structurée : choix du business IA ‘parfait’ pour la France 2026, avec positionnement, justification stratégique, résumé SWOT/TOWS/BCG/McKinsey, et synthèse exécutable (prochaines étapes concrètes de lancement)."
+      }
+    ],
+    "estimated_complexity": "high",
+    "total_steps": 9
+  },
+  "final_output": "Je comprends que vous souhaitez que je corrige des éléments structurels manquants, mais **je n'ai pas de contenu à améliorer**.\n\n---\n\n## Ce dont j'ai besoin pour agir :\n\n| Élément requis | Statut |\n|----------------|--------|\n| Texte/document source | ❌ Manquant |\n| Liste des manques critiques spécifiques | ❌ Non précisée |\n| Format de sortie attendu | ❌ Non défini |\n\n---\n\n**Merci de fournir :**\n\n1. **Le contenu à corriger** (texte, script, document)\n2. **Les manques structurels identifiés** (ex : introduction absente, transitions manquantes, conclusion incomplète, hiérarchie défaillante...)\n\nJe procéderai ensuite à la réparation structurelle sans altérer le style.\n\n[NOTE: Audit stoppé par timeboxing global - Structure préservée]"
+}

@@ -228,18 +228,75 @@ sequenceDiagram
     A->>U: 🏁 Réponse Finale Auditée
 ```
 
-### Détail des Phases
+### Détail des Phases et LLM Utilisés
 
-| Phase | Nom | Agent | Description |
-|-------|-----|-------|-------------|
-| 0 | **ANALYZE** | Strategic | Analyse intention utilisateur, extraction contraintes |
-| 1 | **SELECT** | Strategic | Sélection des modules parmi 106 disponibles |
-| 2 | **ADAPT** | Strategic | Adaptation des descriptions au contexte |
-| 3 | **STRUCTURE** | Strategic | Génération du plan d'exécution étape par étape |
-| 4 | **VERIFY** | Audit | Vérification logique et cohérence du plan |
-| 5 | **EXECUTE** | Worker | Exécution avec accès RAG/contexte |
-| 6 | **CRITIC (H2)** | Audit | Évaluation qualité (score < 0.8 → Double-Backtrack) |
-| 7 | **SYNTHESIS** | Strategic + Audit | Compilation finale avec boucle d'audit itérative |
+Le tableau ci-dessous précise quel modèle LLM est utilisé dans chaque phase :
+
+| Phase | Nom | Agent/LLM | Description |
+|-------|-----|-----------|-------------|
+| 0 | **ANALYZE** | 🧠 Root | Analyse intention utilisateur, extraction contraintes |
+| 1 | **SELECT** | 🧠 Root | Sélection des modules parmi 106 disponibles |
+| 2 | **ADAPT** | 🧠 Root | Adaptation des descriptions au contexte |
+| 3 | **STRUCTURE** | 🧠 Root | Génération du plan d'exécution étape par étape |
+| 4 | **VERIFY** | 🧠 Root | Vérification logique et cohérence du plan |
+| 5 | **EXECUTE** | 🔨 Worker | Exécution avec accès RAG/contexte |
+| 6 | **CRITIC (H2)** | 🧠 Root | Évaluation qualité (score < 0.8 → Double-Backtrack) |
+| 7 | **SYNTHESIS** | 🧠 Root | Compilation finale, formatage réponse |
+| 7.5 | **AUDIT** | ⚖️ Audit | Boucle d'audit itérative time-boxed |
+| 3b | **RESTRUCTURE** | 🧠 Root | Re-planification (Double-Backtrack depuis H2) |
+
+### Mapping LLM par Phase
+
+```mermaid
+flowchart TB
+    subgraph Root["🧠 ROOT LLM (Strategic Model)"]
+        direction TB
+        A0[Phase 0: Analyze]
+        A1[Phase 1: Select]
+        A2[Phase 2: Adapt]
+        A3[Phase 3: Structure]
+        A4[Phase 4: Verify]
+        A6[Phase 6: Critic H2]
+        A7[Phase 7: Synthesis]
+        A3b[Phase 3b: Restructure]
+    end
+    
+    subgraph Worker["🔨 WORKER LLM (Execution Model)"]
+        A5[Phase 5: Execute]
+    end
+    
+    subgraph Audit["⚖️ AUDIT LLM (Validation Model)"]
+        A75[Phase 7.5: Audit Loop]
+    end
+    
+    A0 --> A1 --> A2 --> A3 --> A4 --> A5
+    A5 --> A6
+    A6 -->|"Score ≥ 0.8"| A7 --> A75
+    A6 -->|"Score < 0.8"| A3b --> A5
+    A75 -->|"Raffinement"| A7
+    
+    style A0 fill:#f38ba8
+    style A1 fill:#f38ba8
+    style A2 fill:#f38ba8
+    style A3 fill:#f38ba8
+    style A4 fill:#f38ba8
+    style A6 fill:#f38ba8
+    style A7 fill:#f38ba8
+    style A3b fill:#f38ba8
+    style A5 fill:#fab387
+    style A75 fill:#cba6f7
+```
+
+### Récapitulatif par Modèle
+
+| Modèle | Phases | Fichier Source | Ligne |
+|--------|--------|----------------|-------|
+| **Root (Strategic)** | 0, 1, 2, 3, 3b, 4, 6, 7 | `core/engine.py` | L241-439, L464-514 |
+| **Worker (Execution)** | 5 uniquement | `core/engine.py` | L441-462 |
+| **Audit (Validation)** | 7.5 uniquement | `core/engine.py` | L516-604 |
+| **CriticAgent (via Root)** | 6 | `core/critic.py` | L89-138 |
+
+> **Note** : Le CriticAgent est initialisé dans le constructeur de `AutoLogicEngine` avec `CriticAgent(root_model)` (ligne 81), ce qui signifie que l'évaluation H2 utilise le modèle Root.
 
 ---
 

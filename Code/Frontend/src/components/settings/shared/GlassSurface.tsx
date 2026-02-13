@@ -1,3 +1,11 @@
+/**
+ * Apple HIG Card Surface
+ *
+ * Clean grouped card with subtle shadow, rounded corners,
+ * and optional entry animation. Replaces the old GlassSurface
+ * with its chromatic refraction effects.
+ */
+
 import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, type HTMLMotionProps } from 'framer-motion';
@@ -18,27 +26,17 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
     ...props
 }, ref) => {
 
-    // Base styles for all glass surfaces
-    const baseStyles = "relative overflow-hidden transition-all duration-300 rounded-[var(--radius)]";
+    const baseStyles = "relative overflow-hidden transition-all duration-300 rounded-2xl";
 
-    // Specific styles for each strata tier
     const strataStyles = {
-        1: "bg-[var(--glass-1-bg)] border border-[var(--glass-1-border)] backdrop-blur-[12px] saturate-140 shadow-glass-1",
-        2: "bg-[var(--glass-2-bg)] border border-[var(--glass-2-border)] backdrop-blur-[24px] saturate-180 shadow-glass-2",
-        3: "bg-[var(--glass-3-bg)] border border-transparent backdrop-blur-[48px] saturate-200 shadow-glass-3",
+        1: "bg-card border border-border shadow-apple-sm",
+        2: "bg-card border border-border shadow-apple-md",
+        3: "bg-card/95 backdrop-blur-xl border border-border shadow-apple-lg",
     };
 
-    // Interactive hover effects (mainly for Strata 2 cards)
     const interactiveStyles = interactive
-        ? "hover:bg-[oklch(100%_0_0_/_0.12)] hover:scale-[1.01] hover:shadow-neon-cyan/20 active:scale-[0.99]"
+        ? "hover:bg-card/90 hover:shadow-apple-md active:scale-[0.99] transition-transform"
         : "";
-
-    // Chromatic refraction effect for Strata 3
-    const refractionEffect = strata === 3 ? (
-        <div className="absolute inset-0 pointer-events-none opacity-40 bg-gradient-to-br from-cyan-400/25 via-transparent to-magenta-500/25 mix-blend-overlay" />
-    ) : null;
-
-    // Border gradient for Strata 3 is handled via inline styles below
 
     return (
         <motion.div
@@ -49,17 +47,11 @@ const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(({
                 interactiveStyles,
                 className
             )}
-            style={{
-                ...props.style,
-                // Apply the gradient border for strata 3 if strict border-image specific logic isn't working via classes
-                ...(strata === 3 ? { border: '1px solid transparent', backgroundImage: 'linear-gradient(var(--glass-3-bg), var(--glass-3-bg)), var(--glass-3-border)', backgroundOrigin: 'border-box', backgroundClip: 'content-box, border-box' } : {})
-            }}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
             {...props}
         >
-            {refractionEffect}
             <div className="relative z-10">
                 {children}
             </div>

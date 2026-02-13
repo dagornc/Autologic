@@ -5,6 +5,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { AutoLogicResult, LLMConfig, LoadingStage } from '../types';
 import { reasoningApi } from '../services/api';
+import type { LogMessage } from '../components/ui/LoadingOverlay';
 
 interface UseAutoLogicReturn {
     /** Tâche en cours de saisie */
@@ -21,12 +22,28 @@ interface UseAutoLogicReturn {
     loadingStage: LoadingStage;
     /** Nom du modèle LLM en cours d'utilisation */
     currentModel: string | null;
+    /** Les 3 derniers messages de log */
+    recentLogs: LogMessage[];
     /** Soumet la tâche pour résolution */
     submitTask: (config?: LLMConfig) => Promise<void>;
     /** Arrête la tâche en cours */
     stopTask: () => void;
     /** Réinitialise l'état */
     reset: () => void;
+}
+
+/**
+ * Détecte le niveau de log à partir du message
+ */
+function detectLogLevel(message: string): 'INFO' | 'WARNING' | 'ERROR' {
+    const upperMsg = message.toUpperCase();
+    if (upperMsg.includes('ERROR') || upperMsg.includes('ERREUR') || upperMsg.includes('FAILED') || upperMsg.includes('ÉCHEC')) {
+        return 'ERROR';
+    }
+    if (upperMsg.includes('WARNING') || upperMsg.includes('WARN') || upperMsg.includes('ATTENTION')) {
+        return 'WARNING';
+    }
+    return 'INFO';
 }
 
 /**
@@ -39,6 +56,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
     const [error, setError] = useState<string | null>(null);
     const [loadingStage, setLoadingStage] = useState<LoadingStage>('');
     const [currentModel, setCurrentModel] = useState<string | null>(null);
+    const [recentLogs, setRecentLogs] = useState<LogMessage[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const submitTask = useCallback(async (config?: LLMConfig) => {
@@ -52,10 +70,10 @@ export function useAutoLogic(): UseAutoLogicReturn {
 
         setIsLoading(true);
         setError(null);
-        setError(null);
         setResult(null);
         setLoadingStage('Analyzing request intent...'); // Initial state
         setCurrentModel(null);
+        setRecentLogs([]); // Reset logs on new task
 
         try {
             const controller = new AbortController();
@@ -83,12 +101,16 @@ export function useAutoLogic(): UseAutoLogicReturn {
                         // Progress Event
                         // Format: { stage: "Analyzing", status: "active", message: "..." }
                         // We map backend stage to frontend LoadingStage string if needed
-                        // Or simply use the message or construct a string
-                        if (event.message) {
-                            setLoadingStage(event.message as LoadingStage);
-                        } else {
-                            setLoadingStage(`${event.stage}...` as LoadingStage);
-                        }
+                        const displayMessage = event.message || `${event.stage}...`;
+                        setLoadingStage(displayMessage as LoadingStage);
+
+                        // Ajouter le message aux logs récents
+                        const logMessage: LogMessage = {
+                            level: detectLogLevel(displayMessage),
+                            message: displayMessage,
+                            timestamp: new Date()
+                        };
+                        setRecentLogs(prev => [...prev.slice(-2), logMessage]); // Garder seulement les 3 derniers
 
                         if (event.model) {
                             setCurrentModel(event.model);
@@ -120,7 +142,6 @@ export function useAutoLogic(): UseAutoLogicReturn {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
             setIsLoading(false);
-            setIsLoading(false);
             setError('Task stopped at your request.');
             setLoadingStage('Stopped by user');
             setCurrentModel(null);
@@ -133,6 +154,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
         setError(null);
         setLoadingStage('');
         setCurrentModel(null);
+        setRecentLogs([]);
     }, []);
 
     return {
@@ -143,6 +165,7 @@ export function useAutoLogic(): UseAutoLogicReturn {
         error,
         loadingStage,
         currentModel,
+        recentLogs,
         submitTask,
         stopTask,
         reset,

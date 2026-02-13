@@ -164,13 +164,14 @@
         <span class="p">)</span></div>
 
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_emit_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_emit_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper pour émettre un événement de progression.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">:</span>
             <span class="n">event</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;stage&quot;</span><span class="p">:</span> <span class="n">stage</span><span class="p">,</span>
                 <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
                 <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">,</span>
+                <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">model_name</span><span class="p">,</span>
                 <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="p">}</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
@@ -203,11 +204,63 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur de parsing JSON: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">[]</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_dynamic_timeout</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">base_timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">complexity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">steps_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calcule un timeout adapté à la complexité de la tâche.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_timeout: Timeout de base en secondes</span>
+<span class="sd">            complexity: Niveau de complexité (low, medium, high, unknown)</span>
+<span class="sd">            steps_count: Nombre d&#39;étapes dans le plan</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Timeout ajusté en secondes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">multipliers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;low&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">}</span>
+        <span class="n">mult</span> <span class="o">=</span> <span class="n">multipliers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">complexity</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="mf">1.5</span><span class="p">)</span>
+        <span class="c1"># +10s par étape au-delà de 5</span>
+        <span class="n">extra_steps</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">steps_count</span> <span class="o">-</span> <span class="mi">5</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">base_timeout</span> <span class="o">*</span> <span class="n">mult</span> <span class="o">+</span> <span class="n">extra_steps</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Dynamic timeout: base=</span><span class="si">{</span><span class="n">base_timeout</span><span class="si">}</span><span class="s2">, complexity=</span><span class="si">{</span><span class="n">complexity</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;steps=</span><span class="si">{</span><span class="n">steps_count</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">s&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_confused_output</span><span class="p">(</span><span class="n">output</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Détecte si la sortie du LLM est une réponse &quot;confuse&quot; plutôt qu&#39;un contenu utile.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output: La sortie à vérifier</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True si la sortie semble être une confusion du LLM</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">confusion_markers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;je n&#39;ai pas de contenu&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;merci de fournir&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;élément requis&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;je comprends que vous souhaitez&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;je ne peux pas&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;veuillez préciser&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;information manquante&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">output_lower</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">marker</span> <span class="ow">in</span> <span class="n">output_lower</span> <span class="k">for</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">confusion_markers</span><span class="p">)</span>
+
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_clean_json_response</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Nettoie une réponse JSON potentiellement entourée de markdown.&quot;&quot;&quot;</span>
-        <span class="c1"># Suppression du markdown</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Nettoie une réponse JSON potentiellement entourée de markdown ou de tags de raisonnement.&quot;&quot;&quot;</span>
+        <span class="c1"># Suppression des tags de raisonnement type &lt;think&gt;...&lt;/think&gt;</span>
         <span class="n">clean</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&lt;think&gt;.*?&lt;/think&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">clean</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># Suppression du markdown</span>
         <span class="k">if</span> <span class="n">clean</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;```&quot;</span><span class="p">):</span>
             <span class="c1"># Trouver la première occurrence de &#39;{&#39;</span>
             <span class="n">start_idx</span> <span class="o">=</span> <span class="n">clean</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;{&quot;</span><span class="p">)</span>
@@ -273,13 +326,13 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;PHASE 0: ANALYSE INITIALE&quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 0: Analyse de la tâche&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Analyzing intent and constraints...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Analyzing intent and constraints...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">analyze_prompt</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;analyze_task&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Analysis complete&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Analyzing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Analysis complete&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="c1"># Fallback simple</span>
@@ -298,7 +351,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 1: Sélection des modules&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Selecting best reasoning modules...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Selecting best reasoning modules...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">modules_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
@@ -315,13 +368,20 @@
             <span class="n">selected</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">selected_ids</span><span class="p">]</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sélectionné </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules: </span><span class="si">{</span><span class="n">selected_ids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sélectionné </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules: </span><span class="si">{</span><span class="n">selected_ids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">selected</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur sélection modules après retries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to select modules&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="p">[]</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Activation du Fallback: Sélection des modules par défaut&quot;</span><span class="p">)</span>
+            
+            <span class="n">fallback_ids</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;decomposer_le_probleme&quot;</span><span class="p">,</span> <span class="s2">&quot;identifier_les_contraintes&quot;</span><span class="p">,</span> <span class="s2">&quot;brainstorming&quot;</span><span class="p">]</span>
+            <span class="n">fallback_modules</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reasoning_modules</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="n">fallback_ids</span><span class="p">]</span>
+            
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Selecting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Fallback to default modules (Connection Error)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fallback_modules</span></div>
 
 
 <div class="viewcode-block" id="AutoLogicEngine.adapt_modules">
@@ -337,7 +397,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 2: Adaptation des modules&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Adapting modules to context...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Adapting modules to context...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">selected_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">selected</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
@@ -361,13 +421,25 @@
                     <span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adapté </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">adapted_modules</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Modules adapted&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adapté </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">adapted_modules</span><span class="p">)</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Modules adapted&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">adapted_modules</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur adaptation modules après retries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to adapt modules&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="p">[]</span></div>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Activation du Fallback: Utilisation des descriptions génériques&quot;</span><span class="p">)</span>
+            
+            <span class="n">fallback_adapted</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">AdaptedModule</span><span class="p">(</span>
+                    <span class="n">base</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
+                    <span class="n">adapted_description</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                    <span class="n">specific_actions</span><span class="o">=</span><span class="p">[]</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">selected</span>
+            <span class="p">]</span>
+            
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Adapting&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Fallback to generic descriptions (Error during adaptation)&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fallback_adapted</span></div>
 
 
 <div class="viewcode-block" id="AutoLogicEngine.structure_reasoning">
@@ -383,7 +455,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 3: Structuration du plan&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Building execution plan...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Building execution plan...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">adapted_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
             <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">adapted</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span>
@@ -399,7 +471,9 @@
 
             <span class="n">plan</span> <span class="o">=</span> <span class="n">ReasoningPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">plan_info</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plan créé avec </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> étapes&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Plan created with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> steps&quot;</span><span class="p">)</span>
+            <span class="n">plan</span> <span class="o">=</span> <span class="n">ReasoningPlan</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">plan_info</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plan créé avec </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> étapes&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Plan created with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span><span class="si">}</span><span class="s2"> steps&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">plan</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -416,14 +490,15 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;PHASE 4: VÉRIFICATION DU PLAN&quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 4: Vérification du plan&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Verifying plan validity...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Verifying plan validity...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         
         <span class="n">plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">verify_plan_prompt</span><span class="p">(</span><span class="n">plan_json</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;verify_plan&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Plan verified&quot;</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">llm</span><span class="p">,</span> <span class="s2">&quot;verify_plan&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Plan verified&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Verifying&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Validation skipped&quot;</span><span class="p">)</span>
@@ -445,7 +520,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 3b: Restructuration du plan (Correction)&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Refining plan based on feedback...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Refining plan based on feedback...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">old_plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">old_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">restructure_prompt</span><span class="p">(</span><span class="n">old_plan_json</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">feedback</span><span class="p">)</span>
@@ -475,7 +550,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">llm</span> <span class="o">=</span> <span class="n">worker_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">worker_llm</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 5: Exécution du plan&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Executing reasoning steps...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Executing reasoning steps...&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">plan_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">execution_prompt</span><span class="p">(</span>
@@ -483,7 +558,7 @@
         <span class="p">)</span>
 
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Execution finished&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Executing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Execution finished&quot;</span><span class="p">,</span> <span class="n">llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">response</span></div>
 
 
@@ -496,33 +571,56 @@
         <span class="n">root_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">audit_llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseLLM</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">analysis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">audit_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
-        <span class="n">audit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">audit_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+        <span class="n">audit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">plan_complexity</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+        <span class="n">plan_steps_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        PHASE 7 &amp; 7.5: SYNTHÈSE &amp; AUDIT ITÉRATIF</span>
 <span class="sd">        Affine la réponse finale avec une boucle d&#39;audit time-boxed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            task: La tâche originale</span>
+<span class="sd">            raw_output: La sortie brute de l&#39;exécution</span>
+<span class="sd">            root_llm: LLM pour la synthèse</span>
+<span class="sd">            audit_llm: LLM pour l&#39;audit</span>
+<span class="sd">            analysis: Analyse initiale avec contraintes</span>
+<span class="sd">            audit_timeout: Timeout de base pour l&#39;audit (auto-ajusté)</span>
+<span class="sd">            audit_max_retries: Nombre max de passes d&#39;audit</span>
+<span class="sd">            plan_complexity: Complexité du plan (low/medium/high)</span>
+<span class="sd">            plan_steps_count: Nombre d&#39;étapes dans le plan</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Phase 7: Synthèse (Strategic Model)</span>
         <span class="n">synthesis_llm</span> <span class="o">=</span> <span class="n">root_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span>
         <span class="n">audit_llm</span> <span class="o">=</span> <span class="n">audit_llm</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">audit_llm</span>
 
+        <span class="c1"># Calcul du timeout dynamique</span>
+        <span class="n">effective_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_dynamic_timeout</span><span class="p">(</span>
+            <span class="n">audit_timeout</span><span class="p">,</span> <span class="n">plan_complexity</span><span class="p">,</span> <span class="n">plan_steps_count</span>
+        <span class="p">)</span>
+
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 7: Synthèse finale de la réponse&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesizing final output...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesizing final output...&quot;</span><span class="p">,</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         
         <span class="n">prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">synthesis_prompt</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">raw_output</span><span class="p">,</span> <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">)</span>
         <span class="n">current_output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
 
+        <span class="c1"># Détection de sortie confuse - fallback sur raw_output</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_confused_output</span><span class="p">(</span><span class="n">current_output</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Synthèse confuse détectée - fallback sur raw_output&quot;</span><span class="p">)</span>
+            <span class="n">current_output</span> <span class="o">=</span> <span class="n">raw_output</span>
+
         <span class="c1"># Si pas de contraintes, on retourne direct</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">analysis</span> <span class="ow">and</span> <span class="n">analysis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;constraints&quot;</span><span class="p">)):</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesis complete&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Synthesizing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Synthesis complete&quot;</span><span class="p">,</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">current_output</span>
 
         <span class="c1"># Phase 7.5: Boucle d&#39;Audit (Universelle) - Utilise le modèle d&#39;Audit dédié</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Phase 7.5: Audit Universel (Timeout Global: </span><span class="si">{</span><span class="n">audit_timeout</span><span class="si">}</span><span class="s2">s, Max Retries: </span><span class="si">{</span><span class="n">audit_max_retries</span><span class="si">}</span><span class="s2">, Model: </span><span class="si">{</span><span class="n">audit_llm</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Phase 7.5: Audit Universel (Timeout Effectif: </span><span class="si">{</span><span class="n">effective_timeout</span><span class="si">}</span><span class="s2">s, Max Retries: </span><span class="si">{</span><span class="n">audit_max_retries</span><span class="si">}</span><span class="s2">, Model: </span><span class="si">{</span><span class="n">audit_llm</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">)&quot;</span>
         <span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Auditing response against constraints...&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Auditing response against constraints...&quot;</span><span class="p">,</span> <span class="n">audit_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
         <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">iteration</span> <span class="o">=</span> <span class="mi">0</span>
@@ -531,15 +629,13 @@
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="c1"># Check Timeout (Force Proceed logic - Universal)</span>
             <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
-            <span class="k">if</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="n">audit_timeout</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">elapsed</span> <span class="o">&gt;</span> <span class="n">effective_timeout</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Audit Global Timeout: Force Proceed après </span><span class="si">{</span><span class="n">elapsed</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Audit Global Timeout: Force Proceed après </span><span class="si">{</span><span class="n">elapsed</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s (limite: </span><span class="si">{</span><span class="n">effective_timeout</span><span class="si">}</span><span class="s2">s)&quot;</span>
                 <span class="p">)</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit timeout - finalizing&quot;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="p">(</span>
-                    <span class="n">current_output</span>
-                    <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">[NOTE: Audit stoppé par timeboxing global - Structure préservée]&quot;</span>
-                <span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit timeout - finalizing&quot;</span><span class="p">,</span> <span class="n">audit_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
+                <span class="c1"># Retourner le contenu sans annotation de timeout si le contenu est valide</span>
+                <span class="k">return</span> <span class="n">current_output</span>
 
             <span class="k">if</span> <span class="n">iteration</span> <span class="o">&gt;=</span> <span class="n">max_iterations</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Audit: Max iterations rounded&quot;</span><span class="p">)</span>
@@ -551,7 +647,7 @@
             <span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Utilisation du modèle d&#39;audit pour la vérification</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Audit pass </span><span class="si">{</span><span class="n">iteration</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Audit pass </span><span class="si">{</span><span class="n">iteration</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span> <span class="n">audit_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
                 
                 <span class="n">audit_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_and_parse_json</span><span class="p">(</span>
                     <span class="n">audit_prompt</span><span class="p">,</span> <span class="n">audit_llm</span><span class="p">,</span> <span class="s2">&quot;audit_final&quot;</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">2</span>
@@ -585,22 +681,30 @@
                 <span class="n">instructions</span> <span class="o">=</span> <span class="n">audit_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                     <span class="s2">&quot;improvement_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;Corriger les éléments manquants.&quot;</span>
                 <span class="p">)</span>
-                <span class="n">refine_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Tu es un agent de production. AMÉLIORATION REQUISE (Focus Structurel).</span>
-<span class="s2">                </span>
-<span class="s2">                INSTRUCTIONS PRIORITAIRES : </span><span class="si">{</span><span class="n">instructions</span><span class="si">}</span>
-<span class="s2">                MANQUES CRITIQUES : </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span>
-<span class="s2">                </span>
-<span class="s2">                Répare la structure. Ne touche pas au style.&quot;&quot;&quot;</span>
+                <span class="c1"># Utilisation du template centralisé avec contexte complet</span>
+                <span class="n">refine_prompt</span> <span class="o">=</span> <span class="n">PromptTemplates</span><span class="o">.</span><span class="n">refine_prompt</span><span class="p">(</span>
+                    <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+                    <span class="n">current_output</span><span class="o">=</span><span class="n">current_output</span><span class="p">,</span>
+                    <span class="n">instructions</span><span class="o">=</span><span class="n">instructions</span><span class="p">,</span>
+                    <span class="n">missing_elements</span><span class="o">=</span><span class="n">missing</span><span class="p">,</span>
+                <span class="p">)</span>
 
                 <span class="c1"># Utilisation du modèle de synthèse pour la correction</span>
-                <span class="n">current_output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">refine_prompt</span><span class="p">)</span>
+                <span class="n">refined_output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">synthesis_llm</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">refine_prompt</span><span class="p">)</span>
+                
+                <span class="c1"># Vérifier que le raffinement n&#39;est pas confus</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_confused_output</span><span class="p">(</span><span class="n">refined_output</span><span class="p">):</span>
+                    <span class="n">current_output</span> <span class="o">=</span> <span class="n">refined_output</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Raffinement confus détecté - conservation de la version précédente&quot;</span><span class="p">)</span>
+                
                 <span class="n">iteration</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur durant l&#39;audit: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">break</span>
 
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit passed&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Auditing&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Audit passed&quot;</span><span class="p">,</span> <span class="n">audit_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">current_output</span></div>
 
 
@@ -640,7 +744,7 @@
 
             <span class="c1"># 2. Appel du Critic H2 (PHASE 6)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Phase 6: Évaluation critique H2&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Evaluating results (H2 Critic)...&quot;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Evaluating results (H2 Critic)...&quot;</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span> <span class="k">if</span> <span class="n">root_llm</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
             
             <span class="n">evaluation</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">critic_agent</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
                 <span class="n">task</span><span class="p">,</span> <span class="n">current_plan</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">current_response</span>
@@ -648,7 +752,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Score Critique: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation successful (Score: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation successful (Score: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span> <span class="k">if</span> <span class="n">root_llm</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
                 
                 <span class="c1"># VALIDATION -&gt; SYNTHÈSE (PHASE 7)</span>
                 <span class="n">final_output</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize_output</span><span class="p">(</span>
@@ -659,6 +763,8 @@
                     <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">,</span>
                     <span class="n">audit_timeout</span><span class="o">=</span><span class="n">audit_timeout</span><span class="p">,</span>
                     <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">audit_max_retries</span><span class="p">,</span>
+                    <span class="n">plan_complexity</span><span class="o">=</span><span class="n">current_plan</span><span class="o">.</span><span class="n">complexity</span><span class="p">,</span>
+                    <span class="n">plan_steps_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">current_plan</span><span class="o">.</span><span class="n">steps</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="p">{</span>
                     <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>
@@ -670,7 +776,7 @@
                 <span class="p">}</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rejeté par H2: </span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation failed (</span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">). Retrying...&quot;</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Validation failed (</span><span class="si">{</span><span class="n">evaluation</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">). Retrying...&quot;</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span> <span class="k">if</span> <span class="n">root_llm</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
                 <span class="n">feedback</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">feedback</span>
 
                 <span class="c1"># DOUBLE-BACKTRACK LOGIC:</span>
@@ -682,7 +788,7 @@
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                         <span class="s2">&quot;Re-planification demandée par le Critique (Backtrack Phase 3)&quot;</span>
                     <span class="p">)</span>
-                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Backtracking to plan structure...&quot;</span><span class="p">)</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Structuring&quot;</span><span class="p">,</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;Backtracking to plan structure...&quot;</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span> <span class="k">if</span> <span class="n">root_llm</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
 
                     <span class="k">if</span> <span class="n">attempt</span> <span class="o">&lt;</span> <span class="n">max_retries</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="c1"># Appel effectif à la restructuration du plan</span>
@@ -700,7 +806,7 @@
                             <span class="k">continue</span>
 
         <span class="c1"># Final pass Synthesis even if low score</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Max retries reached&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Critic&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Max retries reached&quot;</span><span class="p">,</span> <span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span> <span class="k">if</span> <span class="n">root_llm</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         
         <span class="n">final_output</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">synthesize_output</span><span class="p">(</span>
             <span class="n">task</span><span class="p">,</span>
@@ -710,8 +816,10 @@
             <span class="n">analysis</span><span class="o">=</span><span class="n">analysis</span><span class="p">,</span>
             <span class="n">audit_timeout</span><span class="o">=</span><span class="n">audit_timeout</span><span class="p">,</span>
             <span class="n">audit_max_retries</span><span class="o">=</span><span class="n">audit_max_retries</span><span class="p">,</span>
+            <span class="n">plan_complexity</span><span class="o">=</span><span class="n">current_plan</span><span class="o">.</span><span class="n">complexity</span><span class="p">,</span>
+            <span class="n">plan_steps_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">current_plan</span><span class="o">.</span><span class="n">steps</span><span class="p">),</span>
         <span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Final&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Task processing finished&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emit_progress</span><span class="p">(</span><span class="s2">&quot;Final&quot;</span><span class="p">,</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;Task processing finished&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="p">)</span>
         
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span>

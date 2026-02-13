@@ -349,6 +349,51 @@ RETOURNE UN JSON STRICT :
 }}"""
 
     @staticmethod
+    def refine_prompt(
+        task: str,
+        current_output: str,
+        instructions: str,
+        missing_elements: list,
+    ) -> str:
+        """
+        PHASE 7.5b: RAFFINEMENT STRUCTUREL
+        Produit une version améliorée du contenu en conservant le contexte complet.
+
+        Args:
+            task: La tâche initiale
+            current_output: Le contenu actuel à améliorer
+            instructions: Instructions d'amélioration de l'audit
+            missing_elements: Liste des éléments manquants critiques
+
+        Returns:
+            Le prompt formaté pour le raffinement
+        """
+        missing_str = "\n".join(f"- {el}" for el in missing_elements) if missing_elements else "Aucun"
+        
+        return f"""Tu es un agent de production expert en amélioration structurelle.
+
+TÂCHE INITIALE :
+{task}
+
+CONTENU ACTUEL À AMÉLIORER :
+{current_output}
+
+INSTRUCTIONS D'AMÉLIORATION :
+{instructions}
+
+ÉLÉMENTS MANQUANTS CRITIQUES :
+{missing_str}
+
+RÈGLES STRICTES :
+1. CONSERVE tout le contenu existant qui est valide et pertinent
+2. AJOUTE les éléments manquants identifiés ci-dessus
+3. AMÉLIORE la structure et la clarté sans altérer le style
+4. PRODUIS une réponse COMPLÈTE et substantielle, PAS un résumé ni une demande de clarification
+5. NE DEMANDE JAMAIS d'informations supplémentaires - tu as tout ce qu'il faut
+
+RETOURNE LE CONTENU AMÉLIORÉ ET COMPLET (format Markdown)."""
+
+    @staticmethod
     def critic_evaluation_prompt(
         input_task: str, autologic_plan: str, generated_response: str
     ) -> str:

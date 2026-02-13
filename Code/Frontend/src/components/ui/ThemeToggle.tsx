@@ -1,3 +1,7 @@
+/**
+ * Apple-style Theme Toggle
+ */
+
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
@@ -15,32 +19,24 @@ export const ThemeToggle: React.FC = () => {
     return (
         <button
             onClick={cycleTheme}
-            className="relative p-3 rounded-xl overflow-hidden group btn-ghost-liquid"
+            className="relative p-2.5 rounded-full hover:bg-muted/50 transition-colors duration-200"
             aria-label="Toggle theme"
         >
-            {/* Liquid Background Effect for Toggle */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-            <div className="relative z-10">
-                <AnimatePresence mode="wait" initial={false}>
-                    <motion.div
-                        key={theme}
-                        initial={{ y: -20, opacity: 0, rotate: -90 }}
-                        animate={{ y: 0, opacity: 1, rotate: 0 }}
-                        exit={{ y: 20, opacity: 0, rotate: 90 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                        {isDark ? (
-                            <Moon className="w-5 h-5 text-indigo-300 drop-shadow-[0_0_8px_rgba(165,180,252,0.5)]" />
-                        ) : (
-                            <Sun className="w-5 h-5 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                        )}
-                    </motion.div>
-                </AnimatePresence>
-            </div>
-
-            {/* Glow effect */}
-            <div className="absolute inset-0 ring-1 ring-white/10 rounded-xl group-hover:ring-white/30 transition-all duration-300" />
+            <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                    key={theme}
+                    initial={{ y: -12, opacity: 0, rotate: -60 }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    exit={{ y: 12, opacity: 0, rotate: 60 }}
+                    transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                    {isDark ? (
+                        <Moon className="w-[18px] h-[18px] text-muted-foreground" />
+                    ) : (
+                        <Sun className="w-[18px] h-[18px] text-muted-foreground" />
+                    )}
+                </motion.div>
+            </AnimatePresence>
         </button>
     );
 };

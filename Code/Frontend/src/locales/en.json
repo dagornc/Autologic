@@ -1,0 +1,248 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "prompts": "Prompts",
+        "history": "History",
+        "help": "Help",
+        "settings": "Settings"
+    },
+    "language": {
+        "label": "Language",
+        "fr": "Français",
+        "en": "English",
+        "es": "Español",
+        "de": "Deutsch"
+    },
+    "dashboard": {
+        "title": "What will we solve today?",
+        "subtitle": "Orchestrating autonomous agents to solve complex reasoning tasks.",
+        "inputPlaceholder": "Describe your problem or reasoning task...",
+        "submit": "Run Analysis",
+        "stop": "Stop"
+    },
+    "settings": {
+        "title": "Settings",
+        "tabs": {
+            "general": "General",
+            "strategic": "Strategic",
+            "tactical": "Tactical",
+            "audit": "Audit"
+        },
+        "general": {
+            "provider": "Provider",
+            "model": "Model",
+            "freeOnly": "Free models only",
+            "connectionStatus": "Connection status",
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "searchModel": "Search a model...",
+            "appearance": "Appearance & Behavior",
+            "themeMode": "Theme Mode",
+            "accessibility": "Accessibility",
+            "reducedMotion": "Reduced Motion",
+            "reducedMotionDesc": "Minimize animations for a more static experience.",
+            "dyslexicFont": "Dyslexic Friendly Font",
+            "dyslexicFontDesc": "Switch to OpenDyslexic or increased spacing.",
+            "highContrast": "High Contrast",
+            "highContrastDesc": "Increase legibility with stronger borders and solid backgrounds."
+        },
+        "strategic": {
+            "agentTitle": "Strategic Agent",
+            "agentDesc": "The master planner and decision maker.",
+            "maxWorkers": "Max Workers",
+            "maxWorkersDesc": "Number of agents working in parallel",
+            "temperature": "Creativity (Temperature)",
+            "temperatureDesc": "Controls response creativity",
+            "maxTokens": "Max Tokens",
+            "maxTokensDesc": "Token limit per response",
+            "resilience": "Resilience & Reliability",
+            "autoRetries": "Auto-Retries",
+            "autoRetriesDesc": "Automatically retry failed LLM calls.",
+            "smartFallback": "Smart Fallback",
+            "smartFallbackDesc": "Fallback to alternative models if overloaded.",
+            "rateLimit": "Rate Limit (Req/min)",
+            "systemContext": "System Context",
+            "systemContextPlaceholder": "Enter global system context..."
+        },
+        "tactical": {
+            "agentTitle": "Tactical Agent",
+            "agentDesc": "Executes specific sub-tasks defined by the root.",
+            "syncToggle": "Use Strategic Configuration",
+            "syncToggleDesc": "Inherit settings from the Root agent for execution tasks.",
+            "linkedToStrategic": "Linked to Strategic Agent",
+            "retries": "Retries",
+            "retriesDesc": "Number of automatic retry attempts",
+            "rateLimit": "Rate Limit",
+            "rateLimitDesc": "Requests per minute",
+            "smartFallback": "Smart Fallback",
+            "smartFallbackDesc": "Switch to an alternative model on error",
+            "timeout": "Timeout",
+            "timeoutDesc": "Maximum duration per request (seconds)",
+            "temperature": "Creativity (Temperature)",
+            "resilience": "Resilience & Reliability",
+            "autoRetries": "Auto-Retries",
+            "autoRetriesDesc": "Automatically retry failed LLM calls.",
+            "rateLimitLabel": "Rate Limit (Req/min)"
+        },
+        "audit": {
+            "agentTitle": "Audit Agent",
+            "agentDesc": "Validates the output of the Tactical agent.",
+            "syncToggle": "Use Strategic Configuration",
+            "syncToggleDesc": "Use the main brain for validation (recommended for consistency).",
+            "linkedToStrategic": "Linked to Strategic Agent",
+            "h2Critic": "H2 Critic",
+            "h2CriticDesc": "Enable critical evaluation of results",
+            "criticTemperature": "Critic Temperature",
+            "criticTemperatureDesc": "Creativity of the critic agent",
+            "autoImprove": "Auto-improve",
+            "autoImproveDesc": "Automatically improve weak results",
+            "maxRetries": "Max Audit Retries",
+            "temperature": "Creativity (Temperature)",
+            "resilience": "Resilience & Reliability",
+            "autoRetries": "Auto-Retries",
+            "autoRetriesDesc": "Automatically retry failed LLM calls.",
+            "smartFallback": "Smart Fallback",
+            "smartFallbackDesc": "Fallback to alternative models if overloaded.",
+            "rateLimit": "Rate Limit (Req/min)"
+        }
+    },
+    "prompts": {
+        "title": "Prompts Manager",
+        "search": "Search a prompt...",
+        "newPrompt": "New Prompt",
+        "categories": {
+            "all": "All",
+            "logic": "Logic",
+            "creative": "Creative",
+            "analysis": "Analysis",
+            "custom": "Custom"
+        },
+        "edit": "Edit",
+        "delete": "Delete",
+        "use": "Use",
+        "save": "Save",
+        "cancel": "Cancel",
+        "emptyState": "No prompts found.",
+        "emptyStateAction": "Create your first prompt!",
+        "nameLabel": "Name",
+        "namePlaceholder": "Prompt name",
+        "contentLabel": "Content",
+        "contentPlaceholder": "Prompt content...",
+        "categoryLabel": "Category",
+        "create": "Create a prompt",
+        "editTitle": "Edit prompt",
+        "confirmDelete": "Are you sure you want to delete this prompt?",
+        "subtitle": "Manage your AI reasoning templates",
+        "emptyStateDesc": "Your library is currently empty. AI reasoning templates you create will appear here.",
+        "toCreate": "to create",
+        "promptCount": "prompt(s)"
+    },
+    "history": {
+        "title": "History",
+        "back": "Back to history",
+        "emptyState": "No history found.",
+        "emptyStateAction": "Start your first conversation!",
+        "loading": "Loading history...",
+        "task": "Task",
+        "confirmDelete": "Are you sure you want to delete this conversation?",
+        "deleteTitle": "Delete conversation"
+    },
+    "help": {
+        "title": "Documentation",
+        "subtitle": "User guide and project information",
+        "loading": "Loading documentation...",
+        "error": "Unable to load help file."
+    },
+    "common": {
+        "close": "Close",
+        "loading": "Loading...",
+        "error": "Error",
+        "theme": {
+            "toggle": "Toggle theme",
+            "light": "Light",
+            "dark": "Dark"
+        }
+    },
+    "suggestions": {
+        "title": "Try an example",
+        "chips": {
+            "market": "Analyze a competitive market for AI startups",
+            "strategy": "Build a go-to-market strategy for a SaaS product",
+            "debug": "Debug a distributed system memory leak",
+            "research": "Summarize recent advances in reinforcement learning"
+        },
+        "cards": {
+            "market": {
+                "title": "Market Analysis",
+                "prompt": "Perform a comprehensive competitive analysis for a new AI-powered SaaS startup entering the European market. Identify key competitors, market gaps, and strategic positioning opportunities."
+            },
+            "strategy": {
+                "title": "Product Strategy",
+                "prompt": "Design a go-to-market strategy for a B2B SaaS platform focused on automated document processing. Include pricing model, launch timeline, and customer acquisition channels."
+            },
+            "debug": {
+                "title": "Code Debugging",
+                "prompt": "Analyze and debug a memory leak in a distributed Node.js microservices architecture. The system uses Redis for caching and PostgreSQL for persistence. Memory usage grows 200MB/hour."
+            },
+            "research": {
+                "title": "Research Synthesis",
+                "prompt": "Synthesize the latest research (2024-2025) on multi-agent reinforcement learning. Compare approaches, highlight key breakthroughs, and identify open problems."
+            }
+        }
+    },
+    "progress": {
+        "step": "Step {{current}}/{{total}}",
+        "elapsed": "elapsed",
+        "remaining": "remaining"
+    },
+    "score": {
+        "qualityScore": "Quality Score",
+        "excellent": "Excellent",
+        "veryGood": "Very Good",
+        "good": "Good",
+        "average": "Average",
+        "low": "Needs Improvement"
+    },
+    "solution": {
+        "title": "Final Solution",
+        "subtitle": "Synthesized output from the reasoning engine",
+        "copy": "Copy",
+        "exportMd": "Markdown",
+        "exportPdf": "PDF",
+        "copied": "Copied!",
+        "exported": "Exported!"
+    },
+    "toast": {
+        "taskComplete": "Task completed",
+        "taskCompleteMsg": "Your reasoning task has been solved successfully.",
+        "taskError": "Task failed",
+        "taskStopped": "Task stopped",
+        "taskStoppedMsg": "Processing was interrupted."
+    },
+    "onboarding": {
+        "skip": "Skip tour",
+        "next": "Continue",
+        "getStarted": "Get Started",
+        "step1": {
+            "title": "Welcome to AutoLogic",
+            "desc": "An advanced reasoning engine that orchestrates autonomous agents to solve complex problems step by step."
+        },
+        "step2": {
+            "title": "Describe Your Problem",
+            "desc": "Type your complex task in the input field. AutoLogic will analyze, plan, and execute a multi-step reasoning process."
+        },
+        "step3": {
+            "title": "Watch the Engine Think",
+            "desc": "Follow the reasoning process in real-time with the visual flow diagram and progress bar. Each step is validated by an H2 Critic."
+        },
+        "step4": {
+            "title": "Get Verified Results",
+            "desc": "Receive a comprehensive solution with quality score. Export as Markdown or PDF, and browse your history anytime."
+        }
+    },
+    "shortcuts": {
+        "submit": "Submit task",
+        "focus": "Focus input",
+        "settings": "Open settings"
+    }
+}

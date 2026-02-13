@@ -1,3 +1,10 @@
+/**
+ * Apple HIG Model Selector
+ *
+ * Clean dropdown selectors for Provider and Model with
+ * Apple-style select inputs, consistent with macOS System Settings.
+ */
+
 import React, { useMemo } from 'react';
 import type { ModelData } from '../../../types/settings';
 import LiquidToggle from './LiquidToggle';
@@ -17,7 +24,7 @@ interface ModelSelectorProps {
     disabled?: boolean;
 }
 
-const GlassSelect = ({
+const AppleSelect = ({
     label,
     value,
     onChange,
@@ -25,21 +32,23 @@ const GlassSelect = ({
     disabled,
     placeholder = "Select..."
 }: {
-    label: string,
-    value: string,
-    onChange: (val: string) => void,
-    options: string[],
-    disabled?: boolean,
-    placeholder?: string
+    label: string;
+    value: string;
+    onChange: (val: string) => void;
+    options: string[];
+    disabled?: boolean;
+    placeholder?: string;
 }) => (
-    <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+    <div className="space-y-1.5">
+        <label className="text-[13px] font-medium text-muted-foreground">{label}</label>
         <div className="relative">
             <select
                 className={cn(
-                    "w-full bg-[var(--glass-1-bg)] border border-[var(--border)] rounded-md pl-3 pr-8 py-2 text-sm appearance-none transition-all",
-                    "focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] hover:bg-[var(--glass-2-bg)]",
-                    disabled && "opacity-50 cursor-not-allowed text-muted-foreground"
+                    "w-full bg-background border border-border rounded-xl pl-3.5 pr-9 py-2.5 text-[15px] appearance-none",
+                    "transition-all duration-200",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                    "hover:border-foreground/20",
+                    disabled && "opacity-40 cursor-not-allowed text-muted-foreground"
                 )}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -47,12 +56,12 @@ const GlassSelect = ({
             >
                 {options.length === 0 && <option value={value}>{value || placeholder}</option>}
                 {options.map((opt) => (
-                    <option key={opt} value={opt} className="bg-[var(--background)] text-foreground">
+                    <option key={opt} value={opt} className="bg-background text-foreground">
                         {opt}
                     </option>
                 ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
     </div>
 );
@@ -69,55 +78,41 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     labelPrefix = "",
     disabled
 }) => {
-
-    // Get available providers
     const providers = useMemo(() => {
         if (!modelData?.providers) return [provider].filter(Boolean);
         return modelData.providers;
     }, [modelData, provider]);
 
-    // Get available models for selected provider
     const availableModels = useMemo(() => {
         if (!modelData) return [];
-
         let models = modelData.models?.[provider] || [];
-
-        // If OpenRouter and Free Only is checked, filter the list
         if (provider.toLowerCase() === 'openrouter' && freeModelsOnly) {
             if (modelData.modelsDetailed?.[provider]) {
-                // Filter using detailed info if available
                 models = modelData.modelsDetailed[provider]
                     .filter(m => m.is_free)
                     .map(m => m.id);
             } else {
-                // Fallback to name heuristic
                 models = models.filter(m => m.includes(':free') || m.toLowerCase().includes('free'));
             }
         }
-
-        // Ensure current model is in list if it's set
         if (model && !models.includes(model) && !freeModelsOnly) {
             return [model, ...models];
         }
-
         return models;
     }, [modelData, provider, freeModelsOnly, model]);
 
-
     const isAutoRouting = model === 'openrouter/auto';
 
-    // Determine color identity for toggles
     const colorId = labelPrefix ? (labelPrefix.toLowerCase().includes('worker') ? 'tactical' : 'audit') : 'strategic';
-    // Mapping string to literal type
     type ColorIdType = 'strategic' | 'tactical' | 'audit' | 'general';
     const validColors: ColorIdType[] = ['strategic', 'tactical', 'audit', 'general'];
     const safeColorId: ColorIdType = validColors.includes(colorId as ColorIdType) ? colorId as ColorIdType : 'strategic';
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                {/* Provider Selector */}
-                <GlassSelect
+            {/* Grid: side-by-side on desktop, stacked on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <AppleSelect
                     label={`${labelPrefix} Provider`.trim()}
                     value={provider}
                     onChange={onProviderChange}
@@ -125,17 +120,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                     disabled={disabled || loading}
                 />
 
-                {/* Model Selector */}
                 {loading ? (
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground">{`${labelPrefix} Model`.trim()}</label>
-                        <div className="flex items-center gap-2 h-9 px-3 border border-[var(--border)] rounded-md bg-[var(--glass-1-bg)] text-muted-foreground text-sm">
+                    <div className="space-y-1.5">
+                        <label className="text-[13px] font-medium text-muted-foreground">{`${labelPrefix} Model`.trim()}</label>
+                        <div className="flex items-center gap-2 h-[42px] px-3.5 border border-border rounded-xl bg-background text-muted-foreground text-[15px]">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Loading models...</span>
                         </div>
                     </div>
                 ) : (
-                    <GlassSelect
+                    <AppleSelect
                         label={`${labelPrefix} Model`.trim()}
                         value={model}
                         onChange={onModelChange}
@@ -145,10 +139,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                 )}
             </div>
 
-            {/* OpenRouter Special Controls */}
+            {/* OpenRouter options */}
             {provider.toLowerCase() === 'openrouter' && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-2">
-                    {/* Auto Routing Toggle */}
+                <div className="space-y-0 divide-y divide-border">
                     <LiquidToggle
                         enabled={isAutoRouting}
                         onChange={(enabled) => onModelChange(enabled ? 'openrouter/auto' : '')}
@@ -157,7 +150,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
                         colorIdentity={safeColorId}
                     />
 
-                    {/* Free Models Filter */}
                     {onFreeModelsOnlyChange && (
                         <LiquidToggle
                             enabled={freeModelsOnly || false}

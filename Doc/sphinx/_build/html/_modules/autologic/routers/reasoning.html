@@ -155,7 +155,19 @@
 <span class="sd">    Exécute le cycle complet Self-Discover sur une tâche.</span>
 <span class="sd">    Legacy synchronous endpoint.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">_run_task_logic</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">engine</span><span class="p">)</span></div>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..services.reasoning_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReasoningService</span>
+    <span class="n">service</span> <span class="o">=</span> <span class="n">ReasoningService</span><span class="p">()</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">execute_task</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{})</span>
+        
+        <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
+             
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in solve_task: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
 
 
 
@@ -170,22 +182,25 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Streaming task resolution: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">task</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
 
-    <span class="n">q</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">progress_listener</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
         <span class="k">await</span> <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">event_generator</span><span class="p">():</span>
-        <span class="c1"># Lancer la tâche en background</span>
+        <span class="c1"># Instantiate Service</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..services.reasoning_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReasoningService</span>
+        <span class="n">service</span> <span class="o">=</span> <span class="n">ReasoningService</span><span class="p">()</span>
+
+        <span class="c1"># Launch task in background</span>
         <span class="n">task_future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="n">_run_task_logic</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">engine</span><span class="p">,</span> <span class="n">progress_listener</span><span class="p">)</span>
+            <span class="n">service</span><span class="o">.</span><span class="n">execute_task</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">task</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">progress_listener</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="ow">not</span> <span class="n">task_future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="c1"># Wait for event or task completion</span>
-                    <span class="c1"># Uses a short timeout to check task status periodically</span>
                     <span class="n">event</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
                     
                     <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
@@ -212,144 +227,6 @@
 
 
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_run_task_logic</span><span class="p">(</span>
-    <span class="n">request</span><span class="p">:</span> <span class="n">TaskRequest</span><span class="p">,</span>
-    <span class="n">engine</span><span class="p">:</span> <span class="n">AutoLogicEngine</span><span class="p">,</span>
-    <span class="n">callback</span><span class="o">=</span><span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reused logic for task execution.&quot;&quot;&quot;</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Résolution de tâche: </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">task</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Récupérer les paramètres ou utiliser la config active par défaut</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{}</span>
-        <span class="n">override_provider</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;provider&quot;</span><span class="p">)</span>
-        <span class="n">override_model</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Factory et imports</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..core.provider_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_provider_factory</span>
-
-        <span class="n">factory</span> <span class="o">=</span> <span class="n">get_provider_factory</span><span class="p">()</span>
-
-        <span class="c1"># Options communes (peuvent être None)</span>
-        <span class="n">common_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">{</span>
-                <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;api_key&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;temperature&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_tokens&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timeout&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_enabled&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;max_retries&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_retries&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallback_enabled&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;retry_base_delay&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retry_base_delay&quot;</span><span class="p">),</span>
-                <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rate_limit&quot;</span><span class="p">),</span>
-            <span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="p">}</span>
-
-        <span class="c1"># Construct specific kwargs for Root, Worker, Audit</span>
-        <span class="n">root_resilience</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rateLimit&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;retryEnabled&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fallbackEnabled&quot;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="n">root_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">root_resilience</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}}</span>
-
-        <span class="n">worker_resilience</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;workerRateLimit&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;workerRetryEnabled&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;workerFallbackEnabled&quot;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="n">worker_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">worker_resilience</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}}</span>
-
-        <span class="n">audit_resilience</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;rate_limit&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auditRateLimit&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;retry_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auditRetryEnabled&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;fallback_enabled&quot;</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;auditFallbackEnabled&quot;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="n">audit_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">common_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">audit_resilience</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}}</span>
-
-        <span class="c1"># Logique d&#39;instanciation</span>
-        <span class="k">if</span> <span class="n">override_provider</span> <span class="ow">or</span> <span class="n">override_model</span><span class="p">:</span>
-            <span class="c1"># Cas Override : on utilise le même modèle pour tout (mode legacy/test)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Override détecté : Root &amp; Worker &amp; Audit utilisent </span><span class="si">{</span><span class="n">override_provider</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">override_model</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-            <span class="n">root_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_llm</span><span class="p">(</span>
-                <span class="n">provider</span><span class="o">=</span><span class="n">override_provider</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">override_model</span><span class="p">,</span> <span class="o">**</span><span class="n">common_kwargs</span>
-            <span class="p">)</span>
-            <span class="n">worker_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_llm</span><span class="p">(</span>
-                <span class="n">provider</span><span class="o">=</span><span class="n">override_provider</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">override_model</span><span class="p">,</span> <span class="o">**</span><span class="n">common_kwargs</span>
-            <span class="p">)</span>
-            <span class="n">audit_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_llm</span><span class="p">(</span>
-                <span class="n">provider</span><span class="o">=</span><span class="n">override_provider</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">override_model</span><span class="p">,</span> <span class="o">**</span><span class="n">common_kwargs</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Cas Configuration Dual (Root != Worker != Audit)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Utilisation de la configuration Multi-Agent (Root/Worker/Audit)&quot;</span>
-            <span class="p">)</span>
-
-            <span class="c1"># Root LLM (Stratégique: Select, Adapt, Structure)</span>
-            <span class="n">root_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_llm</span><span class="p">(</span><span class="o">**</span><span class="n">root_kwargs</span><span class="p">)</span>
-
-            <span class="c1"># Worker LLM (Tactique: Execute)</span>
-            <span class="n">worker_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_worker_llm</span><span class="p">(</span><span class="o">**</span><span class="n">worker_kwargs</span><span class="p">)</span>
-
-            <span class="c1"># Audit LLM (Observer: Critique)</span>
-            <span class="n">audit_llm</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="n">create_audit_llm</span><span class="p">(</span><span class="o">**</span><span class="n">audit_kwargs</span><span class="p">)</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Cycle configuré -&gt; Root: </span><span class="si">{</span><span class="n">root_llm</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> | Worker: </span><span class="si">{</span><span class="n">worker_llm</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> | Audit: </span><span class="si">{</span><span class="n">audit_llm</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-        <span class="c1"># Config Engine with callback if provided</span>
-        <span class="n">local_engine</span> <span class="o">=</span> <span class="n">AutoLogicEngine</span><span class="p">(</span>
-            <span class="n">root_model</span><span class="o">=</span><span class="n">root_llm</span><span class="p">,</span>
-            <span class="n">worker_model</span><span class="o">=</span><span class="n">worker_llm</span><span class="p">,</span>
-            <span class="n">audit_model</span><span class="o">=</span><span class="n">audit_llm</span><span class="p">,</span>
-            <span class="n">progress_callback</span><span class="o">=</span><span class="n">callback</span>
-        <span class="p">)</span>
-
-        <span class="c1"># Exécution du cycle avec les trois LLMs</span>
-        <span class="n">audit_timeout</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_timeout&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">30</span>
-        <span class="p">)</span>
-        <span class="n">audit_max_retries</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;audit_max_retries&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">factory</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">&quot;audit_max_retries&quot;</span><span class="p">,</span> <span class="mi">3</span>
-        <span class="p">)</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">local_engine</span><span class="o">.</span><span class="n">run_full_cycle</span><span class="p">(</span>
-            <span class="n">request</span><span class="o">.</span><span class="n">task</span><span class="p">,</span>
-            <span class="n">root_llm</span><span class="o">=</span><span class="n">root_llm</span><span class="p">,</span>
-            <span class="n">worker_llm</span><span class="o">=</span><span class="n">worker_llm</span><span class="p">,</span>
-            <span class="n">audit_llm</span><span class="o">=</span><span class="n">audit_llm</span><span class="p">,</span>
-            <span class="n">audit_timeout</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">audit_timeout</span><span class="p">),</span>
-            <span class="n">audit_max_retries</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">audit_max_retries</span><span class="p">),</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur cycle: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">])</span>
-
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Tâche résolue avec succès&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
-            <span class="c1"># Drain queue</span>
-            <span class="k">pass</span>
-
-        <span class="k">return</span> <span class="n">result</span>
-
-    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur configuration: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
-        <span class="k">raise</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Erreur inattendue: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-
-
 <div class="viewcode-block" id="list_modules">
 <a class="viewcode-back" href="../../../index.html#autologic.routers.reasoning.list_modules">[docs]</a>
 <span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/modules&quot;</span><span class="p">)</span>
@@ -361,6 +238,7 @@
 <span class="sd">        Liste des modules de raisonnement avec leurs métadonnées</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;modules&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">engine</span><span class="o">.</span><span class="n">reasoning_modules</span><span class="p">]}</span></div>
+
 
 </pre></div>
 
